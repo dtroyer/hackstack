@@ -1,0 +1,287 @@
+---
+title: Securing OpenStack Client Connections Part 1
+author: dtroyer
+date: 2012-12-18 12:12:12
+categories: OpenStack, DevStack
+tags: devstack tls
+---
+We all know that the difference between ``https`` and ``http`` is the addition of encryption, right?  Of course, but less attention is paid to the other purposes of SSL and TLS: to verify one or both of the parties involved in the connection and to validate that the objects used in the verification meet certain criteria. [1]_  In the common case of a user directing a web browser to a 'secure' site, only one side is potentially validated, that being the server.  Maybe.
+
+Browsers generally go a good job of performing server certificate verification and validation but other https clients may not do so well.  Sometimes the web browser will pop up a box saying that the server is untrusted for one reason or another.  This can be the result of a failure to validate the server certificate or verifying that the name used to reach the server matches who the server claims to be.  It will usually contain the reason for the failure but generally it also contains a button to click on that allows the connection to proceed.  This effectively neuters the validation process and opens the door for server spoofing and man-in-the-middle attacks.
+
+The point here is not to rehash the merits of that behaviour but to investigate the use of ``https`` in the OpenStack Python clients and to validate their certificate verification.  And validation.  Mmmmmm...recursion...
+
+But First
+=========
+
+Before we can delve into the world of Python modules and SSL wrappers we must first have a way to test against some known secure servers.  This means uncorking some OpenSSL-foo and entering the dark world of certificate authorities (CA).  "But that's been covered to death!" you may say.  Yes it has [2]_, but generally only to the level of self-sigining a cert for use in private servers.  I believe the common name for these certs is 'snakeoil'.  However, certificates in the real world are not only self-signed, but often signed by a CA that is itself signed by one or more parent CAs.  The root CA certificates are included in the lists shipped with most operating systems, browsers and even some programming libraries.
+
+Our goal then is to build a server certificate that is a) signed by an intermediate CA and b) has the basic attributes and extensions common in real-world certificates.  To get that we need a root CA and an intermediate CA.  To get that we need some shell scripts and OpenSSL configuration files for each operation.
+
+Note that in this exercise we do not encrypt the private keys as this is all used for development and testing of the SSL/TLS connections and should not be used for production.
+
+Root CA
+=======
+
+A self-signed certificate has the unique characteristic of the Issuer matches the Subject.  Creating a self-signed root CA is a common operation and has been covered many times elsewhere.  So here are the basics:
+
+* Create the root CA directory structure::
+
+    for i in certs crl newcerts private; do
+        mkdir -p CA/root-ca/$i
+    done
+    chmod 710 CA/root-ca/private
+    echo "01" >CA/root-ca/serial
+    touch CA/root-ca/index.txt
+
+* Generate the root CA configuration file ``CA/root-ca/ca.conf``::
+
+    echo '
+    [ ca ]
+    default_ca = CA_default
+
+    [ CA_default ]
+    dir                     = ./CA/root-ca
+    policy                  = policy_match
+    database                = $dir/index.txt
+    serial                  = $dir/serial
+    certs                   = $dir/certs
+    crl_dir                 = $dir/crl
+    new_certs_dir           = $dir/newcerts
+    certificate             = $dir/cacert.pem
+    private_key             = $dir/private/cacert.key
+    RANDFILE                = $dir/private/.rand
+    default_md              = default
+    
+    [ req ]
+    default_bits            = 1024
+    default_md              = sha1
+    
+    prompt                  = no
+    distinguished_name      = ca_distinguished_name
+    
+    x509_extensions         = ca_extensions
+    
+    [ ca_distinguished_name ]
+    organizationName        = Example Inc.
+    organizationalUnitName  = Certificate Authority
+    emailAddress            = ca@example.com
+    commonName              = Example Inc Root CA
+    
+    [ policy_match ]
+    countryName             = optional
+    stateOrProvinceName     = optional
+    organizationName        = match
+    organizationalUnitName  = optional
+    commonName              = supplied
+    emailAddress            = optional
+    
+    [ ca_extensions ]
+    basicConstraints        = critical,CA:true
+    subjectKeyIdentifier    = hash
+    authorityKeyIdentifier  = keyid:always, issuer
+    keyUsage                = cRLSign, keyCertSign
+    
+    ' >CA/root-ca/ca.conf
+
+  The ``ca_distinguished_name`` section defines the full name of the root CA.
+
+* Generate a private key and self-signed certificate::
+
+    openssl req -config CA/root-ca/ca.conf \
+        -x509 \
+        -nodes \
+        -newkey rsa \
+        -days 21360 \
+        -keyout CA/root-ca/private/cacert.key \
+        -out CA/root-ca/cacert.pem \
+        -outform PEM
+
+* Take a peek at the root certificate::
+
+    openssl x509 -noout -text -in CA/root-ca/cacert.pem
+
+Intermediate CA
+===============
+
+Creating an Intermediate CA is very similar except the root CA must do the signing so the process takes a couple of additional steps:
+
+* Create the intermediate CA directory structure::
+
+    for i in certs crl newcerts private; do
+        mkdir -p CA/int-ca/$i
+    done
+    chmod 710 CA/int-ca/private
+    echo "01" >CA/int-ca/serial
+    touch CA/int-ca/index.txt
+
+* Generate the intermediate CA configuration file ``CA/int-ca/ca.conf``::
+
+    echo '
+    [ ca ]
+    default_ca = CA_default
+
+    [ CA_default ]
+    dir                     = ./CA/int-ca
+    policy                  = policy_match
+    database                = $dir/index.txt
+    serial                  = $dir/serial
+    certs                   = $dir/certs
+    crl_dir                 = $dir/crl
+    new_certs_dir           = $dir/newcerts
+    certificate             = $dir/cacert.pem
+    private_key             = $dir/private/cacert.key
+    RANDFILE                = $dir/private/.rand
+    default_md              = default
+    
+    [ req ]
+    default_bits            = 1024
+    default_md              = sha1
+    
+    prompt                  = no
+    distinguished_name      = ca_distinguished_name
+    
+    x509_extensions         = ca_extensions
+    
+    [ ca_distinguished_name ]
+    organizationName        = Example Inc.
+    organizationalUnitName  = Certificate Authority
+    emailAddress            = ca@example.com
+    commonName              = Example Inc Intermediate CA
+    
+    [ policy_match ]
+    countryName             = optional
+    stateOrProvinceName     = optional
+    organizationName        = match
+    organizationalUnitName  = optional
+    commonName              = supplied
+    emailAddress            = optional
+    
+    [ ca_extensions ]
+    basicConstraints        = critical,CA:true
+    subjectKeyIdentifier    = hash
+    authorityKeyIdentifier  = keyid:always, issuer
+    keyUsage                = cRLSign, keyCertSign
+    
+    ' >CA/int-ca/ca.conf
+
+  Note that the ``commonName`` in the ``ca_distinguished_name`` section is different than the root CA.  The ``ca_extensions`` section is also critical here, specifically the ``keyUsage`` attribute containing the ``keyCertSign`` so the certificate signed can be used itself to sign other certificates.
+
+* Generate a private key and certificate signing request::
+
+    openssl req -config CA/int-ca/ca.conf \
+        -sha1 \
+        -nodes \
+        -newkey rsa \
+        -keyout CA/int-ca/private/cacert.key \
+        -out CA/int-ca/int-ca.csr \
+        -outform PEM
+
+* Sign the CSR::
+
+    openssl ca -config CA/root-ca/ca.conf \
+        -extensions ca_extensions \
+        -days 365 \
+        -notext \
+        -in CA/int-ca/int-ca.csr \
+        -out CA/int-ca/cacert.pem \
+        -batch
+
+* Create a trust chain, a file that contains the CA certificates from the immediate signing CA back to the root CA::
+
+    cat CA/root-ca/cacert.pem CA/int-ca/cacert.pem >>CA/int-ca/ca-chain.pem
+
+* Take a peek at the intermediate certificate::
+
+    openssl x509 -noout -text -in CA/int-ca/cacert.pem
+
+Server Certificate
+==================
+
+This process is repeated for every server that needs a certificate.
+
+* Generate the intermediate CA signing configuration file ``CA/int-ca/sign.conf``::
+
+    echo '
+    [ ca ]
+    default_ca = CA_default
+    
+    [ CA_default ]
+    dir                     = ./CA/int-ca
+    policy                  = policy_match
+    database                = $dir/index.txt
+    serial                  = $dir/serial
+    certs                   = $dir/certs
+    crl_dir                 = $dir/crl
+    new_certs_dir           = $dir/newcerts
+    certificate             = $dir/cacert.pem
+    private_key             = $dir/private/cacert.key
+    RANDFILE                = $dir/private/.rand
+    default_md              = default
+    
+    [ req ]
+    default_bits            = 1024
+    default_md              = sha1
+    
+    prompt                  = no
+    distinguished_name      = req_distinguished_name
+    
+    x509_extensions         = req_extensions
+    
+    [ req_distinguished_name ]
+    organizationName        = Example Inc.
+    
+    [ policy_match ]
+    countryName             = optional
+    stateOrProvinceName     = optional
+    organizationName        = match
+    organizationalUnitName  = optional
+    commonName              = supplied
+    
+    [ req_extensions ]
+    basicConstraints        = CA:false
+    subjectKeyIdentifier    = hash
+    authorityKeyIdentifier  = keyid:always, issuer
+    keyUsage                = digitalSignature, keyEncipherment, keyAgreement
+    extendedKeyUsage        = serverAuth, clientAuth
+    subjectAltName          = $ENV::SUBJECT_ALT_NAME
+    
+    ' >CA/int-ca/sign.conf
+
+  The primary difference is in the ``req_extensions`` section setting up for the certificates signed by this CA.  One of the bits often missed is the inclusion of the ``subjectAltName`` that matches the ``commonName`` and optionally includes additional names that the certificate is valid for.
+
+* Generate a signing request::
+
+    openssl req \
+        -sha1 \
+        -nodes \
+        -newkey rsa \
+        -keyout CA/int-ca/private/cert.example.com.key \
+        -out CA/int-ca/cert.example.com.csr \
+        -subj '/O=Example Inc./OU=Servers/CN=cert.example.com'
+
+* Sign the CSR, with an optional value for ``subjectAltName``::
+
+    SUBJECT_ALT_NAME="DNS: cert.example.com" \
+    openssl ca -config CA/int-ca/sign.conf -extensions req_extensions -days 365 -notext \
+        -out CA/int-ca/cert.example.com.crt \
+        -in CA/int-ca/cert.example.com.csr \
+        -batch
+
+  Setting the ``SUBJECT_ALT_NAME`` environment variable is the easiest way to set ``subjectAltName`` without rewriting the config file for each certificate.
+
+* Take a peek at the server certificate::
+
+    openssl x509 -noout -text -in CA/int-ca/cert.example.com.pem
+
+Setting Up the Server
+=====================
+
+Server configurations differ but most will require the server certificate fiel created in the last step, the provate key file created in the CSR step and the CA chain file created in the previous section.  This is where encrypting the private key can make testing difficult and why we did not do that here.
+
+Later installations in this series will demonstrate how to do this using the SSL/TLS proxy server ``stud``.
+
+----
+
+.. [1] `Find more about http vs https <https://www.google.com/search?q=http+vs+https>`_
+.. [2] `Find more about creating a CA with OpenSSL <http://www.google.com/search?q=openssl+certificate+authority>`_
