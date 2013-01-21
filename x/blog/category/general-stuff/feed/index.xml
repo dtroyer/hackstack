@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+     xmlns:atom="http://www.w3.org/2005/Atom"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+     >
+  <channel>
+    <title>HackStack Posts</title>
+    <link>http://hackstack.org/x/blog</link>
+    <description>OpenStack and other hackish things</description>
+    <pubDate>Thu, 24 Jan 2013 05:19:20 GMT</pubDate>
+    <generator>Blogofile</generator>
+    <sy:updatePeriod>hourly</sy:updatePeriod>
+    <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Syntax highlight test</title>
+      <link>http://hackstack.org/x/blog/2011/05/11/syntax-highlight-test</link>
+      <pubDate>Wed, 11 May 2011 15:25:00 CDT</pubDate>
+      <category><![CDATA[general stuff]]></category>
+      <guid isPermaLink="false">FwrKkiBls6PAzK0hbmzoSrN5z1M=</guid>
+      <description>Syntax highlight test</description>
+      <content:encoded><![CDATA[<p>This post contains some highlighted python code:</p>
+<div class="pygments_murphy syntax_highlight"><pre><span class="kn">import</span> <span class="nn">this</span><br/><br/><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;main&quot;</span><span class="p">:</span><br/>    <span class="k">print</span> <span class="s">&quot;Hello, World!&quot;</span><br/></pre></div>
+
+<p>This is accomplished with the built-in <a href="https://github.com/EnigmaCurry/blogofile/blob/master/blogofile/site_init/blog_features/_filters/syntax_highlight.py">syntax highlighter filter</a></p>]]></content:encoded>
+    </item>
+  </channel>
+</rss>

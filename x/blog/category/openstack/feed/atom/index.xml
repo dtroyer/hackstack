@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed
+  xmlns="http://www.w3.org/2005/Atom"
+  xmlns:thr="http://purl.org/syndication/thread/1.0"
+  xml:lang="en"
+   >
+  <title type="text">HackStack Posts</title>
+  <subtitle type="text">OpenStack and other hackish things</subtitle>
+
+  <updated>2013-01-24T05:19:20Z</updated>
+  <generator uri="http://blogofile.com/">Blogofile</generator>
+
+  <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
+  <id>http://hackstack.org/x/blog/feed/atom/</id>
+  <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Securing OpenStack Client Connections Part 2]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2012/12/21/securing-openstack-client-connections-part-2" />
+    <id>http://hackstack.org/x/blog/2012/12/21/securing-openstack-client-connections-part-2</id>
+    <updated>2012-12-21T12:12:12Z</updated>
+    <published>2012-12-21T12:12:12Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <category scheme="http://hackstack.org/x/blog" term="devstack" />
+    <summary type="html"><![CDATA[Securing OpenStack Client Connections Part 2]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2012/12/21/securing-openstack-client-connections-part-2"><![CDATA[<div class="document">
+<p>The OpenStack client repositories (or packages) include both the Python API bindings and the reference command line interface (CLI) implementation to communicate with the OpenStack APIs.   Client support for modern encrypted connections, i.e SSLv3 and/or TLSv1, has been spotty at best.</p>
+<p>Most of the clients are capable of using SSL for encryption but often the certificate verification part of the protocol did not work properly for tier-2 or privately signed certificates, prompting the addition of the --insecure option to some of the clients.  In addition, most of the clients had no mechanism to specify an alternate CA bundle file to enable certificate verification.</p>
+<p>Python has historically had incomplete X.509 certificate support in its standard library.  For example, ssl and httplib do not verify the hostname as part of certificate verification. Four of the clients (keystone, nova, cinder, quantum) use httplib2 which had no hostname verification before 0.7.0 and what it currently has is incomplete. The other two clients (glance and swift) use httplib directly and either have no hostname verification (swift) or implement it locally (glance).</p>
+<div class="section" id="issue-summary">
+<h1>Issue Summary</h1>
+<ul class="simple">
+<li>Python's ssl module does no certificate hostname verification in 2.7.x; it has been added in 3.2 but will not be backported.[1]</li>
+<li>ssl is pinned to using protocol version SSLv23 and must be directly patched to override it.</li>
+<li>httplib uses ssl and adds no hostname verification.  In addition it only uses the default SSLV23 protocol version set by ssl.  We don't want this as SSLv2 is deprecated and insecure.  Patching that value directly into the ssl module works but is suboptimal.</li>
+<li>httplib2 implements a basic hostname verification but it has some problems such as only checking commonName if the certificate's subjectAltNames is not present and handling wildcards differently than specified in RFC-2818.</li>
+<li>httplib2 uses an internal ca bundle (cacert.txt) if the ca_certs argument is not given to HTTPSConnectionWithTimeout.__init__().</li>
+<li>In other news, httplib2 only supports 3xx redirects for GET method.</li>
+</ul>
+<div class="section" id="additional-notes">
+<h2>Additional Notes</h2>
+<p>glanceclient has patched the ssl module out of httplib in favor of pyOpenSSL.  Stuart McLaren added http.VerifiedHTTPSConnection.host_matches_cert() to validate commonName and subjectAltName for httplib connections but it doesn't handle wildcards.</p>
+</div>
+</div>
+<div class="section" id="why-requests-2">
+<h1>Why requests? [2]</h1>
+<p>The requests module backported match_hostname() from Python 3.2.  Like all of the other modules here it does not handle the iPAddress attribute in subjectAltName. This is mostly relevant in development and testing use cases like with DevStack.  The 3.2 match_hostname() implementation however does allow IP addresses as a dNSName.</p>
+<p>Requests also brings a number of other features to the table that may or may not have been implemented individually in the existing clients such as JSON encoding/decoding and 3xx redirection support for POST, PUT, PATCH DELETE, and HEAD.  Plus it is stable (notwithstanding the recent 1.0 release) and the developer is known in the OS community.</p>
+</div>
+<div class="section" id="the-cli-solution">
+<h1>The CLI Solution</h1>
+<p>The current round of patches to the CLIs is to get them all up to the same level of support for TLSv1 for authentication, at a minimum.  Glance and Swift continue to use httplib directly for their data transfer connections (really, all connections to their respective services) and these already support SSL.v?.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="11%" />
+<col width="16%" />
+<col width="44%" />
+<col width="16%" />
+<col width="13%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Client</th>
+<th class="head">HTTP Module</th>
+<th class="head">Client object</th>
+<th class="head">CLI Arg</th>
+<th class="head">Env Var</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>keystone</td>
+<td>httplib2</td>
+<td>class.HTTPClient(httplib2.Http)</td>
+<td>--os-cacert</td>
+<td>OS_CACERT</td>
+</tr>
+<tr><td>nova</td>
+<td>httplib2</td>
+<td>class.HTTPClient(httplib2.Http)</td>
+<td>n/a</td>
+<td>n/a</td>
+</tr>
+<tr><td>cinder</td>
+<td>httplib2</td>
+<td>class.HTTPClient(httplib2.Http)</td>
+<td>n/a</td>
+<td>n/a</td>
+</tr>
+<tr><td>glance</td>
+<td>httplib</td>
+<td>class.HTTPClient(object)</td>
+<td>--ca-file</td>
+<td>n/a</td>
+</tr>
+<tr><td>swift</td>
+<td>httplib</td>
+<td>class Connection(object)</td>
+<td>n/a</td>
+<td>n/a</td>
+</tr>
+<tr><td>quantum</td>
+<td>httplib2</td>
+<td>class.HTTPClient(httplib2.Http)</td>
+<td>n/a</td>
+<td>n/a</td>
+</tr>
+</tbody>
+</table>
+<p>The approach taken for the httplib2 subclasses is to change the parent class to object and reqork the request() method to call requests.request().  Some of the differences for requests leaked out of that method but have been mostly containd within the HTTPClient class.  All four of the clients (formetly) using httplib2 have implemented one or more features that can easily be handled by requests (redirection) or should also be propogated to the other clients.  This is ripe for a refactor of HTTPClient to a common module but that effort is not in scope here.</p>
+<p>keystoneclient (complete) <a class="reference external" href="https://review.openstack.org/#/c/17624/">https://review.openstack.org/#/c/17624/</a></p>
+<ul class="simple">
+<li>replace httplib2 with requests</li>
+</ul>
+<p>novaclient (complete) <a class="reference external" href="https://review.openstack.org/#/c/18257/">https://review.openstack.org/#/c/18257/</a></p>
+<ul class="simple">
+<li>replace httplib2 with requests</li>
+<li>add --os-cacert and OS_CACERT support</li>
+<li>provide ca_cert to keystone clinet for authentication</li>
+</ul>
+<p>cinderclient (complete) <a class="reference external" href="https://review.openstack.org/#/c/18278/">https://review.openstack.org/#/c/18278/</a></p>
+<ul class="simple">
+<li>replace httplib2 with requests</li>
+<li>add --os-cacert and OS_CACERT support</li>
+<li>provide ca_cert to keystone clinet for authentication</li>
+</ul>
+<p>glanceclient (complete) <a class="reference external" href="https://review.openstack.org/#/c/17698/">https://review.openstack.org/#/c/17698/</a></p>
+<ul class="simple">
+<li>rename --ca-cert to --os-cacert and add OS_CACERT</li>
+<li>provide ca_cert to keystone client for authentication</li>
+</ul>
+<p>swiftclient (complete) <a class="reference external" href="https://review.openstack.org/#/c/18393/">https://review.openstack.org/#/c/18393/</a></p>
+<ul class="simple">
+<li>add --os-cacert and OS_CACERT support</li>
+<li>provide ca_cert to keystone client for authentication</li>
+</ul>
+<p>quantumclient (not started)</p>
+<ul class="simple">
+<li>replace httplib2 with requests</li>
+<li>add --os-cacert and OS_CACERT support</li>
+<li>provide ca_cert to keystone clinet for authentication</li>
+</ul>
+<div class="section" id="testing">
+<h2>Testing</h2>
+<p>Aside from the usual unit tests, support for a TLS proxy is being added to DevStack to demonstrate and test a TLS-enabled OpenStack configuration.  It uses stud as the TLS endpoint that proxies to the usual service endpoints.  The most interesting challenge here is doing it all on a single host and making the service catalog work.  Yay!</p>
+<p>The TLS-in-DevStack also builds a two-tiered CA (root and intermediate) for testing proper certificate chain validation.</p>
+</div>
+</div>
+<div class="section" id="links">
+<h1>Links</h1>
+<ul class="simple">
+<li>glanceclient host_matches_cert(): <a class="reference external" href="https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py">https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py</a></li>
+<li>request's urllib3.ssl_match_hostname.match_hostname(): <a class="reference external" href="https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72">https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72</a> <a class="reference external" href="https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23">https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23</a></li>
+</ul>
+<p>[1]: <a class="reference external" href="http://bugs.python.org/issue1589">http://bugs.python.org/issue1589</a>, the comments about 2.x begin at <a class="reference external" href="http://bugs.python.org/issue1589#msg120946">http://bugs.python.org/issue1589#msg120946</a></p>
+<p>[2]: The patches for the OpenStack CLIs were engineered and implemented before the release of requests 1.0 which is a significantly different implementation and is untested in our application.</p>
+</div>
+</div>
+]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Securing Client Connections]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2012/12/18/securing-client-connections" />
+    <id>http://hackstack.org/x/blog/2012/12/18/securing-client-connections</id>
+    <updated>2012-12-18T12:12:12Z</updated>
+    <published>2012-12-18T12:12:12Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <category scheme="http://hackstack.org/x/blog" term="devstack" />
+    <summary type="html"><![CDATA[Securing Client Connections]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2012/12/18/securing-client-connections"><![CDATA[<div class="document">
+<p>The difference of <tt class="docutils literal">https</tt> over <tt class="docutils literal">http</tt> is the addition of encryption, right?  Yes, but it is also meant to include the addition of verification/validation of one or both of the paries involved in the connection.  In the common case of a user directing a web browser to a 'secure' site, only one side is potentially validated, that being the server.  Maybe.</p>
+<p>Browsers generally go a good job of performing server certificate validation but other https clients may not do so well.  Sometimes the web browser will pop up a box saying that the server is untrusted for one reason or another.  This is the result of a failure to validate the server certificate.  It will usually contain the reason for the failure but generally it also contains a button to click on that allows the connection to proceed.  This effectively neuters the validation process and opens the door for server spoofing and man-in-the-middle attacks.</p>
+<p>The point here is not to rehash the merits of that behaviour but to demonstrate the parallel with other users of <tt class="docutils literal">https</tt> and uncovering the characteristics in how they handle encryption and validation of server certificates.  Specifically this is a look into how the OpenStack Python REST clients behave and how to validate the certificate validation.  Mmmmmm...recursion...</p>
+<div class="section" id="but-first">
+<h1>But First</h1>
+<p>Before we can delve into the world of Python modules and SSL wrappers we must first have a way to test against some known secure servers.  This means uncorking some OpenSSL-foo and entering the dark world of certificate authorities (CA).  &quot;But that's been covered to death!&quot; you may say.  Yes it has, but generally only to the level of self-sigining a cert for use in private servers.  I believe the common name for these certs is 'snakeoil'.  Occasionally you will find a walkthrough that introduces an intermediate certificate authority to better emulate the real-world certificates obtained from the commercial vendors that have their root CA certificates included in the lists shipped with most operating systems, browsers and even some programming libraries.</p>
+<p>Our goal then is to build a server certificate that is a) signed by an intermediate CA and b) has the basic attributes and extensions common in real-world certificates.  To get that we need a root CA and to get that we need some code.  The approach taken here is to create OpenSSL configuration files that illustrate the configuration file sections that are used for each operation.</p>
+</div>
+<div class="section" id="root-ca">
+<h1>Root CA</h1>
+<p>Creating a self-signed root CA is a common operation and has been covered many times elsewhere.  So here are the basics:</p>
+<ul>
+<li><p class="first">create root CA dir structure:</p>
+<pre class="literal-block">
+for i in certs crl newcerts private; do
+    mkdir -p CA/root-ca/$i
+done
+chmod 710 CA/root-ca/private
+echo &quot;01&quot; &gt;CA/root-ca/serial
+cp /dev/null CA/root-ca/index.txt
+</pre>
+</li>
+<li><p class="first">generate CA/root-ca/ca.conf:</p>
+<pre class="literal-block">
+echo '
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir                     = ./CA/root-ca
+policy                  = policy_match
+database                = $dir/index.txt
+serial                  = $dir/serial
+certs                   = $dir/certs
+crl_dir                 = $dir/crl
+new_certs_dir           = $dir/newcerts
+certificate             = $dir/cacert.pem
+private_key             = $dir/private/cacert.key
+RANDFILE                = $dir/private/.rand
+default_md              = default
+
+[ req ]
+default_bits            = 1024
+default_md              = sha1
+
+prompt                  = no
+distinguished_name      = ca_distinguished_name
+
+x509_extensions         = ca_extensions
+
+[ ca_distinguished_name ]
+organizationName        = Example Inc.
+organizationalUnitName  = Certificate Authority
+emailAddress            = ca&#64;example.com
+commonName              = Example Inc Root CA
+
+[ policy_match ]
+countryName             = optional
+stateOrProvinceName     = optional
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ ca_extensions ]
+basicConstraints        = critical,CA:true
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always, issuer
+keyUsage                = cRLSign, keyCertSign
+
+' &gt;CA/root-ca/ca.conf
+</pre>
+</li>
+<li><p class="first">generate a private key and self-signed certificate:</p>
+<pre class="literal-block">
+openssl req -config CA/root-ca/ca.conf -x509 -nodes -newkey rsa -days 21360 \
+    -out CA/root-ca/cacert.pem \
+    -keyout CA/root-ca/private/cacert.key \
+    -outform PEM
+</pre>
+</li>
+<li><p class="first">take a peek at the root certificate:</p>
+<pre class="literal-block">
+openssl x509 -noout -text -in CA/root-ca/cacert.pem
+</pre>
+</li>
+</ul>
+</div>
+<div class="section" id="intermediate-ca">
+<h1>Intermediate CA</h1>
+<p>Creating an Intermediate CA is very similar except the root CA must do the signing so the process takes a couple of additional steps:</p>
+<ul>
+<li><p class="first">create intermediate CA dir structure:</p>
+<pre class="literal-block">
+for i in certs crl newcerts private; do
+    mkdir -p CA/int-ca/$i
+done
+chmod 710 CA/int-ca/private
+echo &quot;01&quot; &gt;CA/int-ca/serial
+cp /dev/null CA/int-ca/index.txt
+</pre>
+</li>
+<li><p class="first">generate CA/int-ca/ca.conf:</p>
+<pre class="literal-block">
+echo '
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir                     = ./CA/int-ca
+policy                  = policy_match
+database                = $dir/index.txt
+serial                  = $dir/serial
+certs                   = $dir/certs
+crl_dir                 = $dir/crl
+new_certs_dir           = $dir/newcerts
+certificate             = $dir/cacert.pem
+private_key             = $dir/private/cacert.key
+RANDFILE                = $dir/private/.rand
+default_md              = default
+
+[ req ]
+default_bits            = 1024
+default_md              = sha1
+
+prompt                  = no
+distinguished_name      = ca_distinguished_name
+
+x509_extensions         = ca_extensions
+
+[ ca_distinguished_name ]
+organizationName        = Example Inc.
+organizationalUnitName  = Certificate Authority
+emailAddress            = ca&#64;example.com
+commonName              = Example Inc Intermediate CA
+
+[ policy_match ]
+countryName             = optional
+stateOrProvinceName     = optional
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ ca_extensions ]
+basicConstraints        = critical,CA:true
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always, issuer
+keyUsage                = cRLSign, keyCertSign
+
+' &gt;CA/int-ca/ca.conf
+</pre>
+</li>
+<li><dl class="first docutils">
+<dt>generate a private key and self-signed certificate::</dt>
+<dd><dl class="first last docutils">
+<dt>openssl req -config CA/int-ca/ca.conf -sha1 -newkey rsa -nodes </dt>
+<dd><p class="first last">-out CA/int-ca/int-ca.csr -keyout CA/int-ca/private/cacert.key -outform PEM</p>
+</dd>
+<dt>openssl ca -config CA/root-ca/ca.conf -extensions ca_extensions -days 365 -notext </dt>
+<dd><p class="first last">-out CA/int-ca/cacert.pem -in CA/int-ca/int-ca.csr -batch</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><p class="first">make a trust chain:</p>
+<pre class="literal-block">
+cat CA/root-ca/cacert.pem CA/int-ca/cacert.pem &gt;&gt;CA/int-ca/ca-chain.pem
+</pre>
+</li>
+<li><p class="first">take a peek at the intermediate certificate:</p>
+<pre class="literal-block">
+openssl x509 -noout -text -in CA/int-ca/cacert.pem
+</pre>
+</li>
+</ul>
+</div>
+<div class="section" id="server-certificate">
+<h1>Server Certificate</h1>
+<ul>
+<li><p class="first">generate CA/int-ca/sign.conf:</p>
+<pre class="literal-block">
+echo '
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir                     = ./CA/int-ca
+policy                  = policy_match
+database                = $dir/index.txt
+serial                  = $dir/serial
+certs                   = $dir/certs
+crl_dir                 = $dir/crl
+new_certs_dir           = $dir/newcerts
+certificate             = $dir/cacert.pem
+private_key             = $dir/private/cacert.key
+RANDFILE                = $dir/private/.rand
+default_md              = default
+
+[ req ]
+default_bits            = 1024
+default_md              = sha1
+
+prompt                  = no
+distinguished_name      = req_distinguished_name
+
+x509_extensions         = req_extensions
+
+[ req_distinguished_name ]
+organizationName        = Example Inc.
+
+[ policy_match ]
+countryName             = optional
+stateOrProvinceName     = optional
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+
+[ req_extensions ]
+basicConstraints        = CA:false
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always, issuer
+keyUsage                = digitalSignature, keyEncipherment, keyAgreement
+extendedKeyUsage        = serverAuth, clientAuth
+subjectAltName          = $ENV::SUBJECT_ALT_NAME
+
+' &gt;CA/int-ca/sign.conf
+</pre>
+</li>
+<li><p class="first">generate a signing request:</p>
+<pre class="literal-block">
+openssl req -sha1 -newkey rsa -nodes \
+    -keyout CA/int-ca/private/cert.example.com.key \
+    -out CA/int-ca/cert.example.com.csr \
+    -subj '/O=Example Inc./OU=Servers/CN=cert.example.com'
+
+SUBJECT_ALT_NAME=&quot;IP: 1.2.3.4&quot; \
+openssl ca -config CA/int-ca/sign.conf -extensions req_extensions -days 365 -notext \
+    -out CA/int-ca/cert.example.com.crt \
+    -in CA/int-ca/cert.example.com.csr \
+    -batch
+</pre>
+</li>
+<li><p class="first">take a peek at the server certificate:</p>
+<pre class="literal-block">
+openssl x509 -noout -text -in CA/int-ca/cert.example.com.pem
+</pre>
+</li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Devstack At One]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2012/10/20/devstack-at-one" />
+    <id>http://hackstack.org/x/blog/2012/10/20/devstack-at-one</id>
+    <updated>2012-10-20T10:20:30Z</updated>
+    <published>2012-10-20T10:20:30Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <category scheme="http://hackstack.org/x/blog" term="devstack" />
+    <summary type="html"><![CDATA[Devstack At One]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2012/10/20/devstack-at-one"><![CDATA[<div class="document">
+<p>First birthdays are always fun...especially the bit where the birthday kidlet is encouraged to make a mess of the cake to the mild amusement of the adults present.  At least that's how it worked in the little burg where I grew up.  (Little burg?  Isn't that redundant?)  My parents have pictures of me doing that, I have pictures of my kids doing that, I anticipate the cycle will continue someday.</p>
+<p>Now that the <a class="reference external" href="http://openstack.org">OpenStack</a> Grizzly Design Summit is over I realize that <a class="reference external" href="devstack.org">DevStack</a> is just over a year old, having been shown off for the first time at the Essex Design Summit in Boston.  We should have had a party!  Maybe I'll just retroactively declare one of the many during the week to be DevStack's birthday party.  Anyone care to vote on which one? (<em>cough*Nebula*cough</em>)  Look, DevStack still has a little cache on its face, how cute!</p>
+<p>anotherjesse and sleepsonthefloor initially started building DevStack to address their own needs for OpenStack development and exploration.  They were scratching an itch as the saying goes, and it soon became apparent that this might be generally useful.  Over its first year DevStack has become the de facto quick way to build an OpenStack cloud for developers.  While it was (and still is) primarily targeted for development use it has been found in other interesting places, most promintely in the OpenStack Continuous Integration gating tests.</p>
+<p>The original goals of DevStack remain as its primary guide:</p>
+<ul class="simple">
+<li>provide an environment for development and basic testing of OpenStack with and quick turnaround times and easy access to debug logs and output</li>
+<li>provide an example of one way to configure OpenStack and provide a simple mechanism to try different configurations</li>
+<li>support multiple deployment environments (bare metal, VMs, ramdisk, etc)</li>
+</ul>
+<p>We have largely stayed true to those goals and IMHO achieved them in large part.  As new uses of DevStack have come to light we added</p>
+<ul class="simple">
+<li>provide a basic platform for CI testing and gating of OpenStack commits</li>
+</ul>
+<div class="section" id="what-just-happened">
+<h1>What Just Happened?</h1>
+<p>Honestly it feels like not much has happened on DevStack since I started working on Grenade.  In reality, I look at the commits and see some significant developments that are worth noting for those who don't spend their coffee breaks looking at commit logs.  In early October we split off a stable/folsom branch of DevStack and configured it to pull stable/folsom branches from the project repos.  Everything below happened before stable/folsom was created.</p>
+<ul class="simple">
+<li><strong>Tell stack.sh to shut up!</strong>  The logging in <tt class="docutils literal">stack.sh</tt> was re-worked to allow writing the familiar xtrace stream to the <tt class="docutils literal">stack.sh.log</tt> files but only display a limited number of status messages in the console window.  Set <tt class="docutils literal">VERBOSE=False</tt> in <tt class="docutils literal">localrc</tt> to relieve your eyes from having to look at that stream that is busier than a VMS boot log.</li>
+<li><strong>Ceilometer and HEAT are now available!</strong>  You can now incorporate both projects into your DevStack install in the same install-from-source mode that the other projects use.</li>
+<li><strong>Cinder is the default volume service!</strong>  Nova volumes will take a powder sometime during Grizzly so we're using that new kid, Cinder, to provide block storage.  Stop by and see how jgriffith is doing, maybe he'll put you on a horse.</li>
+<li><strong>Get smarter about loading images into Glance from IMAGE_URLS!</strong>  It is the little things in life, like properly set image disk types in Glance, that make the difference between 'Life Is Good' and 'Life Is Pretty Good'.  What's next, setting the sticky bit on public images?</li>
+<li><strong>Exclamation points are on clearance!</strong>  Just checking to see if you were paying attention.  Unfortunately the only ones left are all in Comic Sans.</li>
+<li><strong>Keystone backend is SQL by default!</strong>  <tt class="docutils literal">default_catalog.templates</tt> is dead, long live <tt class="docutils literal">default_catalog.templates</tt>!  Unless of course you set <tt class="docutils literal"><span class="pre">KEYSTONE_CATALOG_BACKEND=not-sql</span></tt> (really, we test for 'sql' so anything else resurrects the old way).</li>
+</ul>
+</div>
+<div class="section" id="near-term-development">
+<h1>Near-term Development</h1>
+<p>I can her you thinking &quot;OK, all that is well and good, but what have you done for me today?&quot;  Humph.  Lurking in design summit sessions that decide the future of OpenStack's DNS strategy or hallway^H^H^H^H^H^HDeveloper Lounge conversations about how to refactor MySQL configuration in <tt class="docutils literal">stack.sh</tt> or scruitinizing the debut of Dope'n'Stack's latest release or dutifully searching for non-coffee-or-tea-based caffeine isn't enough?</p>
+<p>We added some important things from the design summit to the list, presented here in no particular order so don't get any ideas:</p>
+<ul class="simple">
+<li>sdague's arm should be straightened out by the time he returns home and begins doing core reviews on DevStack.  <em>[Ed: After further review it seems that he didn't wait.]</em></li>
+<li>In other sdague news, he is also planning to implement support for PostgreSQL.  And factor out the aforementioned MySQL support from <tt class="docutils literal">stack.sh</tt> in the process.</li>
+<li>That pesky new kid Grenade wants, nee demands, the completion of the project re-factoring from <tt class="docutils literal">stack.sh</tt> so it can include the results in the <tt class="docutils literal"><span class="pre">upgrade-*</span></tt> scripts.</li>
+<li>Rework the dependency system to be more portable across multiple distros.  Most of the python dependencies are handled by pip out of the <tt class="docutils literal"><span class="pre">tools/pip-requires</span></tt> files in the project source trees but the remaining packaged dependencies need to be specified per-project to ensure they are present when that project is enabled.  The existing system is simple but maybe a little too simple especially to support differences between multiple RPM-based distros (hello OpenSUSE!)</li>
+<li>Finalize Quantal support.  Actually that may be done already but someone should check before he shoots his mouth off and says it is done.</li>
+</ul>
+</div>
+<div class="section" id="wild-hares">
+<h1>Wild Hares</h1>
+<p>Try these ideas on for size:</p>
+<ul class="simple">
+<li>sliced bread</li>
+<li><a class="reference external" href="http://www.alibaba.com/showroom/inflatable-dart-board.html">inflatable dart board</a></li>
+<li>GOTO</li>
+<li><a class="reference external" href="http://en.wikipedia.org/wiki/New_Coke">New Coke</a></li>
+</ul>
+<p>Not everything is a good idea and not everything makes it into the master branch which means often good ideas don't make the cut.  Whether good or bad, here are some ideas suggested for DevStack that will not be implemented and here is why:</p>
+<ul class="simple">
+<li><strong>Rewrite in Python?</strong> One of the primary goals of DevStack is to demonstrate one simple way to set up OpenStack.  We feel that is best served using shell scripts that are accessible to more people, especially to implementors who are not developers.</li>
+<li><strong>Start/run services under upstart/init/whatever?</strong> The OpenStack services run in screen to simplify developer access to stop and re-start the services during the development cycle.</li>
+<li><strong>Install OpenStack from packages?</strong> This mode becomes extremely hard to convert a project from using the packaged code to a repo checked out from GitHub.  There may be enough demand to warrant wrapping the Ubuntu or Fedora package installs with some default configuration that produces an end-result similar to DevStack but we're going to leave that for someon else to tackle.</li>
+</ul>
+</div>
+<div class="section" id="resources">
+<h1>Resources</h1>
+<p>Please excuse us while we wipe the cache off DevStack's face and get back to the freaking cool job of aiding and abetting the creation of more <tt class="docutils literal">&lt;echo <span class="pre">delay=&quot;0.3ms&quot;</span> <span class="pre">repeat=&quot;6&quot;&gt;</span></tt> Software With Which To Rule The World! <tt class="docutils literal">&lt;/echo&gt;</tt>.  In the mean time here's where to track down the whos-and-whats mentioned above.</p>
+<ul class="simple">
+<li>DevStack site: <a class="reference external" href="http://devstack.org">http://devstack.org</a></li>
+<li>FAQ: <a class="reference external" href="http://devstack.org/faq.html">http://devstack.org/faq.html</a></li>
+<li>Recent Changes: <a class="reference external" href="http://devstack.org/changes.html">http://devstack.org/changes.html</a></li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
+</feed>
