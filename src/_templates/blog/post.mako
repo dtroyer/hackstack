@@ -14,7 +14,7 @@
   <div class="blog_post">
     <header>
       <div id="${post.slug}"></div>
-      <h2 class="blog_post_title"><a href="${post.permapath()}" rel="bookmark" title="Permanent Link to ${post.title}">${post.title}</a></h2>
+      <h1 class="blog_post_title"><a href="${post.permapath()}" rel="bookmark" title="Permanent Link to ${post.title}">${post.title}</a></h1>
       <p><small><span class="blog_post_date">${post.date.strftime("%B %d, %Y at %I:%M %p")}</span> | categories: 
         <span class="blog_post_categories">${", ".join(category_links)}</span>
         % if bf.config.blog.disqus.enabled:

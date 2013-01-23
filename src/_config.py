@@ -16,14 +16,14 @@
 ######################################################################
 ## site.dir -- The site generation destination
 # This is the "_site" directory by default
-site.dir = "../_p"
+site.dir = "../x"
 
 ## site_url -- Your site's full URL
 # Your "site" is the same thing as your _site directory.
 #  If you're hosting a blogofile powered site as a subdirectory of a larger
 #  non-blogofile site, then you would set the site_url to the full URL
 #  including that subdirectory: "http://www.yoursite.com/path/to/blogofile-dir"
-site.url = "http://hackstack.org/_p"
+site.url = "http://hackstack.org/x"
 
 ## site.author -- Your name, the author of the website.
 # This is optional. If set to anything other than None, the
@@ -43,7 +43,7 @@ blog.enabled = True
 #  and you set blog_path to "/blog" your full blog URL would be
 #  "http://www.yoursite.com/~ryan/blog"
 #  Leave blank "" to set to the root of site_url
-blog.path = ""
+blog.path = "/blog"
 
 ## blog_name -- Your Blog's name.
 # This is used repeatedly in default blog templates
@@ -63,6 +63,9 @@ blog.timezone = "US/Central"
 ## blog_googleanaltics_id -- enable Google Analytics tracking
 ## TODO: move to plugin/filter?
 blog.googleanlytics_id = "UA-XXXXX-X"
+
+blog.post_excerpts.enabled = True
+blog.post_excerpts.word_length = 100
 
 ## Markdown extensions
 ## These are turned off by default, but turned on
