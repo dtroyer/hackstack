@@ -1,0 +1,123 @@
+---
+title: Securing OpenStack Client Connections Part 2
+author: dtroyer
+date: 2012-12-21 12:12:12
+categories: OpenStack, DevStack
+tags: devstack cli
+---
+In the first part of this series we covered creating a pair of certificate authorities and a signed certificate with the same attributes commonly found in commercial certificates.  This part covers the OpenStack Python clients and proper certificate verification.
+
+The OpenStack client repositories (or packages) include both the Python API bindings and the reference command line interface (CLI) implementation to communicate with the OpenStack APIs.   Client support for modern encrypted connections, i.e SSLv3 and/or TLSv1, has been spotty at best.
+
+Most of the clients are capable of using SSL for encryption but often the certificate verification part of the protocol did not work properly for tier-2 or privately signed certificates, prompting the addition of the ``--insecure`` option to some of the clients to sidestep the problem altogether.  In addition, most of the clients had no mechanism to specify an alternate CA bundle file to enable certificate verification for certificates not signed by the commercial CAs.
+
+Python has historically had incomplete X.509 certificate support in its standard library.  For example, ``ssl`` and ``httplib`` do not verify the hostname as part of certificate verification. Four of the clients (keystone, nova, cinder, quantum) use ``httplib2`` which had no hostname verification before version 0.7.0 and what it currently has is also incomplete. The other two clients (glance and swift) use ``httplib`` directly and either have no hostname verification (swift) or implement it locally (glance).
+
+Issue Summary
+=============
+
+* Python's ``ssl`` module does no certificate hostname verification in 2.7.x; it has been added in 3.2 but will not be backported. [1]_
+* ``ssl`` is pinned to using protocol version ``SSLv23`` and must be directly patched to override it.
+* ``httplib`` uses ``ssl`` and adds no hostname verification.  In addition it only uses the default ``SSLV23`` protocol version set by ``ssl``.  We don't want this as SSLv2 is deprecated and insecure.  Patching that value directly into the ``ssl`` module works but is suboptimal.
+* ``httplib2`` implements a basic hostname verification but it has some problems such as only checking ``commonName`` if the certificate's ``subjectAltNames`` is not present and handling wildcards differently than specified in RFC-2818.
+* ``httplib2`` uses an internal ca bundle (``cacert.txt``) if the ``ca_certs`` argument is not given to ``HTTPSConnectionWithTimeout.__init__()``.
+* In other news, ``httplib2`` only supports 3xx redirects for GET method.
+
+Additional Notes
+----------------
+
+glanceclient has patched the ``ssl`` module out of ``httplib`` in favor of ``pyOpenSSL``.  Stuart McLaren added ``http.VerifiedHTTPSConnection.host_matches_cert()`` to validate ``commonName`` and ``subjectAltName`` for ``httplib`` connections but it doesn't handle wildcards.
+
+Why requests? [2]_
+====================
+
+The ``requests`` module backported ``match_hostname()`` from Python 3.2.  Like the rest of the modules here it does not handle the ``iPAddress`` attribute in ``subjectAltName``. This is mostly relevant in development and testing use cases like with DevStack.  The 3.2 ``match_hostname()`` implementation however does allow IP addresses as a ``dNSName``.
+
+``requests`` also brings a number of other features to the table that may or may not have been implemented individually in the existing clients such as JSON encoding/decoding and 3xx redirection support for POST, PUT, PATCH DELETE, and HEAD.  Plus it is stable (notwithstanding the recent 1.0 release) and the developer is known in the OS community.
+
+The CLI Solution
+================
+
+There has recently been a round of patches to the CLIs to get them all up to the same level of support for TLSv1 to be used for authentication at a minimum.  Glance and Swift continue to use ``httplib`` directly for their data transfer connections (really, all connections to their respective services) and these already support SSLv3.
+
+========  ===========  ===============================  ===========  =========
+          Client 
+Client    HTTP Module  Client object                    CLI Arg      Env Var
+========  ===========  ===============================  ===========  =========
+keystone  httplib2     class.HTTPClient(httplib2.Http)  --os-cacert  OS_CACERT
+nova      httplib2     class.HTTPClient(httplib2.Http)  n/a          n/a
+cinder    httplib2     class.HTTPClient(httplib2.Http)  n/a          n/a
+glance    httplib      class.HTTPClient(object)         --ca-file    n/a
+swift     httplib      class Connection(object)         n/a          n/a
+quantum   httplib2     class.HTTPClient(httplib2.Http)  n/a          n/a
+========  ===========  ===============================  ===========  =========
+
+The approach taken for the ``httplib2`` subclasses is to change the parent class to ``object`` and rework the ``request()`` method to call ``requests.request()``.  Some of the differences for ``requests`` leaked out of that method but have been mostly containd within the ``HTTPClient`` class.  All four of the clients (formerly) using ``httplib2`` have implemented one or more features that can easily be handled by ``requests`` (redirection) or should also be propogated to the other clients.  This is ripe for a refactor of ``HTTPClient`` to a common module but that effort is not in scope here.
+
+keystoneclient
+--------------
+
+Implemented in https://review.openstack.org/#/c/17624/ *(complete)*
+
+* replace ``httplib2`` with ``requests``
+
+novaclient
+----------
+
+Implemented in https://review.openstack.org/#/c/18257/ *(complete)*
+
+* replace ``httplib2`` with ``requests``
+* add ``--os-cacert`` and ``OS_CACERT`` support
+* provide ``ca_cert`` to keystone client for authentication
+
+cinderclient
+------------
+
+Implemented in https://review.openstack.org/#/c/18278/ *(complete)*
+
+* replace ``httplib2`` with ``requests``
+* add ``--os-cacert`` and ``OS_CACERT`` support
+* provide ``ca_cert`` to keystone client for authentication
+
+glanceclient
+------------
+
+Implemented in https://review.openstack.org/#/c/17698/ *(complete)*
+
+* rename ``--ca-cert`` to ``--os-cacert`` and add ``OS_CACERT``
+* provide ``ca_cert`` to keystone client for authentication
+
+swiftclient
+-----------
+
+Implemented in https://review.openstack.org/#/c/18393/ *(complete)*
+
+* add ``--os-cacert`` and ``OS_CACERT`` support
+* provide ``ca_cert`` to keystone client for authentication
+
+quantumclient
+-------------
+
+*(not started)*
+
+* replace ``httplib2`` with ``requests``
+* add ``--os-cacert`` and ``OS_CACERT`` support
+* provide ``ca_cert`` to keystone client for authentication
+
+Testing
+-------
+
+Aside from the usual unit tests, support for a TLS proxy is being added to DevStack to demonstrate and test a TLS-enabled OpenStack configuration.  It uses ``stud`` as the TLS endpoint that proxies to the usual service endpoints.  The most interesting challenge here is doing it all on a single host and making the service catalog work.  Yay!  This will be described in (hopefully) the next post in this series.
+
+The TLS-in-DevStack also builds a two-tiered CA (root and intermediate) for testing proper certificate chain validation as described in `the first installment </x/blog/2012/12/18/securing-openstack-client-connections-part-1/>`_.
+
+Links
+=====
+
+* glanceclient ``host_matches_cert()``: https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py
+* ``request``'s ``urllib3.ssl_match_hostname.match_hostname()``: https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72 https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23
+
+----
+
+.. [1] `Python issue 1589 <http://bugs.python.org/issue1589>`_, the comments about 2.x `begin here <http://bugs.python.org/issue1589#msg120946>`_.
+.. [2] The patches for the OpenStack CLIs were engineered and implemented before the release of ``requests`` 1.0 which is a significantly different implementation and is untested in our application.
