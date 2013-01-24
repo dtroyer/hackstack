@@ -7,3 +7,6 @@ build:
 
 serve:
 	blogofile serve --src-dir $(SRC)
+
+push:
+	git push
