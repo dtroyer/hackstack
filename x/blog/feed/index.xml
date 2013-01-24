@@ -10,7 +10,7 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Thu, 24 Jan 2013 05:19:20 GMT</pubDate>
+    <pubDate>Fri, 25 Jan 2013 06:34:39 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -23,32 +23,33 @@
       <guid isPermaLink="false">IZEREiaAiOZB3E2UqmEI6sBnIY4=</guid>
       <description>Securing OpenStack Client Connections Part 2</description>
       <content:encoded><![CDATA[<div class="document">
+<p>In the first part of this series we covered creating a pair of certificate authorities and a signed certificate with the same attributes commonly found in commercial certificates.  This part covers the OpenStack Python clients and proper certificate verification.</p>
 <p>The OpenStack client repositories (or packages) include both the Python API bindings and the reference command line interface (CLI) implementation to communicate with the OpenStack APIs.   Client support for modern encrypted connections, i.e SSLv3 and/or TLSv1, has been spotty at best.</p>
-<p>Most of the clients are capable of using SSL for encryption but often the certificate verification part of the protocol did not work properly for tier-2 or privately signed certificates, prompting the addition of the --insecure option to some of the clients.  In addition, most of the clients had no mechanism to specify an alternate CA bundle file to enable certificate verification.</p>
-<p>Python has historically had incomplete X.509 certificate support in its standard library.  For example, ssl and httplib do not verify the hostname as part of certificate verification. Four of the clients (keystone, nova, cinder, quantum) use httplib2 which had no hostname verification before 0.7.0 and what it currently has is incomplete. The other two clients (glance and swift) use httplib directly and either have no hostname verification (swift) or implement it locally (glance).</p>
+<p>Most of the clients are capable of using SSL for encryption but often the certificate verification part of the protocol did not work properly for tier-2 or privately signed certificates, prompting the addition of the <tt class="docutils literal"><span class="pre">--insecure</span></tt> option to some of the clients to sidestep the problem altogether.  In addition, most of the clients had no mechanism to specify an alternate CA bundle file to enable certificate verification for certificates not signed by the commercial CAs.</p>
+<p>Python has historically had incomplete X.509 certificate support in its standard library.  For example, <tt class="docutils literal">ssl</tt> and <tt class="docutils literal">httplib</tt> do not verify the hostname as part of certificate verification. Four of the clients (keystone, nova, cinder, quantum) use <tt class="docutils literal">httplib2</tt> which had no hostname verification before version 0.7.0 and what it currently has is also incomplete. The other two clients (glance and swift) use <tt class="docutils literal">httplib</tt> directly and either have no hostname verification (swift) or implement it locally (glance).</p>
 <div class="section" id="issue-summary">
 <h1>Issue Summary</h1>
 <ul class="simple">
-<li>Python's ssl module does no certificate hostname verification in 2.7.x; it has been added in 3.2 but will not be backported.[1]</li>
-<li>ssl is pinned to using protocol version SSLv23 and must be directly patched to override it.</li>
-<li>httplib uses ssl and adds no hostname verification.  In addition it only uses the default SSLV23 protocol version set by ssl.  We don't want this as SSLv2 is deprecated and insecure.  Patching that value directly into the ssl module works but is suboptimal.</li>
-<li>httplib2 implements a basic hostname verification but it has some problems such as only checking commonName if the certificate's subjectAltNames is not present and handling wildcards differently than specified in RFC-2818.</li>
-<li>httplib2 uses an internal ca bundle (cacert.txt) if the ca_certs argument is not given to HTTPSConnectionWithTimeout.__init__().</li>
-<li>In other news, httplib2 only supports 3xx redirects for GET method.</li>
+<li>Python's <tt class="docutils literal">ssl</tt> module does no certificate hostname verification in 2.7.x; it has been added in 3.2 but will not be backported. <a class="footnote-reference" href="#id3" id="id1">[1]</a></li>
+<li><tt class="docutils literal">ssl</tt> is pinned to using protocol version <tt class="docutils literal">SSLv23</tt> and must be directly patched to override it.</li>
+<li><tt class="docutils literal">httplib</tt> uses <tt class="docutils literal">ssl</tt> and adds no hostname verification.  In addition it only uses the default <tt class="docutils literal">SSLV23</tt> protocol version set by <tt class="docutils literal">ssl</tt>.  We don't want this as SSLv2 is deprecated and insecure.  Patching that value directly into the <tt class="docutils literal">ssl</tt> module works but is suboptimal.</li>
+<li><tt class="docutils literal">httplib2</tt> implements a basic hostname verification but it has some problems such as only checking <tt class="docutils literal">commonName</tt> if the certificate's <tt class="docutils literal">subjectAltNames</tt> is not present and handling wildcards differently than specified in RFC-2818.</li>
+<li><tt class="docutils literal">httplib2</tt> uses an internal ca bundle (<tt class="docutils literal">cacert.txt</tt>) if the <tt class="docutils literal">ca_certs</tt> argument is not given to <tt class="docutils literal">HTTPSConnectionWithTimeout.__init__()</tt>.</li>
+<li>In other news, <tt class="docutils literal">httplib2</tt> only supports 3xx redirects for GET method.</li>
 </ul>
 <div class="section" id="additional-notes">
 <h2>Additional Notes</h2>
-<p>glanceclient has patched the ssl module out of httplib in favor of pyOpenSSL.  Stuart McLaren added http.VerifiedHTTPSConnection.host_matches_cert() to validate commonName and subjectAltName for httplib connections but it doesn't handle wildcards.</p>
+<p>glanceclient has patched the <tt class="docutils literal">ssl</tt> module out of <tt class="docutils literal">httplib</tt> in favor of <tt class="docutils literal">pyOpenSSL</tt>.  Stuart McLaren added <tt class="docutils literal">http.VerifiedHTTPSConnection.host_matches_cert()</tt> to validate <tt class="docutils literal">commonName</tt> and <tt class="docutils literal">subjectAltName</tt> for <tt class="docutils literal">httplib</tt> connections but it doesn't handle wildcards.</p>
 </div>
 </div>
 <div class="section" id="why-requests-2">
-<h1>Why requests? [2]</h1>
-<p>The requests module backported match_hostname() from Python 3.2.  Like all of the other modules here it does not handle the iPAddress attribute in subjectAltName. This is mostly relevant in development and testing use cases like with DevStack.  The 3.2 match_hostname() implementation however does allow IP addresses as a dNSName.</p>
-<p>Requests also brings a number of other features to the table that may or may not have been implemented individually in the existing clients such as JSON encoding/decoding and 3xx redirection support for POST, PUT, PATCH DELETE, and HEAD.  Plus it is stable (notwithstanding the recent 1.0 release) and the developer is known in the OS community.</p>
+<h1>Why requests? <a class="footnote-reference" href="#id4" id="id2">[2]</a></h1>
+<p>The <tt class="docutils literal">requests</tt> module backported <tt class="docutils literal">match_hostname()</tt> from Python 3.2.  Like the rest of the modules here it does not handle the <tt class="docutils literal">iPAddress</tt> attribute in <tt class="docutils literal">subjectAltName</tt>. This is mostly relevant in development and testing use cases like with DevStack.  The 3.2 <tt class="docutils literal">match_hostname()</tt> implementation however does allow IP addresses as a <tt class="docutils literal">dNSName</tt>.</p>
+<p><tt class="docutils literal">requests</tt> also brings a number of other features to the table that may or may not have been implemented individually in the existing clients such as JSON encoding/decoding and 3xx redirection support for POST, PUT, PATCH DELETE, and HEAD.  Plus it is stable (notwithstanding the recent 1.0 release) and the developer is known in the OS community.</p>
 </div>
 <div class="section" id="the-cli-solution">
 <h1>The CLI Solution</h1>
-<p>The current round of patches to the CLIs is to get them all up to the same level of support for TLSv1 for authentication, at a minimum.  Glance and Swift continue to use httplib directly for their data transfer connections (really, all connections to their respective services) and these already support SSL.v?.</p>
+<p>There has recently been a round of patches to the CLIs to get them all up to the same level of support for TLSv1 to be used for authentication at a minimum.  Glance and Swift continue to use <tt class="docutils literal">httplib</tt> directly for their data transfer connections (really, all connections to their respective services) and these already support SSLv3.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="11%" />
@@ -104,89 +105,119 @@
 </tr>
 </tbody>
 </table>
-<p>The approach taken for the httplib2 subclasses is to change the parent class to object and reqork the request() method to call requests.request().  Some of the differences for requests leaked out of that method but have been mostly containd within the HTTPClient class.  All four of the clients (formetly) using httplib2 have implemented one or more features that can easily be handled by requests (redirection) or should also be propogated to the other clients.  This is ripe for a refactor of HTTPClient to a common module but that effort is not in scope here.</p>
-<p>keystoneclient (complete) <a class="reference external" href="https://review.openstack.org/#/c/17624/">https://review.openstack.org/#/c/17624/</a></p>
+<p>The approach taken for the <tt class="docutils literal">httplib2</tt> subclasses is to change the parent class to <tt class="docutils literal">object</tt> and rework the <tt class="docutils literal">request()</tt> method to call <tt class="docutils literal">requests.request()</tt>.  Some of the differences for <tt class="docutils literal">requests</tt> leaked out of that method but have been mostly containd within the <tt class="docutils literal">HTTPClient</tt> class.  All four of the clients (formerly) using <tt class="docutils literal">httplib2</tt> have implemented one or more features that can easily be handled by <tt class="docutils literal">requests</tt> (redirection) or should also be propogated to the other clients.  This is ripe for a refactor of <tt class="docutils literal">HTTPClient</tt> to a common module but that effort is not in scope here.</p>
+<div class="section" id="keystoneclient">
+<h2>keystoneclient</h2>
+<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/17624/">https://review.openstack.org/#/c/17624/</a> <em>(complete)</em></p>
 <ul class="simple">
-<li>replace httplib2 with requests</li>
+<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
 </ul>
-<p>novaclient (complete) <a class="reference external" href="https://review.openstack.org/#/c/18257/">https://review.openstack.org/#/c/18257/</a></p>
+</div>
+<div class="section" id="novaclient">
+<h2>novaclient</h2>
+<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/18257/">https://review.openstack.org/#/c/18257/</a> <em>(complete)</em></p>
 <ul class="simple">
-<li>replace httplib2 with requests</li>
-<li>add --os-cacert and OS_CACERT support</li>
-<li>provide ca_cert to keystone clinet for authentication</li>
+<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
+<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
+<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
 </ul>
-<p>cinderclient (complete) <a class="reference external" href="https://review.openstack.org/#/c/18278/">https://review.openstack.org/#/c/18278/</a></p>
+</div>
+<div class="section" id="cinderclient">
+<h2>cinderclient</h2>
+<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/18278/">https://review.openstack.org/#/c/18278/</a> <em>(complete)</em></p>
 <ul class="simple">
-<li>replace httplib2 with requests</li>
-<li>add --os-cacert and OS_CACERT support</li>
-<li>provide ca_cert to keystone clinet for authentication</li>
+<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
+<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
+<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
 </ul>
-<p>glanceclient (complete) <a class="reference external" href="https://review.openstack.org/#/c/17698/">https://review.openstack.org/#/c/17698/</a></p>
+</div>
+<div class="section" id="glanceclient">
+<h2>glanceclient</h2>
+<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/17698/">https://review.openstack.org/#/c/17698/</a> <em>(complete)</em></p>
 <ul class="simple">
-<li>rename --ca-cert to --os-cacert and add OS_CACERT</li>
-<li>provide ca_cert to keystone client for authentication</li>
+<li>rename <tt class="docutils literal"><span class="pre">--ca-cert</span></tt> to <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and add <tt class="docutils literal">OS_CACERT</tt></li>
+<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
 </ul>
-<p>swiftclient (complete) <a class="reference external" href="https://review.openstack.org/#/c/18393/">https://review.openstack.org/#/c/18393/</a></p>
+</div>
+<div class="section" id="swiftclient">
+<h2>swiftclient</h2>
+<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/18393/">https://review.openstack.org/#/c/18393/</a> <em>(complete)</em></p>
 <ul class="simple">
-<li>add --os-cacert and OS_CACERT support</li>
-<li>provide ca_cert to keystone client for authentication</li>
+<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
+<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
 </ul>
-<p>quantumclient (not started)</p>
+</div>
+<div class="section" id="quantumclient">
+<h2>quantumclient</h2>
+<p><em>(not started)</em></p>
 <ul class="simple">
-<li>replace httplib2 with requests</li>
-<li>add --os-cacert and OS_CACERT support</li>
-<li>provide ca_cert to keystone clinet for authentication</li>
+<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
+<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
+<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
 </ul>
+</div>
 <div class="section" id="testing">
 <h2>Testing</h2>
-<p>Aside from the usual unit tests, support for a TLS proxy is being added to DevStack to demonstrate and test a TLS-enabled OpenStack configuration.  It uses stud as the TLS endpoint that proxies to the usual service endpoints.  The most interesting challenge here is doing it all on a single host and making the service catalog work.  Yay!</p>
-<p>The TLS-in-DevStack also builds a two-tiered CA (root and intermediate) for testing proper certificate chain validation.</p>
+<p>Aside from the usual unit tests, support for a TLS proxy is being added to DevStack to demonstrate and test a TLS-enabled OpenStack configuration.  It uses <tt class="docutils literal">stud</tt> as the TLS endpoint that proxies to the usual service endpoints.  The most interesting challenge here is doing it all on a single host and making the service catalog work.  Yay!  This will be described in (hopefully) the next post in this series.</p>
+<p>The TLS-in-DevStack also builds a two-tiered CA (root and intermediate) for testing proper certificate chain validation as described in <a class="reference external" href="/x/blog/2012/12/18/securing-openstack-client-connections-part-1/">the first installment</a>.</p>
 </div>
 </div>
 <div class="section" id="links">
 <h1>Links</h1>
 <ul class="simple">
-<li>glanceclient host_matches_cert(): <a class="reference external" href="https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py">https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py</a></li>
-<li>request's urllib3.ssl_match_hostname.match_hostname(): <a class="reference external" href="https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72">https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72</a> <a class="reference external" href="https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23">https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23</a></li>
+<li>glanceclient <tt class="docutils literal">host_matches_cert()</tt>: <a class="reference external" href="https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py">https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py</a></li>
+<li><tt class="docutils literal">request</tt>'s <tt class="docutils literal">urllib3.ssl_match_hostname.match_hostname()</tt>: <a class="reference external" href="https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72">https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72</a> <a class="reference external" href="https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23">https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23</a></li>
 </ul>
-<p>[1]: <a class="reference external" href="http://bugs.python.org/issue1589">http://bugs.python.org/issue1589</a>, the comments about 2.x begin at <a class="reference external" href="http://bugs.python.org/issue1589#msg120946">http://bugs.python.org/issue1589#msg120946</a></p>
-<p>[2]: The patches for the OpenStack CLIs were engineered and implemented before the release of requests 1.0 which is a significantly different implementation and is untested in our application.</p>
+<hr class="docutils" />
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><a class="reference external" href="http://bugs.python.org/issue1589">Python issue 1589</a>, the comments about 2.x <a class="reference external" href="http://bugs.python.org/issue1589#msg120946">begin here</a>.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The patches for the OpenStack CLIs were engineered and implemented before the release of <tt class="docutils literal">requests</tt> 1.0 which is a significantly different implementation and is untested in our application.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 ]]></content:encoded>
     </item>
     <item>
-      <title>Securing Client Connections</title>
-      <link>http://hackstack.org/x/blog/2012/12/18/securing-client-connections</link>
+      <title>Securing OpenStack Client Connections Part 1</title>
+      <link>http://hackstack.org/x/blog/2012/12/18/securing-openstack-client-connections-part-1</link>
       <pubDate>Tue, 18 Dec 2012 12:12:12 CST</pubDate>
       <category><![CDATA[openstack]]></category>
       <category><![CDATA[devstack]]></category>
-      <guid isPermaLink="false">4ijQgb65bF6ETqKBD6wjBwzLF-U=</guid>
-      <description>Securing Client Connections</description>
+      <guid isPermaLink="false">5jJXv_GXKDmqOhzJwtDRFGMV5ls=</guid>
+      <description>Securing OpenStack Client Connections Part 1</description>
       <content:encoded><![CDATA[<div class="document">
-<p>The difference of <tt class="docutils literal">https</tt> over <tt class="docutils literal">http</tt> is the addition of encryption, right?  Yes, but it is also meant to include the addition of verification/validation of one or both of the paries involved in the connection.  In the common case of a user directing a web browser to a 'secure' site, only one side is potentially validated, that being the server.  Maybe.</p>
-<p>Browsers generally go a good job of performing server certificate validation but other https clients may not do so well.  Sometimes the web browser will pop up a box saying that the server is untrusted for one reason or another.  This is the result of a failure to validate the server certificate.  It will usually contain the reason for the failure but generally it also contains a button to click on that allows the connection to proceed.  This effectively neuters the validation process and opens the door for server spoofing and man-in-the-middle attacks.</p>
-<p>The point here is not to rehash the merits of that behaviour but to demonstrate the parallel with other users of <tt class="docutils literal">https</tt> and uncovering the characteristics in how they handle encryption and validation of server certificates.  Specifically this is a look into how the OpenStack Python REST clients behave and how to validate the certificate validation.  Mmmmmm...recursion...</p>
+<p>We all know that the difference between <tt class="docutils literal">https</tt> and <tt class="docutils literal">http</tt> is the addition of encryption, right?  Of course, but less attention is paid to the other purposes of SSL and TLS: to verify one or both of the parties involved in the connection and to validate that the objects used in the verification meet certain criteria. <a class="footnote-reference" href="#id3" id="id1">[1]</a>  In the common case of a user directing a web browser to a 'secure' site, only one side is potentially validated, that being the server.  Maybe.</p>
+<p>Browsers generally go a good job of performing server certificate verification and validation but other https clients may not do so well.  Sometimes the web browser will pop up a box saying that the server is untrusted for one reason or another.  This can be the result of a failure to validate the server certificate or verifying that the name used to reach the server matches who the server claims to be.  It will usually contain the reason for the failure but generally it also contains a button to click on that allows the connection to proceed.  This effectively neuters the validation process and opens the door for server spoofing and man-in-the-middle attacks.</p>
+<p>The point here is not to rehash the merits of that behaviour but to investigate the use of <tt class="docutils literal">https</tt> in the OpenStack Python clients and to validate their certificate verification.  And validation.  Mmmmmm...recursion...</p>
 <div class="section" id="but-first">
 <h1>But First</h1>
-<p>Before we can delve into the world of Python modules and SSL wrappers we must first have a way to test against some known secure servers.  This means uncorking some OpenSSL-foo and entering the dark world of certificate authorities (CA).  &quot;But that's been covered to death!&quot; you may say.  Yes it has, but generally only to the level of self-sigining a cert for use in private servers.  I believe the common name for these certs is 'snakeoil'.  Occasionally you will find a walkthrough that introduces an intermediate certificate authority to better emulate the real-world certificates obtained from the commercial vendors that have their root CA certificates included in the lists shipped with most operating systems, browsers and even some programming libraries.</p>
-<p>Our goal then is to build a server certificate that is a) signed by an intermediate CA and b) has the basic attributes and extensions common in real-world certificates.  To get that we need a root CA and to get that we need some code.  The approach taken here is to create OpenSSL configuration files that illustrate the configuration file sections that are used for each operation.</p>
+<p>Before we can delve into the world of Python modules and SSL wrappers we must first have a way to test against some known secure servers.  This means uncorking some OpenSSL-foo and entering the dark world of certificate authorities (CA).  &quot;But that's been covered to death!&quot; you may say.  Yes it has <a class="footnote-reference" href="#id4" id="id2">[2]</a>, but generally only to the level of self-sigining a cert for use in private servers.  I believe the common name for these certs is 'snakeoil'.  However, certificates in the real world are not only self-signed, but often signed by a CA that is itself signed by one or more parent CAs.  The root CA certificates are included in the lists shipped with most operating systems, browsers and even some programming libraries.</p>
+<p>Our goal then is to build a server certificate that is a) signed by an intermediate CA and b) has the basic attributes and extensions common in real-world certificates.  To get that we need a root CA and an intermediate CA.  To get that we need some shell scripts and OpenSSL configuration files for each operation.</p>
+<p>Note that in this exercise we do not encrypt the private keys as this is all used for development and testing of the SSL/TLS connections and should not be used for production.</p>
 </div>
 <div class="section" id="root-ca">
 <h1>Root CA</h1>
-<p>Creating a self-signed root CA is a common operation and has been covered many times elsewhere.  So here are the basics:</p>
+<p>A self-signed certificate has the unique characteristic of the Issuer matches the Subject.  Creating a self-signed root CA is a common operation and has been covered many times elsewhere.  So here are the basics:</p>
 <ul>
-<li><p class="first">create root CA dir structure:</p>
+<li><p class="first">Create the root CA directory structure:</p>
 <pre class="literal-block">
 for i in certs crl newcerts private; do
     mkdir -p CA/root-ca/$i
 done
 chmod 710 CA/root-ca/private
 echo &quot;01&quot; &gt;CA/root-ca/serial
-cp /dev/null CA/root-ca/index.txt
+touch CA/root-ca/index.txt
 </pre>
 </li>
-<li><p class="first">generate CA/root-ca/ca.conf:</p>
+<li><p class="first">Generate the root CA configuration file <tt class="docutils literal"><span class="pre">CA/root-ca/ca.conf</span></tt>:</p>
 <pre class="literal-block">
 echo '
 [ ca ]
@@ -236,16 +267,21 @@ keyUsage                = cRLSign, keyCertSign
 
 ' &gt;CA/root-ca/ca.conf
 </pre>
+<p>The <tt class="docutils literal">ca_distinguished_name</tt> section defines the full name of the root CA.</p>
 </li>
-<li><p class="first">generate a private key and self-signed certificate:</p>
+<li><p class="first">Generate a private key and self-signed certificate:</p>
 <pre class="literal-block">
-openssl req -config CA/root-ca/ca.conf -x509 -nodes -newkey rsa -days 21360 \
-    -out CA/root-ca/cacert.pem \
+openssl req -config CA/root-ca/ca.conf \
+    -x509 \
+    -nodes \
+    -newkey rsa \
+    -days 21360 \
     -keyout CA/root-ca/private/cacert.key \
+    -out CA/root-ca/cacert.pem \
     -outform PEM
 </pre>
 </li>
-<li><p class="first">take a peek at the root certificate:</p>
+<li><p class="first">Take a peek at the root certificate:</p>
 <pre class="literal-block">
 openssl x509 -noout -text -in CA/root-ca/cacert.pem
 </pre>
@@ -256,17 +292,17 @@ openssl x509 -noout -text -in CA/root-ca/cacert.pem
 <h1>Intermediate CA</h1>
 <p>Creating an Intermediate CA is very similar except the root CA must do the signing so the process takes a couple of additional steps:</p>
 <ul>
-<li><p class="first">create intermediate CA dir structure:</p>
+<li><p class="first">Create the intermediate CA directory structure:</p>
 <pre class="literal-block">
 for i in certs crl newcerts private; do
     mkdir -p CA/int-ca/$i
 done
 chmod 710 CA/int-ca/private
 echo &quot;01&quot; &gt;CA/int-ca/serial
-cp /dev/null CA/int-ca/index.txt
+touch CA/int-ca/index.txt
 </pre>
 </li>
-<li><p class="first">generate CA/int-ca/ca.conf:</p>
+<li><p class="first">Generate the intermediate CA configuration file <tt class="docutils literal"><span class="pre">CA/int-ca/ca.conf</span></tt>:</p>
 <pre class="literal-block">
 echo '
 [ ca ]
@@ -316,26 +352,36 @@ keyUsage                = cRLSign, keyCertSign
 
 ' &gt;CA/int-ca/ca.conf
 </pre>
+<p>Note that the <tt class="docutils literal">commonName</tt> in the <tt class="docutils literal">ca_distinguished_name</tt> section is different than the root CA.  The <tt class="docutils literal">ca_extensions</tt> section is also critical here, specifically the <tt class="docutils literal">keyUsage</tt> attribute containing the <tt class="docutils literal">keyCertSign</tt> so the certificate signed can be used itself to sign other certificates.</p>
 </li>
-<li><dl class="first docutils">
-<dt>generate a private key and self-signed certificate::</dt>
-<dd><dl class="first last docutils">
-<dt>openssl req -config CA/int-ca/ca.conf -sha1 -newkey rsa -nodes </dt>
-<dd><p class="first last">-out CA/int-ca/int-ca.csr -keyout CA/int-ca/private/cacert.key -outform PEM</p>
-</dd>
-<dt>openssl ca -config CA/root-ca/ca.conf -extensions ca_extensions -days 365 -notext </dt>
-<dd><p class="first last">-out CA/int-ca/cacert.pem -in CA/int-ca/int-ca.csr -batch</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<li><p class="first">Generate a private key and certificate signing request:</p>
+<pre class="literal-block">
+openssl req -config CA/int-ca/ca.conf \
+    -sha1 \
+    -nodes \
+    -newkey rsa \
+    -keyout CA/int-ca/private/cacert.key \
+    -out CA/int-ca/int-ca.csr \
+    -outform PEM
+</pre>
 </li>
-<li><p class="first">make a trust chain:</p>
+<li><p class="first">Sign the CSR:</p>
+<pre class="literal-block">
+openssl ca -config CA/root-ca/ca.conf \
+    -extensions ca_extensions \
+    -days 365 \
+    -notext \
+    -in CA/int-ca/int-ca.csr \
+    -out CA/int-ca/cacert.pem \
+    -batch
+</pre>
+</li>
+<li><p class="first">Create a trust chain, a file that contains the CA certificates from the immediate signing CA back to the root CA:</p>
 <pre class="literal-block">
 cat CA/root-ca/cacert.pem CA/int-ca/cacert.pem &gt;&gt;CA/int-ca/ca-chain.pem
 </pre>
 </li>
-<li><p class="first">take a peek at the intermediate certificate:</p>
+<li><p class="first">Take a peek at the intermediate certificate:</p>
 <pre class="literal-block">
 openssl x509 -noout -text -in CA/int-ca/cacert.pem
 </pre>
@@ -344,8 +390,9 @@ openssl x509 -noout -text -in CA/int-ca/cacert.pem
 </div>
 <div class="section" id="server-certificate">
 <h1>Server Certificate</h1>
+<p>This process is repeated for every server that needs a certificate.</p>
 <ul>
-<li><p class="first">generate CA/int-ca/sign.conf:</p>
+<li><p class="first">Generate the intermediate CA signing configuration file <tt class="docutils literal"><span class="pre">CA/int-ca/sign.conf</span></tt>:</p>
 <pre class="literal-block">
 echo '
 [ ca ]
@@ -393,27 +440,53 @@ subjectAltName          = $ENV::SUBJECT_ALT_NAME
 
 ' &gt;CA/int-ca/sign.conf
 </pre>
+<p>The primary difference is in the <tt class="docutils literal">req_extensions</tt> section setting up for the certificates signed by this CA.  One of the bits often missed is the inclusion of the <tt class="docutils literal">subjectAltName</tt> that matches the <tt class="docutils literal">commonName</tt> and optionally includes additional names that the certificate is valid for.</p>
 </li>
-<li><p class="first">generate a signing request:</p>
+<li><p class="first">Generate a signing request:</p>
 <pre class="literal-block">
-openssl req -sha1 -newkey rsa -nodes \
+openssl req \
+    -sha1 \
+    -nodes \
+    -newkey rsa \
     -keyout CA/int-ca/private/cert.example.com.key \
     -out CA/int-ca/cert.example.com.csr \
     -subj '/O=Example Inc./OU=Servers/CN=cert.example.com'
-
-SUBJECT_ALT_NAME=&quot;IP: 1.2.3.4&quot; \
+</pre>
+</li>
+<li><p class="first">Sign the CSR, with an optional value for <tt class="docutils literal">subjectAltName</tt>:</p>
+<pre class="literal-block">
+SUBJECT_ALT_NAME=&quot;DNS: cert.example.com&quot; \
 openssl ca -config CA/int-ca/sign.conf -extensions req_extensions -days 365 -notext \
     -out CA/int-ca/cert.example.com.crt \
     -in CA/int-ca/cert.example.com.csr \
     -batch
 </pre>
+<p>Setting the <tt class="docutils literal">SUBJECT_ALT_NAME</tt> environment variable is the easiest way to set <tt class="docutils literal">subjectAltName</tt> without rewriting the config file for each certificate.</p>
 </li>
-<li><p class="first">take a peek at the server certificate:</p>
+<li><p class="first">Take a peek at the server certificate:</p>
 <pre class="literal-block">
 openssl x509 -noout -text -in CA/int-ca/cert.example.com.pem
 </pre>
 </li>
 </ul>
+</div>
+<div class="section" id="setting-up-the-server">
+<h1>Setting Up the Server</h1>
+<p>Server configurations differ but most will require the server certificate fiel created in the last step, the provate key file created in the CSR step and the CA chain file created in the previous section.  This is where encrypting the private key can make testing difficult and why we did not do that here.</p>
+<p>Later installations in this series will demonstrate how to do this using the SSL/TLS proxy server <tt class="docutils literal">stud</tt>.</p>
+<hr class="docutils" />
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><a class="reference external" href="https://www.google.com/search?q=http+vs+https">Find more about http vs https</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><a class="reference external" href="http://www.google.com/search?q=openssl+certificate+authority">Find more about creating a CA with OpenSSL</a></td></tr>
+</tbody>
+</table>
 </div>
 </div>
 ]]></content:encoded>

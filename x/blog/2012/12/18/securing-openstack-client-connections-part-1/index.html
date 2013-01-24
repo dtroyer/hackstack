@@ -82,8 +82,8 @@
 <article>
   <div class="blog_post">
     <header>
-      <div id="securing-client-connections"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2012/12/18/securing-client-connections/" rel="bookmark" title="Permanent Link to Securing Client Connections">Securing Client Connections</a></h1>
+      <div id="securing-openstack-client-connections-part-1"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2012/12/18/securing-openstack-client-connections-part-1/" rel="bookmark" title="Permanent Link to Securing OpenStack Client Connections Part 1">Securing OpenStack Client Connections Part 1</a></h1>
       <p><small><span class="blog_post_date">December 18, 2012 at 12:12 PM</span> | categories: 
         <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/devstack/'>devstack</a></span>
       </small></p>
@@ -91,29 +91,30 @@
     <div class="post_prose">
       
 <div class="document">
-<p>The difference of <tt class="docutils literal">https</tt> over <tt class="docutils literal">http</tt> is the addition of encryption, right?  Yes, but it is also meant to include the addition of verification/validation of one or both of the paries involved in the connection.  In the common case of a user directing a web browser to a 'secure' site, only one side is potentially validated, that being the server.  Maybe.</p>
-<p>Browsers generally go a good job of performing server certificate validation but other https clients may not do so well.  Sometimes the web browser will pop up a box saying that the server is untrusted for one reason or another.  This is the result of a failure to validate the server certificate.  It will usually contain the reason for the failure but generally it also contains a button to click on that allows the connection to proceed.  This effectively neuters the validation process and opens the door for server spoofing and man-in-the-middle attacks.</p>
-<p>The point here is not to rehash the merits of that behaviour but to demonstrate the parallel with other users of <tt class="docutils literal">https</tt> and uncovering the characteristics in how they handle encryption and validation of server certificates.  Specifically this is a look into how the OpenStack Python REST clients behave and how to validate the certificate validation.  Mmmmmm...recursion...</p>
+<p>We all know that the difference between <tt class="docutils literal">https</tt> and <tt class="docutils literal">http</tt> is the addition of encryption, right?  Of course, but less attention is paid to the other purposes of SSL and TLS: to verify one or both of the parties involved in the connection and to validate that the objects used in the verification meet certain criteria. <a class="footnote-reference" href="#id3" id="id1">[1]</a>  In the common case of a user directing a web browser to a 'secure' site, only one side is potentially validated, that being the server.  Maybe.</p>
+<p>Browsers generally go a good job of performing server certificate verification and validation but other https clients may not do so well.  Sometimes the web browser will pop up a box saying that the server is untrusted for one reason or another.  This can be the result of a failure to validate the server certificate or verifying that the name used to reach the server matches who the server claims to be.  It will usually contain the reason for the failure but generally it also contains a button to click on that allows the connection to proceed.  This effectively neuters the validation process and opens the door for server spoofing and man-in-the-middle attacks.</p>
+<p>The point here is not to rehash the merits of that behaviour but to investigate the use of <tt class="docutils literal">https</tt> in the OpenStack Python clients and to validate their certificate verification.  And validation.  Mmmmmm...recursion...</p>
 <div class="section" id="but-first">
 <h1>But First</h1>
-<p>Before we can delve into the world of Python modules and SSL wrappers we must first have a way to test against some known secure servers.  This means uncorking some OpenSSL-foo and entering the dark world of certificate authorities (CA).  &quot;But that's been covered to death!&quot; you may say.  Yes it has, but generally only to the level of self-sigining a cert for use in private servers.  I believe the common name for these certs is 'snakeoil'.  Occasionally you will find a walkthrough that introduces an intermediate certificate authority to better emulate the real-world certificates obtained from the commercial vendors that have their root CA certificates included in the lists shipped with most operating systems, browsers and even some programming libraries.</p>
-<p>Our goal then is to build a server certificate that is a) signed by an intermediate CA and b) has the basic attributes and extensions common in real-world certificates.  To get that we need a root CA and to get that we need some code.  The approach taken here is to create OpenSSL configuration files that illustrate the configuration file sections that are used for each operation.</p>
+<p>Before we can delve into the world of Python modules and SSL wrappers we must first have a way to test against some known secure servers.  This means uncorking some OpenSSL-foo and entering the dark world of certificate authorities (CA).  &quot;But that's been covered to death!&quot; you may say.  Yes it has <a class="footnote-reference" href="#id4" id="id2">[2]</a>, but generally only to the level of self-sigining a cert for use in private servers.  I believe the common name for these certs is 'snakeoil'.  However, certificates in the real world are not only self-signed, but often signed by a CA that is itself signed by one or more parent CAs.  The root CA certificates are included in the lists shipped with most operating systems, browsers and even some programming libraries.</p>
+<p>Our goal then is to build a server certificate that is a) signed by an intermediate CA and b) has the basic attributes and extensions common in real-world certificates.  To get that we need a root CA and an intermediate CA.  To get that we need some shell scripts and OpenSSL configuration files for each operation.</p>
+<p>Note that in this exercise we do not encrypt the private keys as this is all used for development and testing of the SSL/TLS connections and should not be used for production.</p>
 </div>
 <div class="section" id="root-ca">
 <h1>Root CA</h1>
-<p>Creating a self-signed root CA is a common operation and has been covered many times elsewhere.  So here are the basics:</p>
+<p>A self-signed certificate has the unique characteristic of the Issuer matches the Subject.  Creating a self-signed root CA is a common operation and has been covered many times elsewhere.  So here are the basics:</p>
 <ul>
-<li><p class="first">create root CA dir structure:</p>
+<li><p class="first">Create the root CA directory structure:</p>
 <pre class="literal-block">
 for i in certs crl newcerts private; do
     mkdir -p CA/root-ca/$i
 done
 chmod 710 CA/root-ca/private
 echo &quot;01&quot; &gt;CA/root-ca/serial
-cp /dev/null CA/root-ca/index.txt
+touch CA/root-ca/index.txt
 </pre>
 </li>
-<li><p class="first">generate CA/root-ca/ca.conf:</p>
+<li><p class="first">Generate the root CA configuration file <tt class="docutils literal"><span class="pre">CA/root-ca/ca.conf</span></tt>:</p>
 <pre class="literal-block">
 echo '
 [ ca ]
@@ -163,16 +164,21 @@ keyUsage                = cRLSign, keyCertSign
 
 ' &gt;CA/root-ca/ca.conf
 </pre>
+<p>The <tt class="docutils literal">ca_distinguished_name</tt> section defines the full name of the root CA.</p>
 </li>
-<li><p class="first">generate a private key and self-signed certificate:</p>
+<li><p class="first">Generate a private key and self-signed certificate:</p>
 <pre class="literal-block">
-openssl req -config CA/root-ca/ca.conf -x509 -nodes -newkey rsa -days 21360 \
-    -out CA/root-ca/cacert.pem \
+openssl req -config CA/root-ca/ca.conf \
+    -x509 \
+    -nodes \
+    -newkey rsa \
+    -days 21360 \
     -keyout CA/root-ca/private/cacert.key \
+    -out CA/root-ca/cacert.pem \
     -outform PEM
 </pre>
 </li>
-<li><p class="first">take a peek at the root certificate:</p>
+<li><p class="first">Take a peek at the root certificate:</p>
 <pre class="literal-block">
 openssl x509 -noout -text -in CA/root-ca/cacert.pem
 </pre>
@@ -183,17 +189,17 @@ openssl x509 -noout -text -in CA/root-ca/cacert.pem
 <h1>Intermediate CA</h1>
 <p>Creating an Intermediate CA is very similar except the root CA must do the signing so the process takes a couple of additional steps:</p>
 <ul>
-<li><p class="first">create intermediate CA dir structure:</p>
+<li><p class="first">Create the intermediate CA directory structure:</p>
 <pre class="literal-block">
 for i in certs crl newcerts private; do
     mkdir -p CA/int-ca/$i
 done
 chmod 710 CA/int-ca/private
 echo &quot;01&quot; &gt;CA/int-ca/serial
-cp /dev/null CA/int-ca/index.txt
+touch CA/int-ca/index.txt
 </pre>
 </li>
-<li><p class="first">generate CA/int-ca/ca.conf:</p>
+<li><p class="first">Generate the intermediate CA configuration file <tt class="docutils literal"><span class="pre">CA/int-ca/ca.conf</span></tt>:</p>
 <pre class="literal-block">
 echo '
 [ ca ]
@@ -243,26 +249,36 @@ keyUsage                = cRLSign, keyCertSign
 
 ' &gt;CA/int-ca/ca.conf
 </pre>
+<p>Note that the <tt class="docutils literal">commonName</tt> in the <tt class="docutils literal">ca_distinguished_name</tt> section is different than the root CA.  The <tt class="docutils literal">ca_extensions</tt> section is also critical here, specifically the <tt class="docutils literal">keyUsage</tt> attribute containing the <tt class="docutils literal">keyCertSign</tt> so the certificate signed can be used itself to sign other certificates.</p>
 </li>
-<li><dl class="first docutils">
-<dt>generate a private key and self-signed certificate::</dt>
-<dd><dl class="first last docutils">
-<dt>openssl req -config CA/int-ca/ca.conf -sha1 -newkey rsa -nodes </dt>
-<dd><p class="first last">-out CA/int-ca/int-ca.csr -keyout CA/int-ca/private/cacert.key -outform PEM</p>
-</dd>
-<dt>openssl ca -config CA/root-ca/ca.conf -extensions ca_extensions -days 365 -notext </dt>
-<dd><p class="first last">-out CA/int-ca/cacert.pem -in CA/int-ca/int-ca.csr -batch</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<li><p class="first">Generate a private key and certificate signing request:</p>
+<pre class="literal-block">
+openssl req -config CA/int-ca/ca.conf \
+    -sha1 \
+    -nodes \
+    -newkey rsa \
+    -keyout CA/int-ca/private/cacert.key \
+    -out CA/int-ca/int-ca.csr \
+    -outform PEM
+</pre>
 </li>
-<li><p class="first">make a trust chain:</p>
+<li><p class="first">Sign the CSR:</p>
+<pre class="literal-block">
+openssl ca -config CA/root-ca/ca.conf \
+    -extensions ca_extensions \
+    -days 365 \
+    -notext \
+    -in CA/int-ca/int-ca.csr \
+    -out CA/int-ca/cacert.pem \
+    -batch
+</pre>
+</li>
+<li><p class="first">Create a trust chain, a file that contains the CA certificates from the immediate signing CA back to the root CA:</p>
 <pre class="literal-block">
 cat CA/root-ca/cacert.pem CA/int-ca/cacert.pem &gt;&gt;CA/int-ca/ca-chain.pem
 </pre>
 </li>
-<li><p class="first">take a peek at the intermediate certificate:</p>
+<li><p class="first">Take a peek at the intermediate certificate:</p>
 <pre class="literal-block">
 openssl x509 -noout -text -in CA/int-ca/cacert.pem
 </pre>
@@ -271,8 +287,9 @@ openssl x509 -noout -text -in CA/int-ca/cacert.pem
 </div>
 <div class="section" id="server-certificate">
 <h1>Server Certificate</h1>
+<p>This process is repeated for every server that needs a certificate.</p>
 <ul>
-<li><p class="first">generate CA/int-ca/sign.conf:</p>
+<li><p class="first">Generate the intermediate CA signing configuration file <tt class="docutils literal"><span class="pre">CA/int-ca/sign.conf</span></tt>:</p>
 <pre class="literal-block">
 echo '
 [ ca ]
@@ -320,27 +337,53 @@ subjectAltName          = $ENV::SUBJECT_ALT_NAME
 
 ' &gt;CA/int-ca/sign.conf
 </pre>
+<p>The primary difference is in the <tt class="docutils literal">req_extensions</tt> section setting up for the certificates signed by this CA.  One of the bits often missed is the inclusion of the <tt class="docutils literal">subjectAltName</tt> that matches the <tt class="docutils literal">commonName</tt> and optionally includes additional names that the certificate is valid for.</p>
 </li>
-<li><p class="first">generate a signing request:</p>
+<li><p class="first">Generate a signing request:</p>
 <pre class="literal-block">
-openssl req -sha1 -newkey rsa -nodes \
+openssl req \
+    -sha1 \
+    -nodes \
+    -newkey rsa \
     -keyout CA/int-ca/private/cert.example.com.key \
     -out CA/int-ca/cert.example.com.csr \
     -subj '/O=Example Inc./OU=Servers/CN=cert.example.com'
-
-SUBJECT_ALT_NAME=&quot;IP: 1.2.3.4&quot; \
+</pre>
+</li>
+<li><p class="first">Sign the CSR, with an optional value for <tt class="docutils literal">subjectAltName</tt>:</p>
+<pre class="literal-block">
+SUBJECT_ALT_NAME=&quot;DNS: cert.example.com&quot; \
 openssl ca -config CA/int-ca/sign.conf -extensions req_extensions -days 365 -notext \
     -out CA/int-ca/cert.example.com.crt \
     -in CA/int-ca/cert.example.com.csr \
     -batch
 </pre>
+<p>Setting the <tt class="docutils literal">SUBJECT_ALT_NAME</tt> environment variable is the easiest way to set <tt class="docutils literal">subjectAltName</tt> without rewriting the config file for each certificate.</p>
 </li>
-<li><p class="first">take a peek at the server certificate:</p>
+<li><p class="first">Take a peek at the server certificate:</p>
 <pre class="literal-block">
 openssl x509 -noout -text -in CA/int-ca/cert.example.com.pem
 </pre>
 </li>
 </ul>
+</div>
+<div class="section" id="setting-up-the-server">
+<h1>Setting Up the Server</h1>
+<p>Server configurations differ but most will require the server certificate fiel created in the last step, the provate key file created in the CSR step and the CA chain file created in the previous section.  This is where encrypting the private key can make testing difficult and why we did not do that here.</p>
+<p>Later installations in this series will demonstrate how to do this using the SSL/TLS proxy server <tt class="docutils literal">stud</tt>.</p>
+<hr class="docutils" />
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><a class="reference external" href="https://www.google.com/search?q=http+vs+https">Find more about http vs https</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><a class="reference external" href="http://www.google.com/search?q=openssl+certificate+authority">Find more about creating a CA with OpenSSL</a></td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -360,7 +403,7 @@ openssl x509 -noout -text -in CA/int-ca/cert.example.com.pem
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
       <li><a href="/x/blog/2012/12/21/securing-openstack-client-connections-part-2/">Securing OpenStack Client Connections Part 2</a></li>
-      <li><a href="/x/blog/2012/12/18/securing-client-connections/">Securing Client Connections</a></li>
+      <li><a href="/x/blog/2012/12/18/securing-openstack-client-connections-part-1/">Securing OpenStack Client Connections Part 1</a></li>
       <li><a href="/x/blog/2012/10/20/devstack-at-one/">Devstack At One</a></li>
       <li><a href="/x/blog/2011/05/11/syntax-highlight-test/">Syntax highlight test</a></li>
     </ul>
