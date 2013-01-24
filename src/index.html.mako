@@ -5,14 +5,12 @@
 HackStack
 =========
 
-The thoughts of some guy.
+OpenStack hacking and more...
 
 <ul>
-% for post in bf.config.blog.posts[:5]:
-  % if not post.draft:
-    <%include file="blog/post_excerpt.mako" args="post=post" />
-  % endif
-% endfor
+  % for post in bf.config.blog.iter_posts_published(5):
+    <li><a href="${post.path}">${post.title}</a></li>
+  % endfor
 </ul>
 
 </%self:filter>
