@@ -1,0 +1,30 @@
+<template>
+  <name>fedora17-x86_64</name>
+  <description>Fedora 17 x86_64</description>
+  <os>
+    <name>Fedora</name>
+    <version>17</version>
+    <arch>x86_64</arch>
+    <rootpw>rootpa$$</rootpw>
+    <install type='url'>
+      <url>http://mirrors.kernel.org/fedora/releases/17/Fedora/x86_64/os/</url>
+    </install>
+  </os>
+  <commands>
+    <command name='console'>
+sed -i 's/ rhgb / /g' /etc/default/grub
+sed -i 's/ quiet /i console=ttyS0 /g' /etc/default/grub
+/sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
+    </command>
+    <command name='update'>
+yum -y update
+yum -y downgrade libselinux nss-softokn-freebl libselinux-utils
+yum -y install cloud-init
+yum clean all
+/usr/sbin/adduser stack
+echo -e 'stack\tALL=(ALL)\tNOPASSWD: ALL' >>/etc/sudoers.d/99-stack
+chmod 440 /etc/sudoers.d/99-stack
+sed -i 's/^user: ec2-user/user: stack/g' /etc/cloud/cloud.cfg
+    </command>
+  </commands>
+</template>
