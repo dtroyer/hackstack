@@ -10,10 +10,109 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Fri, 08 Feb 2013 22:48:37 GMT</pubDate>
+    <pubDate>Sat, 20 Apr 2013 06:07:06 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>OpenStack Developer Summit</title>
+      <link>http://hackstack.org/x/blog/2013/04/19/openstack-developer-summit</link>
+      <pubDate>Fri, 19 Apr 2013 19:04:00 CDT</pubDate>
+      <category><![CDATA[openstack]]></category>
+      <guid isPermaLink="false">RltD8bcInfRJzTxxe85BL1Ep_38=</guid>
+      <description>OpenStack Developer Summit</description>
+      <content:encoded><![CDATA[<div class="document">
+<p>The OpenStack Developer Summit has just concluded in Portland, OR, and by many measures was an enormous success.
+Enormous because there were a reported &gt;2800 people in attendance.  I never heard a breakdown of how many
+of those were developers but I'd guess that that number was up too.  The rooms were generally full
+but usually only a handful of people actively participated in most sessions.
+And speaking of full rooms, most of the 'project-formerly-known-as-Quantum' sessions were SRO.
+I skipped those due to other interests but the word is none of the network vendors did.
+Most of my time was spent looking for things that affected my three primary projects:
+DevStack, Grenade and OpenStackClient.</p>
+<p><strong>DevStack</strong></p>
+<p>There was no dedicated session to DevStack
+but it did not escape mention.  Most of the talk I heard about it was in conjunction with its
+use in the CI gating tests and even then there wasn't much.
+The hallway talk seemed to always revolve around adding functionality that really doesn't belong in DevStack.
+It was nice to be able to explain in person that
+the requested feature wasn't core to DevStack's purpose and how they can easily hook in to
+<tt class="docutils literal">stack.sh</tt> to add the feature.</p>
+<p><strong>Grenade</strong></p>
+<p>Grenade had a session on Tuesday led my moi that concentrated on the project upgrade strategy and
+gate issues.  Fortunately the discussion
+around run time was short, Grenade's &lt;5 minutes is dwarfed by Tempest so nobody really cares.</p>
+<p>The upgrade strategy noted the change from rewriting new config files based on the samples
+included in the project repo to only making upgrade-necessary changes to the existing config files.
+The current Grenade implementation does this for all but Keystone and Swift.  The consensus
+in the room was that both of those should be fixable with some knowledgable input.</p>
+<p>There are some improvements that can be made to <tt class="docutils literal"><span class="pre">devstack-vm-gate*.sh</span></tt> to simplify the configuration
+that is actually run in the gate test.  The goal here is to make the gate closer to the
+configuration that is typically used by devs.</p>
+<p><strong>OpenStackClient</strong></p>
+<p>The first (and last) two sessions on OpenStackClient at previous summits were dominated by
+talk about what it should be and how people wanted to use it.  The project is at a stage where
+it needs to get some things completed so we can make a 0.1 pre-alpha release.  We grabbed
+an Unconference slot on Wednesday to get the primary developers together and decide on a few
+things, like the tasks to be completed prior to the 0.1 release.  There were others present who
+I'm afraid we left wondering where the presentation was.</p>
+<p>Command parity with the project clients, save for that name-that-used-to-start-with-a-q project's client, is the major
+task for release.  Compute is not complete (<em>dtroyer</em>), Object (Swift) is non-existant, and
+the remainder are close but need an audit to see what may be missing since they were first
+implemented.</p>
+<p>The major news in the command front is the change of my beloved &quot;verb object&quot; form to
+&quot;object verb&quot;. <a class="footnote-reference" href="#id2" id="id1">[1]</a> There is finally a good reason to change: to facilitate bash tab-completion.
+I'm taking <em>dhellmann's</em> word on this as tab-completion  has not been done yet.  And I'll be dipped
+if I can't come up with anything to counter it. So to ease my pain, Doug volunteered to
+make the change.</p>
+<p><strong>Image Interchange</strong></p>
+<p>This session kept getting sidetracked by people wanting to make the common image format
+include the contents of the system in addition to the format of the disk image file.
+<em>smoser</em> did his best to remind everyone that Glance's concern with image formats stopped
+at the file blocks that contain filesystem bits.  The contents of those blocks is off-limits.</p>
+<p>It should be remembered that in previous summits the opening of user-submitted disk images
+to inject files and user data was specifically removed from Nova due to the potential
+security issues involved.  Also there is the matter of knowing just what to do to a random
+filesystem.  This led to the adoption of cloud drive as an alternative to AWS-style metadata
+service.</p>
+<p>The intention of the session was to work out details of exchanging images between clouds, including
+the disk format used.  Apparently there are OpenStack implementations that do not support
+the qcow2 format because otherwise that is what should be used as it has both compression
+and sparse capabilities.  Of course raw would also work but let's be realistic here.</p>
+<p><strong>Dependency Management</strong></p>
+<p>This is one session that may have some positive effects on DevStack as a side effect of
+documenting OS-level package dependencies for each project.  The session primarily concerned
+opestack/requirements as a gate for Python dependencies and the use of an OpenStack-specific
+PyPi mirror.</p>
+<p>The interesting bit to me is the need to handle non-pip-installable dependencies.  DevStack
+already maintains some of this information for distros and releases.  Moving this into the
+project repos would allow it to be used by other processes and get DevStack completely out
+of tracking project dependencies.  It remains TBD as to who actually does the install.</p>
+<p><strong>Project Renaming</strong></p>
+<p>A recent issue with one of the OpenStack projects that once had a code name with a 'Q' and
+two 'u's is no longer calling itself that.  I'm not touching the reasons why, that is for others
+to explain.  What I am mostly interested in is the amount of work required to change a projects name,
+even when it is done at phase boundaries such as moving into and out of incubation.</p>
+<p>This means that choosing a project name has more pressure to get it right the first time than before.
+I am assuming here that the common sentiment expressed in the session to not stop using project names
+is the path chosen even if the public use of project names is ramped down.</p>
+<p>Two of the three projects that I am deeply involved in (read as 'would do more than a little of
+the name changing work') have names that are invented terms so the chance that there might be confusion
+in the industry is low.  And a different set of two of those projects are primarily used internally
+and should get little public attention.</p>
+<p><strong>Wrapup</strong></p>
+<p>That does it for the highlights of my week in Portland.  I'll leave it to others to summarize
+the rest, save for pimping Terrence and Bertram's <a class="reference external" href="http://dopenstack.com">latest video</a>
+that provided an energetic open to the keynotes.  Stay tuned for some deeper thoughts on a few of the topics mentioned here.</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Sorry VMS DCL fans, I tried.</td></tr>
+</tbody>
+</table>
+</div>
+]]></content:encoded>
+    </item>
     <item>
       <title>A Fedora 18 Image for OpenStack</title>
       <link>http://hackstack.org/x/blog/2013/01/25/a-fedora-18-image-for-openstack</link>
@@ -597,6 +696,44 @@ openssl x509 -noout -text -in CA/int-ca/cert.example.com.pem
 <tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><a class="reference external" href="http://www.google.com/search?q=openssl+certificate+authority">Find more about creating a CA with OpenSSL</a></td></tr>
 </tbody>
 </table>
+</div>
+</div>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>A Fedora 17 Image for OpenStack</title>
+      <link>http://hackstack.org/x/blog/2012/11/13/a-fedora-17-image-for-openstack</link>
+      <pubDate>Tue, 13 Nov 2012 11:13:00 CST</pubDate>
+      <category><![CDATA[openstack]]></category>
+      <category><![CDATA[fedora]]></category>
+      <guid isPermaLink="false">yvYpRvk7kktXtE6rMWCqHSLLam4=</guid>
+      <description>A Fedora 17 Image for OpenStack</description>
+      <content:encoded><![CDATA[<div class="document">
+<p><em>This worked well enough but has been superceeded by ``appliance-creator``</em></p>
+<p>Ubuntu has these nice UEC images that make a great base for cloud appliances.  Fedora has nothing official although there are a couple of older images floating around (links please!).  Nothing for Fedora 17 though.  Let's build one!</p>
+<p>The most flexible image builder seems to be oz, as it runs the standard install process and can build nearly anything that boots in KVM.  There are some specific <a class="reference external" href="http://libguestfs.org/guestfs-faq.1.html">requirements for libguestfs</a> and that usually doesn't work properly in a VM.  This all had to be done on bare metal.</p>
+<p>Even then, building a Fedora 17 image required Fedora 17. OK, I found an old laptop that could do it and installed f17.</p>
+<p>There are also some kickstart files floating around like <a class="reference external" href="https://github.com/rackerjoe/oz-image-build">Racker Joe's repo</a>  and I've stolen from them and from the default kickstart files in Oz.  So here's the <a class="reference external" href="/x/files/fedora17-x86_64.ks">bastard child</a>.</p>
+<div class="section" id="oz">
+<h1>Oz</h1>
+<p>I had to build Oz from source as none of the available packages were current enough:</p>
+<pre class="literal-block">
+git clone https://github.com/clalancette/oz.git
+cd oz
+make rpm
+sudo yum update ~/rpmbuild/RPMS/noarch/oz-0.10.0-0.20121022223625git17f9c7f.fc17.noarch.rpm
+</pre>
+<p>Build an image:</p>
+<pre class="literal-block">
+sudo oz-install -d4 -t6000 -u fedora17-x86_64.tdl -a fedora17-x86_64.ks
+qemu-img convert -c -O qcow2 /var/lib/libvirt/images/fedora17-x86_64.dsk fedora17-x86_64.qcow2
+</pre>
+<p>Upload and boot the image:</p>
+<pre class="literal-block">
+glance image-create --is-public true --name &quot;Fedora 17 test 2&quot; --disk-format qcow2 --container-format bare --file fedora17-x86_64.qcow2
+nova boot --image 94ceb563-41ee-43f6-a999-a3b738c0d299 --flavor 2 --key-name bunsen f17-2
+</pre>
+<p>This image still has some tweaking needed...</p>
 </div>
 </div>
 ]]></content:encoded>

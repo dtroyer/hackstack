@@ -7,7 +7,7 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2013-02-08T22:48:37Z</updated>
+  <updated>2013-04-20T06:07:06Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
@@ -124,6 +124,49 @@ I probably went a little overboard in setting up the proper serial console argum
 </pre>
 </div>
 </div>
+</div>
+</div>
+]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[A Fedora 17 Image for OpenStack]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2012/11/13/a-fedora-17-image-for-openstack" />
+    <id>http://hackstack.org/x/blog/2012/11/13/a-fedora-17-image-for-openstack</id>
+    <updated>2012-11-13T11:13:00Z</updated>
+    <published>2012-11-13T11:13:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <category scheme="http://hackstack.org/x/blog" term="fedora" />
+    <summary type="html"><![CDATA[A Fedora 17 Image for OpenStack]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2012/11/13/a-fedora-17-image-for-openstack"><![CDATA[<div class="document">
+<p><em>This worked well enough but has been superceeded by ``appliance-creator``</em></p>
+<p>Ubuntu has these nice UEC images that make a great base for cloud appliances.  Fedora has nothing official although there are a couple of older images floating around (links please!).  Nothing for Fedora 17 though.  Let's build one!</p>
+<p>The most flexible image builder seems to be oz, as it runs the standard install process and can build nearly anything that boots in KVM.  There are some specific <a class="reference external" href="http://libguestfs.org/guestfs-faq.1.html">requirements for libguestfs</a> and that usually doesn't work properly in a VM.  This all had to be done on bare metal.</p>
+<p>Even then, building a Fedora 17 image required Fedora 17. OK, I found an old laptop that could do it and installed f17.</p>
+<p>There are also some kickstart files floating around like <a class="reference external" href="https://github.com/rackerjoe/oz-image-build">Racker Joe's repo</a>  and I've stolen from them and from the default kickstart files in Oz.  So here's the <a class="reference external" href="/x/files/fedora17-x86_64.ks">bastard child</a>.</p>
+<div class="section" id="oz">
+<h1>Oz</h1>
+<p>I had to build Oz from source as none of the available packages were current enough:</p>
+<pre class="literal-block">
+git clone https://github.com/clalancette/oz.git
+cd oz
+make rpm
+sudo yum update ~/rpmbuild/RPMS/noarch/oz-0.10.0-0.20121022223625git17f9c7f.fc17.noarch.rpm
+</pre>
+<p>Build an image:</p>
+<pre class="literal-block">
+sudo oz-install -d4 -t6000 -u fedora17-x86_64.tdl -a fedora17-x86_64.ks
+qemu-img convert -c -O qcow2 /var/lib/libvirt/images/fedora17-x86_64.dsk fedora17-x86_64.qcow2
+</pre>
+<p>Upload and boot the image:</p>
+<pre class="literal-block">
+glance image-create --is-public true --name &quot;Fedora 17 test 2&quot; --disk-format qcow2 --container-format bare --file fedora17-x86_64.qcow2
+nova boot --image 94ceb563-41ee-43f6-a999-a3b738c0d299 --flavor 2 --key-name bunsen f17-2
+</pre>
+<p>This image still has some tweaking needed...</p>
 </div>
 </div>
 ]]></content>
