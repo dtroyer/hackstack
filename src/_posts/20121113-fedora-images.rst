@@ -4,7 +4,6 @@ author: dtroyer
 date: 2012-11-13 11:13:00
 categories: Fedora, OpenStack
 tags: fedora images
-draft: true
 ---
 *This worked well enough but has been superceeded by ``appliance-creator``*
 

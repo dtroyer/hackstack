@@ -1,0 +1,117 @@
+---
+title: OpenStack Developer Summit
+author: dtroyer
+date: 2013-04-19 19:04:00
+categories: OpenStack
+tags: openstack summit
+---
+
+The OpenStack Developer Summit has just concluded in Portland, OR, and by many measures was an enormous success.
+Enormous because there were a reported >2800 people in attendance.  I never heard a breakdown of how many
+of those were developers but I'd guess that that number was up too.  The rooms were generally full
+but usually only a handful of people actively participated in most sessions.
+And speaking of full rooms, most of the 'project-formerly-known-as-Quantum' sessions were SRO.  
+I skipped those due to other interests but the word is none of the network vendors did.
+Most of my time was spent looking for things that affected my three primary projects:
+DevStack, Grenade and OpenStackClient.  
+
+**DevStack**
+
+There was no dedicated session to DevStack
+but it did not escape mention.  Most of the talk I heard about it was in conjunction with its 
+use in the CI gating tests and even then there wasn't much.  
+The hallway talk seemed to always revolve around adding functionality that really doesn't belong in DevStack.
+It was nice to be able to explain in person that
+the requested feature wasn't core to DevStack's purpose and how they can easily hook in to
+``stack.sh`` to add the feature.
+
+**Grenade**
+
+Grenade had a session on Tuesday led my moi that concentrated on the project upgrade strategy and
+gate issues.  Fortunately the discussion
+around run time was short, Grenade's <5 minutes is dwarfed by Tempest so nobody really cares.
+
+The upgrade strategy noted the change from rewriting new config files based on the samples
+included in the project repo to only making upgrade-necessary changes to the existing config files.
+The current Grenade implementation does this for all but Keystone and Swift.  The consensus
+in the room was that both of those should be fixable with some knowledgable input.
+
+There are some improvements that can be made to ``devstack-vm-gate*.sh`` to simplify the configuration
+that is actually run in the gate test.  The goal here is to make the gate closer to the
+configuration that is typically used by devs.
+
+**OpenStackClient**
+
+The first (and last) two sessions on OpenStackClient at previous summits were dominated by
+talk about what it should be and how people wanted to use it.  The project is at a stage where
+it needs to get some things completed so we can make a 0.1 pre-alpha release.  We grabbed
+an Unconference slot on Wednesday to get the primary developers together and decide on a few 
+things, like the tasks to be completed prior to the 0.1 release.  There were others present who
+I'm afraid we left wondering where the presentation was.
+
+Command parity with the project clients, save for that name-that-used-to-start-with-a-q project's client, is the major
+task for release.  Compute is not complete (*dtroyer*), Object (Swift) is non-existant, and
+the remainder are close but need an audit to see what may be missing since they were first
+implemented.
+
+The major news in the command front is the change of my beloved "verb object" form to
+"object verb". [1]_ There is finally a good reason to change: to facilitate bash tab-completion.
+I'm taking *dhellmann's* word on this as tab-completion  has not been done yet.  And I'll be dipped
+if I can't come up with anything to counter it. So to ease my pain, Doug volunteered to
+make the change.
+
+**Image Interchange**
+
+This session kept getting sidetracked by people wanting to make the common image format
+include the contents of the system in addition to the format of the disk image file.
+*smoser* did his best to remind everyone that Glance's concern with image formats stopped
+at the file blocks that contain filesystem bits.  The contents of those blocks is off-limits.
+
+It should be remembered that in previous summits the opening of user-submitted disk images
+to inject files and user data was specifically removed from Nova due to the potential 
+security issues involved.  Also there is the matter of knowing just what to do to a random
+filesystem.  This led to the adoption of cloud drive as an alternative to AWS-style metadata
+service.
+
+The intention of the session was to work out details of exchanging images between clouds, including 
+the disk format used.  Apparently there are OpenStack implementations that do not support
+the qcow2 format because otherwise that is what should be used as it has both compression
+and sparse capabilities.  Of course raw would also work but let's be realistic here.
+
+**Dependency Management**
+
+This is one session that may have some positive effects on DevStack as a side effect of
+documenting OS-level package dependencies for each project.  The session primarily concerned
+opestack/requirements as a gate for Python dependencies and the use of an OpenStack-specific
+PyPi mirror.
+
+The interesting bit to me is the need to handle non-pip-installable dependencies.  DevStack
+already maintains some of this information for distros and releases.  Moving this into the
+project repos would allow it to be used by other processes and get DevStack completely out
+of tracking project dependencies.  It remains TBD as to who actually does the install.
+
+**Project Renaming**
+
+A recent issue with one of the OpenStack projects that once had a code name with a 'Q' and
+two 'u's is no longer calling itself that.  I'm not touching the reasons why, that is for others
+to explain.  What I am mostly interested in is the amount of work required to change a projects name,
+even when it is done at phase boundaries such as moving into and out of incubation.
+
+This means that choosing a project name has more pressure to get it right the first time than before.
+I am assuming here that the common sentiment expressed in the session to not stop using project names
+is the path chosen even if the public use of project names is ramped down.
+
+Two of the three projects that I am deeply involved in (read as 'would do more than a little of
+the name changing work') have names that are invented terms so the chance that there might be confusion
+in the industry is low.  And a different set of two of those projects are primarily used internally
+and should get little public attention.
+
+**Wrapup**
+
+That does it for the highlights of my week in Portland.  I'll leave it to others to summarize 
+the rest, save for pimping Terrence and Bertram's `latest video`_
+that provided an energetic open to the keynotes.  Stay tuned for some deeper thoughts on a few of the topics mentioned here.
+
+.. _`latest video`: http://dopenstack.com
+
+.. [1] Sorry VMS DCL fans, I tried.
