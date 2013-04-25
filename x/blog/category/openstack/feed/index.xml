@@ -10,10 +10,116 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Sat, 20 Apr 2013 06:07:06 GMT</pubDate>
+    <pubDate>Thu, 25 Apr 2013 04:10:45 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>A CentOS 6 Image for OpenStack</title>
+      <link>http://hackstack.org/x/blog/2013/04/25/a-centos-6-image-for-openstack</link>
+      <pubDate>Thu, 25 Apr 2013 04:25:00 CDT</pubDate>
+      <category><![CDATA[openstack]]></category>
+      <category><![CDATA[rhel]]></category>
+      <category><![CDATA[centos]]></category>
+      <guid isPermaLink="false">xNWj4uudQrtb_Ova4tv9U5ysr-U=</guid>
+      <description>A CentOS 6 Image for OpenStack</description>
+      <content:encoded><![CDATA[<div class="document">
+<p>This is the next installment in the never-ending series of OpenStack image builds.  Today's
+target: CentOS</p>
+<div class="section" id="image-characteristics">
+<h1>Image Characteristics</h1>
+<p>The usual suspects are present:</p>
+<ul class="simple">
+<li>minimal package install</li>
+<li>serial console support</li>
+<li>timezone is <tt class="docutils literal">Etc/UTC</tt></li>
+<li>hostname set to instance name</li>
+<li>a single partition with root filesystem, no swap</li>
+<li>grow root filesystem to device size</li>
+<li>enable EPEL (install epel-release)</li>
+<li>enable could-init repo to get 0.7.1</li>
+</ul>
+<p>A few things are still lacking:</p>
+<ul class="simple">
+<li>selinux is in permissive mode, make enforcing</li>
+<li>strengthen default firewall</li>
+</ul>
+</div>
+<div class="section" id="build">
+<h1>Build</h1>
+<p>Tools like <tt class="docutils literal">Oz</tt> are a good idea in theory but in practice seem to be quite picky about the environment
+they will correctly run on.  I'm looking at you <tt class="docutils literal">libguestfs</tt>.  Other tools like the venerable <tt class="docutils literal"><span class="pre">appliance-creator</span></tt> get hung up
+on needing the same version of things in the host as in the chroot.</p>
+<p>Good ole <tt class="docutils literal"><span class="pre">virt-install</span></tt> happily runs on damn near everything.  This build has been tested
+on CentOS 6.4 and Ubuntu 12.10.  <cite>TODO(dtroyer): don't run this all as root</cite></p>
+<p>Let's get started.</p>
+<ul>
+<li><p class="first">Install <cite>virt-install</cite> and all its prerequisites</p>
+<ul>
+<li><p class="first">on Ubuntu:</p>
+<pre class="literal-block">
+sudo apt-get install virtinst
+</pre>
+</li>
+<li><p class="first">on CentOS:</p>
+<pre class="literal-block">
+sudo yum install libvirt python-virtinst qemu-kvm
+sudo /etc/init.d/libvirtd start
+</pre>
+</li>
+</ul>
+</li>
+<li><p class="first">Get a <a class="reference external" href="https://raw.github.com/dtroyer/image-recipes/master/centos-6-x86_64.ks">CentOS 6 kickstart</a> file with minimal stuff and the extras that we need.  Included in <tt class="docutils literal">%post</tt> is a bit to resize the root filesystem to the size of the actual device provided to the VM.</p>
+</li>
+</ul>
+<ul>
+<li><p class="first">Create base image with <tt class="docutils literal"><span class="pre">virt-install</span></tt>:</p>
+<pre class="literal-block">
+sudo virt-install \
+    --name centos-6-x86_64 \
+    --ram 1024 \
+    --cpu host \
+    --vcpus 1 \
+    --nographics \
+    --os-type=linux \
+    --os-variant=rhel6 \
+    --location=http://mirrors.kernel.org/centos/6/os/x86_64 \
+    --initrd-inject=centos-6-x86_64.ks \
+    --extra-args=&quot;ks=file:/centos-6-x86_64.ks text console=tty0 utf8 console=ttyS0,115200&quot; \
+    --disk path=/var/lib/libvirt/images/centos-6-x86_64.img,size=2,bus=virtio \
+    --force \
+    --noreboot
+</pre>
+</li>
+<li><p class="first">Point to the bridge with external connectivity if it is not <cite>eth0</cite>:</p>
+<pre class="literal-block">
+--network=bridge=br0
+</pre>
+</li>
+<li><p class="first">If <tt class="docutils literal">libguestfs</tt> is functional on your build platform:</p>
+<pre class="literal-block">
+sudo yum install -y libguestfs-tools
+sudo virt-sysprep --no-selinux-relabel -a /var/lib/libvirt/images/centos-6-x86_64.img
+sudo virt-sparsify --convert qcow2 --compress /var/lib/libvirt/images/centos-6-x86_64.img centos-6-x86_64.qcow2
+</pre>
+</li>
+<li><p class="first">Kick it into the cloud image repository:</p>
+<pre class="literal-block">
+glance image-create --name &quot;CentOS 6 x86_64&quot; --disk-format qcow2 --container-format bare --is-public false --file centos-6-x86_64.qcow2
+</pre>
+</li>
+</ul>
+<!-- save for selinux enforcing
+# SELinux: relabelling all filesystem
+echo "guestfis selinux relabel"
+guestfish - -selinux -i $IMGNAME.$EXT <<EOF
+sh load_policy
+sh 'restorecon -Rv /'
+EOF -->
+</div>
+</div>
+]]></content:encoded>
+    </item>
     <item>
       <title>OpenStack Developer Summit</title>
       <link>http://hackstack.org/x/blog/2013/04/19/openstack-developer-summit</link>
