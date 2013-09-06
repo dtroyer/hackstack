@@ -82,6 +82,78 @@
 <article>
   <div class="blog_post">
     <header>
+      <div id="a-fedora-18-image-for-openstack"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2013/01/25/a-fedora-18-image-for-openstack/" rel="bookmark" title="Permanent Link to A Fedora 18 Image for OpenStack">A Fedora 18 Image for OpenStack</a></h1>
+      <p><small><span class="blog_post_date">January 25, 2013 at 01:25 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/fedora/'>fedora</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  Building images to boot in a cloud can be a lot of fun, especially since now two clouds are built alike. Now fortunately the differences are mostly minor, but some of the minor differences can be fatal. Ugh. Good News The recent release of Fedora 18 brought with it a pleasant surprise, the build of some images suitable for loading into your favorite cloud, ala Ubuntu's UEC images. The mailing list notice gives the background and a reply in that thread mentions some desirable changes. So in order to make those changes I decided to roll my own using the
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
+      <div id="securing-openstack-client-connections-part-2"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2012/12/21/securing-openstack-client-connections-part-2/" rel="bookmark" title="Permanent Link to Securing OpenStack Client Connections Part 2">Securing OpenStack Client Connections Part 2</a></h1>
+      <p><small><span class="blog_post_date">December 21, 2012 at 12:12 PM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/devstack/'>devstack</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  In the first part of this series we covered creating a pair of certificate authorities and a signed certificate with the same attributes commonly found in commercial certificates. This part covers the OpenStack Python clients and proper certificate verification. The OpenStack client repositories (or packages) include both the Python API bindings and the reference command line interface (CLI) implementation to communicate with the OpenStack APIs. Client support for modern encrypted connections, i.e SSLv3 and/or TLSv1, has been spotty at best. Most of the clients are capable of using SSL for encryption but often the certificate verification part of the protocol
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
+      <div id="securing-openstack-client-connections-part-1"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2012/12/18/securing-openstack-client-connections-part-1/" rel="bookmark" title="Permanent Link to Securing OpenStack Client Connections Part 1">Securing OpenStack Client Connections Part 1</a></h1>
+      <p><small><span class="blog_post_date">December 18, 2012 at 12:12 PM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/devstack/'>devstack</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  We all know that the difference between https and http is the addition of encryption, right? Of course, but less attention is paid to the other purposes of SSL and TLS: to verify one or both of the parties involved in the connection and to validate that the objects used in the verification meet certain criteria. [1] In the common case of a user directing a web browser to a 'secure' site, only one side is potentially validated, that being the server. Maybe. Browsers generally go a good job of performing server certificate verification and validation but other https clients
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
       <div id="a-fedora-17-image-for-openstack"></div>
       <h1 class="blog_post_title"><a href="/x/blog/2012/11/13/a-fedora-17-image-for-openstack/" rel="bookmark" title="Permanent Link to A Fedora 17 Image for OpenStack">A Fedora 17 Image for OpenStack</a></h1>
       <p><small><span class="blog_post_date">November 13, 2012 at 11:13 AM</span> | categories: 
@@ -132,11 +204,11 @@
 <!--
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
+      <li><a href="/x/blog/2013/09/05/openstack-stack-or-not/">OpenStack - Stack or Not?</a></li>
+      <li><a href="/x/blog/2013/06/20/openstack-clients-on-windows/">OpenStack Clients on Windows</a></li>
+      <li><a href="/x/blog/2013/06/20/openstack-clients/">OpenStack Clients</a></li>
       <li><a href="/x/blog/2013/04/25/a-centos-6-image-for-openstack/">A CentOS 6 Image for OpenStack</a></li>
       <li><a href="/x/blog/2013/04/19/openstack-developer-summit/">OpenStack Developer Summit</a></li>
-      <li><a href="/x/blog/2013/01/25/a-fedora-18-image-for-openstack/">A Fedora 18 Image for OpenStack</a></li>
-      <li><a href="/x/blog/2012/12/21/securing-openstack-client-connections-part-2/">Securing OpenStack Client Connections Part 2</a></li>
-      <li><a href="/x/blog/2012/12/18/securing-openstack-client-connections-part-1/">Securing OpenStack Client Connections Part 1</a></li>
     </ul>
 -->
   </section>

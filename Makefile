@@ -10,3 +10,6 @@ serve:
 
 push:
 	git push
+
+# Activate venv (can't do it here because subshells):
+# . ../blogo/bin/activate
