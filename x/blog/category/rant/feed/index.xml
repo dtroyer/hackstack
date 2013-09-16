@@ -10,7 +10,7 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Mon, 16 Sep 2013 19:41:32 GMT</pubDate>
+    <pubDate>Mon, 16 Sep 2013 21:30:53 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -23,7 +23,7 @@
       <guid isPermaLink="false">n_L3VOh8Wa6r8DsnH3_0f0RV7GE=</guid>
       <description>OpenStack - Seven Layer Dip as a Service</description>
       <content:encoded><![CDATA[<div class="document">
-<p>OpenStack is, as it name implies, a stack of services to provide &quot;components for a cloud infrastructure solution. <a class="footnote-reference" href="#id2" id="id1">[1]</a>  There are layers of services, some interdependent on each other, some only dependent on the layers below it.</p>
+<p>OpenStack is, as it name implies, a stack of services to provide &quot;components for a cloud infrastructure solution&quot;. <a class="footnote-reference" href="#id2" id="id1">[1]</a>  There are layers of services, some interdependent on each other, some only dependent on the layers below it.</p>
 <p>For some time there has been a PC dance around 'labelling' projects that may or may not be at a layer that it wants to be in.  Back in the day, the term 'core' was thrown around to identify the services necessary to build an OpenStack deployment.  That term has been so misused and coopted and stomped on as to become unusable for technical discussions.  The OpenStack Foundation Board has an effort ongoing to define what 'core' means but they are focused on who and what is required in a deployment in order to use the trademarked OpenStack[tm] name and logo and not any determination as to layering of projects.  Go team, but that is not what we in the coding trenches need.</p>
 <p>'Integrated' has become the term-du-jour for the TC to identify those projects that are part of the announced OpenStack release a the end of the development cycle.  That clearly identifies those projects that are administratively included but has no meaning for technical relationship/interface considerations.</p>
 <p>For the sake of argument I am going to co-opt another term, stealing it directly from OSI networking terminology: 'layer'.  Layer is used there to describe the boundaries and interfaces between the functional components.  In OpenStack, the layers we have are the base infrastructure required to make something work, the additional services to make things integrate well with its surroundings and the services provided to the system and its users.  Really general terms there.</p>

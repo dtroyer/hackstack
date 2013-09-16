@@ -7,12 +7,144 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2013-09-16T19:41:32Z</updated>
+  <updated>2013-09-16T21:30:53Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
   <id>http://hackstack.org/x/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[DevStack Local Config]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2013/09/07/devstack-local-config" />
+    <id>http://hackstack.org/x/blog/2013/09/07/devstack-local-config</id>
+    <updated>2013-09-07T09:17:00Z</updated>
+    <published>2013-09-07T09:17:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <category scheme="http://hackstack.org/x/blog" term="devstack" />
+    <summary type="html"><![CDATA[DevStack Local Config]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2013/09/07/devstack-local-config"><![CDATA[<div class="document">
+<p>DevStack has long had an extremely simple mechanism to add arbitrary configuration entries to nova.con, <tt class="docutils literal">EXTRA_OPTS</tt>.  It was handy and even emulated in the Neutron configuration in a number of places.  However, it did not scale well: a new variable and expansion loop is required for each file/section combination.  And now the time has come for a replacement...</p>
+<div class="section" id="requirements">
+<h1>Requirements</h1>
+<blockquote>
+<ul class="simple">
+<li><tt class="docutils literal">localrc</tt> has served well in its capacity of the sole container of local configuration.  Being a single file makes it easy to track and share known working DevStack configurations.  Any new configuration scheme must at least attempt to preserve this property.</li>
+<li>In order to be able to set configuration attributes in arbitrary files and sections, those bits of information must be encoded in the new format.</li>
+<li>There must be a mechanism to selectively merge the configuration values into their destination files rather than do them all at once.</li>
+<li>Reduce the number of configuration variables in general that are simply passed-through to project config files.  They are being set in localrc anyway, moving that to another section of local.conf is not a difficult transition.</li>
+</ul>
+</blockquote>
+</div>
+<div class="section" id="solution">
+<h1>Solution</h1>
+<p>A new master local configuration file is supported (but like <tt class="docutils literal">localrc</tt> is not included in the DevStack repo) that all local configuration for DevStack, including the master copy of <tt class="docutils literal">localrc</tt>.  <tt class="docutils literal">local.conf</tt> is an extended-INI format that introduces a new meta-section header that contains the additional required information: a group name and destination configuration filename.  It has the form:</p>
+<pre class="literal-block">
+[[ &lt;group&gt; | &lt;filename&gt; ]]
+</pre>
+<p>where &lt;group&gt; is the usual DevStack project name (<tt class="docutils literal">nova</tt>, <tt class="docutils literal">cinder</tt>, etc) and &lt;filename&gt; is the config filename.  The filename is eval'ed in the <tt class="docutils literal">stack.sh</tt> context so all environment variables are available and may be used (see example below).</p>
+<p>The file is processed strictly in sequence.  Meta-sections may be specified more than once, if any settings are duplicated the last to appear in the file will be used:</p>
+<pre class="literal-block">
+[[nova|$NOVA_CONF]]
+[DEFAULT]
+use_syslog = True
+
+[osapi_v3]
+enabled = False
+</pre>
+<p>A special meta-section <tt class="docutils literal">[[local:localrc]]</tt> is used to provide a default localrc file.  This allows all custom settings for DevStack to be contained in a single file:</p>
+<pre class="literal-block">
+[[local|localrc]]
+FIXED_RANGE=10.254.1.0/24
+ADMIN_PASSWORD=speciale
+LOGFILE=$DEST/logs/stack.sh.log
+</pre>
+</div>
+<div class="section" id="implementation">
+<h1>Implementation</h1>
+<p>Four new functions were added to parse and merge <tt class="docutils literal">local.conf</tt> into the existing INI-style config files.  The base <tt class="docutils literal">functions</tt> file is getting way too large so these functions are in <tt class="docutils literal">lib/config</tt> which will only contain functions related to config file manipulation.  There shall also be no side-effects from any of these functions.  The existing <tt class="docutils literal">iniXXX()</tt> functions may also eventually move here.</p>
+<blockquote>
+<ul class="simple">
+<li><tt class="docutils literal">get_meta_section()</tt> - Returns an INI fragment for a specific group/filename combination</li>
+<li><tt class="docutils literal">get_meta_section_files()</tt> - Returns a list of the config filenames present in <tt class="docutils literal">local.conf</tt> for a specific group</li>
+<li><tt class="docutils literal">merge_config_file()</tt> - Performs the actual merge of the INI fragment from <tt class="docutils literal">local.conf</tt></li>
+<li><tt class="docutils literal">merge_config_group()</tt> - Loops over the INI fragments present for the specified group and merges them</li>
+</ul>
+</blockquote>
+<p>The merge is performed after the <tt class="docutils literal">install_XXX()</tt> and <tt class="docutils literal">configure_XXX()</tt> functions for all layer 1 and 2 projects are complete and before any services are started.</p>
+</div>
+<div class="section" id="use-it-or-lose-it">
+<h1>Use It Or Lose It</h1>
+<p>The list of existing variables that will be deprecated in favor of using <tt class="docutils literal">local.conf</tt> has not been completed yet but includes <tt class="docutils literal">EXTRA_OPTS</tt> and a handful of <tt class="docutils literal">Q_XXX_XXX_OPTS</tt> variables in Neutron.  These are listed at the end of <tt class="docutils literal">stack.sh</tt> runs as deprecated and will be removed sometime in the Icehouse development cycle after DevStack's stable/havana branch is in place and Grenade's Grizzly-&gt;Havana upgrade is operational.</p>
+<div class="section" id="examples">
+<h2>Examples</h2>
+<ul>
+<li><p class="first">Convert EXTRA_OPTS from:</p>
+<pre class="literal-block">
+EXTRA_OPTS=api_rate_limit=False
+
+to
+
+[[nova|$NOVA_CONF]]
+[DEFAULT]
+api_rate_limit = False
+</pre>
+</li>
+<li><p class="first">Eliminate a Cinder pass-through (<tt class="docutils literal">CINDER_PERIODIC_INTERVAL</tt>):</p>
+<pre class="literal-block">
+[[cinder|$CINDER_CONF]]
+[DEFAULT]
+periodic_interval = 60
+</pre>
+</li>
+<li><p class="first">Change a setting that has no variable:</p>
+<pre class="literal-block">
+[[cinder|$CINDER_CONF]]
+[DEFAULT]
+iscsi_helper = new-tgtadm
+</pre>
+</li>
+<li><p class="first">Basic complete config:</p>
+<pre class="literal-block">
+[[nova|$NOVA_CONF]]
+[DEFAULT]
+api_rate_limit = False
+
+[vmware]
+host_ip = $HOST_IP
+host_username = root
+host_password = deepdarkunknownsecret
+
+
+[[cinder|$CINDER_CONF]]
+[DEFAULT]
+periodic_interval = 60
+
+vmware_host_ip = $HOST_IP
+vmware_host_username = root
+vmware_host_password = deepdarkunknownsecret
+
+
+[[local|localrc]]
+FIXED_RANGE=10.254.1.0/24
+NETWORK_GATEWAY=10.254.1.1
+LOGDAYS=1
+LOGFILE=$DEST/logs/stack.sh.log
+SCREEN_LOGDIR=$DEST/logs/screen
+ADMIN_PASSWORD=quiet
+DATABASE_PASSWORD=$ADMIN_PASSWORD
+RABBIT_PASSWORD=$ADMIN_PASSWORD
+</pre>
+</li>
+</ul>
+</div>
+</div>
+</div>
+]]></content>
+  </entry>
   <entry>
     <author>
       <name>dtroyer</name>
@@ -27,7 +159,7 @@
     <category scheme="http://hackstack.org/x/blog" term="rant" />
     <summary type="html"><![CDATA[OpenStack - Seven Layer Dip as a Service]]></summary>
     <content type="html" xml:base="http://hackstack.org/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service"><![CDATA[<div class="document">
-<p>OpenStack is, as it name implies, a stack of services to provide &quot;components for a cloud infrastructure solution. <a class="footnote-reference" href="#id2" id="id1">[1]</a>  There are layers of services, some interdependent on each other, some only dependent on the layers below it.</p>
+<p>OpenStack is, as it name implies, a stack of services to provide &quot;components for a cloud infrastructure solution&quot;. <a class="footnote-reference" href="#id2" id="id1">[1]</a>  There are layers of services, some interdependent on each other, some only dependent on the layers below it.</p>
 <p>For some time there has been a PC dance around 'labelling' projects that may or may not be at a layer that it wants to be in.  Back in the day, the term 'core' was thrown around to identify the services necessary to build an OpenStack deployment.  That term has been so misused and coopted and stomped on as to become unusable for technical discussions.  The OpenStack Foundation Board has an effort ongoing to define what 'core' means but they are focused on who and what is required in a deployment in order to use the trademarked OpenStack[tm] name and logo and not any determination as to layering of projects.  Go team, but that is not what we in the coding trenches need.</p>
 <p>'Integrated' has become the term-du-jour for the TC to identify those projects that are part of the announced OpenStack release a the end of the development cycle.  That clearly identifies those projects that are administratively included but has no meaning for technical relationship/interface considerations.</p>
 <p>For the sake of argument I am going to co-opt another term, stealing it directly from OSI networking terminology: 'layer'.  Layer is used there to describe the boundaries and interfaces between the functional components.  In OpenStack, the layers we have are the base infrastructure required to make something work, the additional services to make things integrate well with its surroundings and the services provided to the system and its users.  Really general terms there.</p>
@@ -1338,85 +1470,6 @@ glance image-create --is-public true --name &quot;Fedora 17 test 2&quot; --disk-
 nova boot --image 94ceb563-41ee-43f6-a999-a3b738c0d299 --flavor 2 --key-name bunsen f17-2
 </pre>
 <p>This image still has some tweaking needed...</p>
-</div>
-</div>
-]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>dtroyer</name>
-      <uri>http://hackstack.org/x/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Devstack At One]]></title>
-    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2012/10/20/devstack-at-one" />
-    <id>http://hackstack.org/x/blog/2012/10/20/devstack-at-one</id>
-    <updated>2012-10-20T10:20:30Z</updated>
-    <published>2012-10-20T10:20:30Z</published>
-    <category scheme="http://hackstack.org/x/blog" term="openstack" />
-    <category scheme="http://hackstack.org/x/blog" term="devstack" />
-    <summary type="html"><![CDATA[Devstack At One]]></summary>
-    <content type="html" xml:base="http://hackstack.org/x/blog/2012/10/20/devstack-at-one"><![CDATA[<div class="document">
-<p>First birthdays are always fun...especially the bit where the birthday kidlet is encouraged to make a mess of the cake to the mild amusement of the adults present.  At least that's how it worked in the little burg where I grew up.  (Little burg?  Isn't that redundant?)  My parents have pictures of me doing that, I have pictures of my kids doing that, I anticipate the cycle will continue someday.</p>
-<p>Now that the <a class="reference external" href="http://openstack.org">OpenStack</a> Grizzly Design Summit is over I realize that <a class="reference external" href="devstack.org">DevStack</a> is just over a year old, having been shown off for the first time at the Essex Design Summit in Boston.  We should have had a party!  Maybe I'll just retroactively declare one of the many during the week to be DevStack's birthday party.  Anyone care to vote on which one? (<em>cough*Nebula*cough</em>)  Look, DevStack still has a little cache on its face, how cute!</p>
-<p>anotherjesse and sleepsonthefloor initially started building DevStack to address their own needs for OpenStack development and exploration.  They were scratching an itch as the saying goes, and it soon became apparent that this might be generally useful.  Over its first year DevStack has become the de facto quick way to build an OpenStack cloud for developers.  While it was (and still is) primarily targeted for development use it has been found in other interesting places, most promintely in the OpenStack Continuous Integration gating tests.</p>
-<p>The original goals of DevStack remain as its primary guide:</p>
-<ul class="simple">
-<li>provide an environment for development and basic testing of OpenStack with and quick turnaround times and easy access to debug logs and output</li>
-<li>provide an example of one way to configure OpenStack and provide a simple mechanism to try different configurations</li>
-<li>support multiple deployment environments (bare metal, VMs, ramdisk, etc)</li>
-</ul>
-<p>We have largely stayed true to those goals and IMHO achieved them in large part.  As new uses of DevStack have come to light we added</p>
-<ul class="simple">
-<li>provide a basic platform for CI testing and gating of OpenStack commits</li>
-</ul>
-<div class="section" id="what-just-happened">
-<h1>What Just Happened?</h1>
-<p>Honestly it feels like not much has happened on DevStack since I started working on Grenade.  In reality, I look at the commits and see some significant developments that are worth noting for those who don't spend their coffee breaks looking at commit logs.  In early October we split off a stable/folsom branch of DevStack and configured it to pull stable/folsom branches from the project repos.  Everything below happened before stable/folsom was created.</p>
-<ul class="simple">
-<li><strong>Tell stack.sh to shut up!</strong>  The logging in <tt class="docutils literal">stack.sh</tt> was re-worked to allow writing the familiar xtrace stream to the <tt class="docutils literal">stack.sh.log</tt> files but only display a limited number of status messages in the console window.  Set <tt class="docutils literal">VERBOSE=False</tt> in <tt class="docutils literal">localrc</tt> to relieve your eyes from having to look at that stream that is busier than a VMS boot log.</li>
-<li><strong>Ceilometer and HEAT are now available!</strong>  You can now incorporate both projects into your DevStack install in the same install-from-source mode that the other projects use.</li>
-<li><strong>Cinder is the default volume service!</strong>  Nova volumes will take a powder sometime during Grizzly so we're using that new kid, Cinder, to provide block storage.  Stop by and see how jgriffith is doing, maybe he'll put you on a horse.</li>
-<li><strong>Get smarter about loading images into Glance from IMAGE_URLS!</strong>  It is the little things in life, like properly set image disk types in Glance, that make the difference between 'Life Is Good' and 'Life Is Pretty Good'.  What's next, setting the sticky bit on public images?</li>
-<li><strong>Exclamation points are on clearance!</strong>  Just checking to see if you were paying attention.  Unfortunately the only ones left are all in Comic Sans.</li>
-<li><strong>Keystone backend is SQL by default!</strong>  <tt class="docutils literal">default_catalog.templates</tt> is dead, long live <tt class="docutils literal">default_catalog.templates</tt>!  Unless of course you set <tt class="docutils literal"><span class="pre">KEYSTONE_CATALOG_BACKEND=not-sql</span></tt> (really, we test for 'sql' so anything else resurrects the old way).</li>
-</ul>
-</div>
-<div class="section" id="near-term-development">
-<h1>Near-term Development</h1>
-<p>I can her you thinking &quot;OK, all that is well and good, but what have you done for me today?&quot;  Humph.  Lurking in design summit sessions that decide the future of OpenStack's DNS strategy or hallway^H^H^H^H^H^HDeveloper Lounge conversations about how to refactor MySQL configuration in <tt class="docutils literal">stack.sh</tt> or scruitinizing the debut of Dope'n'Stack's latest release or dutifully searching for non-coffee-or-tea-based caffeine isn't enough?</p>
-<p>We added some important things from the design summit to the list, presented here in no particular order so don't get any ideas:</p>
-<ul class="simple">
-<li>sdague's arm should be straightened out by the time he returns home and begins doing core reviews on DevStack.  <em>[Ed: After further review it seems that he didn't wait.]</em></li>
-<li>In other sdague news, he is also planning to implement support for PostgreSQL.  And factor out the aforementioned MySQL support from <tt class="docutils literal">stack.sh</tt> in the process.</li>
-<li>That pesky new kid Grenade wants, nee demands, the completion of the project re-factoring from <tt class="docutils literal">stack.sh</tt> so it can include the results in the <tt class="docutils literal"><span class="pre">upgrade-*</span></tt> scripts.</li>
-<li>Rework the dependency system to be more portable across multiple distros.  Most of the python dependencies are handled by pip out of the <tt class="docutils literal"><span class="pre">tools/pip-requires</span></tt> files in the project source trees but the remaining packaged dependencies need to be specified per-project to ensure they are present when that project is enabled.  The existing system is simple but maybe a little too simple especially to support differences between multiple RPM-based distros (hello OpenSUSE!)</li>
-<li>Finalize Quantal support.  Actually that may be done already but someone should check before he shoots his mouth off and says it is done.</li>
-</ul>
-</div>
-<div class="section" id="wild-hares">
-<h1>Wild Hares</h1>
-<p>Try these ideas on for size:</p>
-<ul class="simple">
-<li>sliced bread</li>
-<li><a class="reference external" href="http://www.alibaba.com/showroom/inflatable-dart-board.html">inflatable dart board</a></li>
-<li>GOTO</li>
-<li><a class="reference external" href="http://en.wikipedia.org/wiki/New_Coke">New Coke</a></li>
-</ul>
-<p>Not everything is a good idea and not everything makes it into the master branch which means often good ideas don't make the cut.  Whether good or bad, here are some ideas suggested for DevStack that will not be implemented and here is why:</p>
-<ul class="simple">
-<li><strong>Rewrite in Python?</strong> One of the primary goals of DevStack is to demonstrate one simple way to set up OpenStack.  We feel that is best served using shell scripts that are accessible to more people, especially to implementors who are not developers.</li>
-<li><strong>Start/run services under upstart/init/whatever?</strong> The OpenStack services run in screen to simplify developer access to stop and re-start the services during the development cycle.</li>
-<li><strong>Install OpenStack from packages?</strong> This mode becomes extremely hard to convert a project from using the packaged code to a repo checked out from GitHub.  There may be enough demand to warrant wrapping the Ubuntu or Fedora package installs with some default configuration that produces an end-result similar to DevStack but we're going to leave that for someon else to tackle.</li>
-</ul>
-</div>
-<div class="section" id="resources">
-<h1>Resources</h1>
-<p>Please excuse us while we wipe the cache off DevStack's face and get back to the freaking cool job of aiding and abetting the creation of more <tt class="docutils literal">&lt;echo <span class="pre">delay=&quot;0.3ms&quot;</span> <span class="pre">repeat=&quot;6&quot;&gt;</span></tt> Software With Which To Rule The World! <tt class="docutils literal">&lt;/echo&gt;</tt>.  In the mean time here's where to track down the whos-and-whats mentioned above.</p>
-<ul class="simple">
-<li>DevStack site: <a class="reference external" href="http://devstack.org">http://devstack.org</a></li>
-<li>FAQ: <a class="reference external" href="http://devstack.org/faq.html">http://devstack.org/faq.html</a></li>
-<li>Recent Changes: <a class="reference external" href="http://devstack.org/changes.html">http://devstack.org/changes.html</a></li>
-</ul>
 </div>
 </div>
 ]]></content>

@@ -10,10 +10,137 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Mon, 16 Sep 2013 19:41:32 GMT</pubDate>
+    <pubDate>Mon, 16 Sep 2013 21:30:53 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>DevStack Local Config</title>
+      <link>http://hackstack.org/x/blog/2013/09/07/devstack-local-config</link>
+      <pubDate>Sat, 07 Sep 2013 09:17:00 CDT</pubDate>
+      <category><![CDATA[openstack]]></category>
+      <category><![CDATA[devstack]]></category>
+      <guid isPermaLink="false">XPq24BFbobrSwXVdJ6QBSd1zKF8=</guid>
+      <description>DevStack Local Config</description>
+      <content:encoded><![CDATA[<div class="document">
+<p>DevStack has long had an extremely simple mechanism to add arbitrary configuration entries to nova.con, <tt class="docutils literal">EXTRA_OPTS</tt>.  It was handy and even emulated in the Neutron configuration in a number of places.  However, it did not scale well: a new variable and expansion loop is required for each file/section combination.  And now the time has come for a replacement...</p>
+<div class="section" id="requirements">
+<h1>Requirements</h1>
+<blockquote>
+<ul class="simple">
+<li><tt class="docutils literal">localrc</tt> has served well in its capacity of the sole container of local configuration.  Being a single file makes it easy to track and share known working DevStack configurations.  Any new configuration scheme must at least attempt to preserve this property.</li>
+<li>In order to be able to set configuration attributes in arbitrary files and sections, those bits of information must be encoded in the new format.</li>
+<li>There must be a mechanism to selectively merge the configuration values into their destination files rather than do them all at once.</li>
+<li>Reduce the number of configuration variables in general that are simply passed-through to project config files.  They are being set in localrc anyway, moving that to another section of local.conf is not a difficult transition.</li>
+</ul>
+</blockquote>
+</div>
+<div class="section" id="solution">
+<h1>Solution</h1>
+<p>A new master local configuration file is supported (but like <tt class="docutils literal">localrc</tt> is not included in the DevStack repo) that all local configuration for DevStack, including the master copy of <tt class="docutils literal">localrc</tt>.  <tt class="docutils literal">local.conf</tt> is an extended-INI format that introduces a new meta-section header that contains the additional required information: a group name and destination configuration filename.  It has the form:</p>
+<pre class="literal-block">
+[[ &lt;group&gt; | &lt;filename&gt; ]]
+</pre>
+<p>where &lt;group&gt; is the usual DevStack project name (<tt class="docutils literal">nova</tt>, <tt class="docutils literal">cinder</tt>, etc) and &lt;filename&gt; is the config filename.  The filename is eval'ed in the <tt class="docutils literal">stack.sh</tt> context so all environment variables are available and may be used (see example below).</p>
+<p>The file is processed strictly in sequence.  Meta-sections may be specified more than once, if any settings are duplicated the last to appear in the file will be used:</p>
+<pre class="literal-block">
+[[nova|$NOVA_CONF]]
+[DEFAULT]
+use_syslog = True
+
+[osapi_v3]
+enabled = False
+</pre>
+<p>A special meta-section <tt class="docutils literal">[[local:localrc]]</tt> is used to provide a default localrc file.  This allows all custom settings for DevStack to be contained in a single file:</p>
+<pre class="literal-block">
+[[local|localrc]]
+FIXED_RANGE=10.254.1.0/24
+ADMIN_PASSWORD=speciale
+LOGFILE=$DEST/logs/stack.sh.log
+</pre>
+</div>
+<div class="section" id="implementation">
+<h1>Implementation</h1>
+<p>Four new functions were added to parse and merge <tt class="docutils literal">local.conf</tt> into the existing INI-style config files.  The base <tt class="docutils literal">functions</tt> file is getting way too large so these functions are in <tt class="docutils literal">lib/config</tt> which will only contain functions related to config file manipulation.  There shall also be no side-effects from any of these functions.  The existing <tt class="docutils literal">iniXXX()</tt> functions may also eventually move here.</p>
+<blockquote>
+<ul class="simple">
+<li><tt class="docutils literal">get_meta_section()</tt> - Returns an INI fragment for a specific group/filename combination</li>
+<li><tt class="docutils literal">get_meta_section_files()</tt> - Returns a list of the config filenames present in <tt class="docutils literal">local.conf</tt> for a specific group</li>
+<li><tt class="docutils literal">merge_config_file()</tt> - Performs the actual merge of the INI fragment from <tt class="docutils literal">local.conf</tt></li>
+<li><tt class="docutils literal">merge_config_group()</tt> - Loops over the INI fragments present for the specified group and merges them</li>
+</ul>
+</blockquote>
+<p>The merge is performed after the <tt class="docutils literal">install_XXX()</tt> and <tt class="docutils literal">configure_XXX()</tt> functions for all layer 1 and 2 projects are complete and before any services are started.</p>
+</div>
+<div class="section" id="use-it-or-lose-it">
+<h1>Use It Or Lose It</h1>
+<p>The list of existing variables that will be deprecated in favor of using <tt class="docutils literal">local.conf</tt> has not been completed yet but includes <tt class="docutils literal">EXTRA_OPTS</tt> and a handful of <tt class="docutils literal">Q_XXX_XXX_OPTS</tt> variables in Neutron.  These are listed at the end of <tt class="docutils literal">stack.sh</tt> runs as deprecated and will be removed sometime in the Icehouse development cycle after DevStack's stable/havana branch is in place and Grenade's Grizzly-&gt;Havana upgrade is operational.</p>
+<div class="section" id="examples">
+<h2>Examples</h2>
+<ul>
+<li><p class="first">Convert EXTRA_OPTS from:</p>
+<pre class="literal-block">
+EXTRA_OPTS=api_rate_limit=False
+
+to
+
+[[nova|$NOVA_CONF]]
+[DEFAULT]
+api_rate_limit = False
+</pre>
+</li>
+<li><p class="first">Eliminate a Cinder pass-through (<tt class="docutils literal">CINDER_PERIODIC_INTERVAL</tt>):</p>
+<pre class="literal-block">
+[[cinder|$CINDER_CONF]]
+[DEFAULT]
+periodic_interval = 60
+</pre>
+</li>
+<li><p class="first">Change a setting that has no variable:</p>
+<pre class="literal-block">
+[[cinder|$CINDER_CONF]]
+[DEFAULT]
+iscsi_helper = new-tgtadm
+</pre>
+</li>
+<li><p class="first">Basic complete config:</p>
+<pre class="literal-block">
+[[nova|$NOVA_CONF]]
+[DEFAULT]
+api_rate_limit = False
+
+[vmware]
+host_ip = $HOST_IP
+host_username = root
+host_password = deepdarkunknownsecret
+
+
+[[cinder|$CINDER_CONF]]
+[DEFAULT]
+periodic_interval = 60
+
+vmware_host_ip = $HOST_IP
+vmware_host_username = root
+vmware_host_password = deepdarkunknownsecret
+
+
+[[local|localrc]]
+FIXED_RANGE=10.254.1.0/24
+NETWORK_GATEWAY=10.254.1.1
+LOGDAYS=1
+LOGFILE=$DEST/logs/stack.sh.log
+SCREEN_LOGDIR=$DEST/logs/screen
+ADMIN_PASSWORD=quiet
+DATABASE_PASSWORD=$ADMIN_PASSWORD
+RABBIT_PASSWORD=$ADMIN_PASSWORD
+</pre>
+</li>
+</ul>
+</div>
+</div>
+</div>
+]]></content:encoded>
+    </item>
     <item>
       <title>Securing OpenStack Client Connections Part 2</title>
       <link>http://hackstack.org/x/blog/2012/12/21/securing-openstack-client-connections-part-2</link>

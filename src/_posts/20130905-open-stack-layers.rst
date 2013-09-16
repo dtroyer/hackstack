@@ -3,7 +3,7 @@ title: OpenStack - Seven Layer Dip as a Service
 author: dtroyer
 date: 2013-09-05 09:05:00
 categories: OpenStack, Rant
-tags: steam
+tags: devstack
 ---
 
 OpenStack is, as it name implies, a stack of services to provide "components for a cloud infrastructure solution". [1]_  There are layers of services, some interdependent on each other, some only dependent on the layers below it.
