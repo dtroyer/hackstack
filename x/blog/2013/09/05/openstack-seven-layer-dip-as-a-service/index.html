@@ -82,8 +82,8 @@
 <article>
   <div class="blog_post">
     <header>
-      <div id="openstack-stack-or-not"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2013/09/05/openstack-stack-or-not/" rel="bookmark" title="Permanent Link to OpenStack - Stack or Not?">OpenStack - Stack or Not?</a></h1>
+      <div id="openstack-seven-layer-dip-as-a-service"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service/" rel="bookmark" title="Permanent Link to OpenStack - Seven Layer Dip as a Service">OpenStack - Seven Layer Dip as a Service</a></h1>
       <p><small><span class="blog_post_date">September 05, 2013 at 09:05 AM</span> | categories: 
         <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/rant/'>rant</a></span>
       </small></p>
@@ -91,8 +91,7 @@
     <div class="post_prose">
       
 <div class="document">
-<p><strong>Draft Rant</strong></p>
-<p>OpenStack is, as it name implies, a stack of services to provide &lt;insert-mission-statement-here&gt;.  There are layers of services, some interdependent on each other, some only dependent on the layers below it.</p>
+<p>OpenStack is, as it name implies, a stack of services to provide &quot;components for a cloud infrastructure solution. <a class="footnote-reference" href="#id2" id="id1">[1]</a>  There are layers of services, some interdependent on each other, some only dependent on the layers below it.</p>
 <p>For some time there has been a PC dance around 'labelling' projects that may or may not be at a layer that it wants to be in.  Back in the day, the term 'core' was thrown around to identify the services necessary to build an OpenStack deployment.  That term has been so misused and coopted and stomped on as to become unusable for technical discussions.  The OpenStack Foundation Board has an effort ongoing to define what 'core' means but they are focused on who and what is required in a deployment in order to use the trademarked OpenStack[tm] name and logo and not any determination as to layering of projects.  Go team, but that is not what we in the coding trenches need.</p>
 <p>'Integrated' has become the term-du-jour for the TC to identify those projects that are part of the announced OpenStack release a the end of the development cycle.  That clearly identifies those projects that are administratively included but has no meaning for technical relationship/interface considerations.</p>
 <p>For the sake of argument I am going to co-opt another term, stealing it directly from OSI networking terminology: 'layer'.  Layer is used there to describe the boundaries and interfaces between the functional components.  In OpenStack, the layers we have are the base infrastructure required to make something work, the additional services to make things integrate well with its surroundings and the services provided to the system and its users.  Really general terms there.</p>
@@ -126,54 +125,65 @@
 <li>Network (Neutron)</li>
 <li>Volume (Cinder)</li>
 <li>Object (Swift)</li>
-<li>Bare-metal (Ironic) - should it be here?</li>
+<li>Bare-metal (Ironic) - status: in incubation</li>
 </ul>
 </blockquote>
 <p>Neutron will eventually become a Layer 1 service when Nova Networking is removed.</p>
+<p>Ironic technically sits below Nova but is optional so it is in Layer 2.</p>
 </div>
 <div class="section" id="layer-3-the-options">
 <h2>Layer 3: The Options</h2>
-<p>Layer 3 services are optional from a functional point of view but valuable in deployments that integrate with the world around them.  They depend on Layer 1 and 2 services.</p>
+<p>Layer 3 services are optional from a functional point of view but valuable in deployments that integrate with the world around them.  They integrate with Layer 1 and 2 services and are dependent on them for operation.</p>
 <blockquote>
 <ul class="simple">
+<li>Web UI (Horizon)</li>
 <li>Notification (Ceilometer)</li>
 </ul>
 </blockquote>
 </div>
 <div class="section" id="layer-4-turtles-all-the-way-up">
 <h2>Layer 4: Turtles All The Way Up</h2>
-<p>Layer 4 catches everything else with an OpenStack sticker on the box.  These are the rest of the XXaaS services. and everything that is purely user facing, i.e. No part of the OpenStack deployment itself depends on the service, it is only used by customers of cloud services.</p>
+<p>Layer 4 catches everything else with an OpenStack sticker on the box.  This includes the rest of the XXaaS services and everything that is purely user facing, i.e. the OpenStack deployment itself does not depend on the service, it is only used by customers of cloud services.</p>
 <blockquote>
 <ul class="simple">
 <li>Orchestration (Heat)</li>
-<li>Database (Trove)</li>
-<li>Naming(?) (Moniker) - status?</li>
+<li>DBaaS (Trove) - status: to be integrated in Icehouse</li>
+<li>DNSaaS (Moniker) - status: applying for incubation</li>
+<li>MQaaS (Marconi) - status: in incubation</li>
 </ul>
 </blockquote>
 </div>
 </div>
 <div class="section" id="relationships">
 <h1>Relationships</h1>
-<p>Expressing how other projects/programs/ad-hoc stuff relaes to the Layers.</p>
+<p>What does all this mean?  Probably not much outside of the following projects.  Really it is just a framework for terminology to describe and categorize projects by their purely technical relationships.</p>
 <div class="section" id="devstack">
 <h2>DevStack</h2>
-<p>We have struggled to keep DevStack from overgrowing its playpen and contain the effects of everyone with a project to pitch wanting to be included.  We have been slowly re-factoring <tt class="docutils literal">stack.sh</tt> to allow simple additional scripts to run at the end with the complete environment available to simplify adding the higher-layered projects.</p>
-<p>My goal is to (soon!) have a layered DevStack that can independently build the layers of services so developers can focus on the layers they care about and still have the ability to build the whole she-bang.  The DevStack layer scripts will also be hookable to allow additional (non-Integrated? non-Incubated?) projects the ability to self-integrate into DevStack without being in the repo.</p>
+<p>DevStack has struggled to keep from overgrowing its playpen and contain the effects of everyone with a project to pitch wanting to get it included.  Some basic hooks have been added to <tt class="docutils literal">stack.sh</tt> to allow projects not explicitly supported in the DevStack repo to be included in <tt class="docutils literal">stack</tt>/<tt class="docutils literal">unstack</tt> operations.  More hooks are coming in the near future as <tt class="docutils literal">stack.sh</tt> continues to get streamlined and make the projects follow a common template for installation/configuration/startup/etc.</p>
+<p>DevStack's goal is to (soon!) clearly define the layers of services so developers can focus on the layers they care about and still have the ability to build the whole she-bang.  The DevStack layer scripts will also be hookable to allow additional (non-Integrated? non-Incubated?) projects the ability to self-integrate into DevStack without being in the repo.</p>
+<p>The layered approach will be to install and configure the layers in order, with the exception that Layer 1 startup will be delayed until Layer 2 configuration is complete to allow the configuration changes to take effect.</p>
 </div>
 <div class="section" id="grenade">
 <h2>Grenade</h2>
-<p>Grenade only performs upgrade runs on Layer 1 and 2 services at the most, even then not including (yet?) all Layer 2 services.  Additional layers can only be added once a project is part of the stable release used as the Grenade <tt class="docutils literal">base</tt> release.</p>
+<p>Grenade only performs upgrade runs on Layer 1 and 2 services at the most, even then not including (yet?) all Layer 2 services.  Additional layers can only be added once a project is part of the DevStack stable release used as the Grenade <tt class="docutils literal">base</tt> release.</p>
 </div>
 <div class="section" id="openstackclient">
 <h2>OpenStackClient</h2>
 <p>OSC is not an official OpenStack project or program despite its existence in the OpenStack namespace on GitHub as it began before those concepts were fully-formed.  So in some regards it is not bound to the rules and conventions that apply to the other projects.  However, to do otherwise would be foolish.</p>
-<p>OSC uses the Layers in determining the priorities for implementation of client commands.  It currently has implementations for Identity, Image, Volume and Compute APIs with plans for Object and Network to come.  It does have a simple plug-in capability that allows additional modules to be added independently wihtout being part of the OSC repo.</p>
+<p>OSC uses the Layers in determining the priorities for implementation of client commands.  It currently has implementations for Identity, Image, Volume and Compute APIs with plans for Object and Network to come.  It does have a simple plug-in capability that allows additional modules to be added independently without being part of the OSC repo.</p>
 </div>
 </div>
 <div class="section" id="epilogue">
 <h1>Epilogue</h1>
-<p>[This has not been a Quinn-Martin Production.  Remember those?]</p>
-<p>The purpose here is to provide a nomenclature useful to discuss the hierarchy of projects as reflected in the projects above.  I'm including these three due to m direct involvement in them, this may also apply to Tempest or something else I am not aware of but I can not speak for those projects.</p>
+<p>[Quinn Martin Productions TV shows always had these, remember? Anyone?]</p>
+<p>Other projects may or may not pick up this terminology, it depends on if it turns out to be useful to them.  There is a technical hierarchy of projects even if not everyone wants to acknowledge it, and the need for avoiding the existing hot-button terms seems to be increasing.</p>
+<hr class="docutils" />
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Stolen directly from <a class="reference external" href="http://www.openstack.org/">openstack.org</a></td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -192,7 +202,7 @@
 <!--
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
-      <li><a href="/x/blog/2013/09/05/openstack-stack-or-not/">OpenStack - Stack or Not?</a></li>
+      <li><a href="/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service/">OpenStack - Seven Layer Dip as a Service</a></li>
       <li><a href="/x/blog/2013/06/20/openstack-clients-on-windows/">OpenStack Clients on Windows</a></li>
       <li><a href="/x/blog/2013/06/20/openstack-clients/">OpenStack Clients</a></li>
       <li><a href="/x/blog/2013/04/25/a-centos-6-image-for-openstack/">A CentOS 6 Image for OpenStack</a></li>

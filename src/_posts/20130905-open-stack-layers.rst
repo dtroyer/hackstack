@@ -1,14 +1,12 @@
 ---
-title: OpenStack - Stack or Not?
+title: OpenStack - Seven Layer Dip as a Service
 author: dtroyer
 date: 2013-09-05 09:05:00
 categories: OpenStack, Rant
 tags: steam
 ---
 
-**Draft Rant**
-
-OpenStack is, as it name implies, a stack of services to provide <insert-mission-statement-here>.  There are layers of services, some interdependent on each other, some only dependent on the layers below it.
+OpenStack is, as it name implies, a stack of services to provide "components for a cloud infrastructure solution". [1]_  There are layers of services, some interdependent on each other, some only dependent on the layers below it.
 
 For some time there has been a PC dance around 'labelling' projects that may or may not be at a layer that it wants to be in.  Back in the day, the term 'core' was thrown around to identify the services necessary to build an OpenStack deployment.  That term has been so misused and coopted and stomped on as to become unusable for technical discussions.  The OpenStack Foundation Board has an effort ongoing to define what 'core' means but they are focused on who and what is required in a deployment in order to use the trademarked OpenStack[tm] name and logo and not any determination as to layering of projects.  Go team, but that is not what we in the coding trenches need.
 
@@ -51,53 +49,66 @@ Layer 2 services have the characteristic that they only depend on the services i
   * Network (Neutron)
   * Volume (Cinder)
   * Object (Swift)
-  * Bare-metal (Ironic) - should it be here?
+  * Bare-metal (Ironic) - status: in incubation
 
 Neutron will eventually become a Layer 1 service when Nova Networking is removed.
+
+Ironic technically sits below Nova but is optional so it is in Layer 2.
 
 Layer 3: The Options
 --------------------
 
-Layer 3 services are optional from a functional point of view but valuable in deployments that integrate with the world around them.  They depend on Layer 1 and 2 services.
+Layer 3 services are optional from a functional point of view but valuable in deployments that integrate with the world around them.  They integrate with Layer 1 and 2 services and are dependent on them for operation.
 
+  * Web UI (Horizon)
   * Notification (Ceilometer)
 
 Layer 4: Turtles All The Way Up
 -------------------------------
 
-Layer 4 catches everything else with an OpenStack sticker on the box.  These are the rest of the XXaaS services. and everything that is purely user facing, i.e. No part of the OpenStack deployment itself depends on the service, it is only used by customers of cloud services.
+Layer 4 catches everything else with an OpenStack sticker on the box.  This includes the rest of the XXaaS services and everything that is purely user facing, i.e. the OpenStack deployment itself does not depend on the service, it is only used by customers of cloud services.
 
   * Orchestration (Heat)
-  * Database (Trove)
-  * Naming(?) (Moniker) - status?
+  * DBaaS (Trove) - status: to be integrated in Icehouse
+  * DNSaaS (Moniker) - status: applying for incubation
+  * MQaaS (Marconi) - status: in incubation
 
 Relationships
 =============
 
-Expressing how other projects/programs/ad-hoc stuff relaes to the Layers.
+What does all this mean?  Probably not much outside of the following projects.  Really it is just a framework for terminology to describe and categorize projects by their purely technical relationships.
 
 DevStack
 --------
 
-We have struggled to keep DevStack from overgrowing its playpen and contain the effects of everyone with a project to pitch wanting to be included.  We have been slowly re-factoring ``stack.sh`` to allow simple additional scripts to run at the end with the complete environment available to simplify adding the higher-layered projects.  
+DevStack has struggled to keep from overgrowing its playpen and contain the effects of everyone with a project to pitch wanting to get it included.  Some basic hooks have been added to ``stack.sh`` to allow projects not explicitly supported in the DevStack repo to be included in ``stack``/``unstack`` operations.  More hooks are coming in the near future as ``stack.sh`` continues to get streamlined and make the projects follow a common template for installation/configuration/startup/etc.
 
-My goal is to (soon!) have a layered DevStack that can independently build the layers of services so developers can focus on the layers they care about and still have the ability to build the whole she-bang.  The DevStack layer scripts will also be hookable to allow additional (non-Integrated? non-Incubated?) projects the ability to self-integrate into DevStack without being in the repo.
+DevStack's goal is to (soon!) clearly define the layers of services so developers can focus on the layers they care about and still have the ability to build the whole she-bang.  The DevStack layer scripts will also be hookable to allow additional (non-Integrated? non-Incubated?) projects the ability to self-integrate into DevStack without being in the repo.
+
+The layered approach will be to install and configure the layers in order, with the exception that Layer 1 startup will be delayed until Layer 2 configuration is complete to allow the configuration changes to take effect.
 
 Grenade
 -------
 
-Grenade only performs upgrade runs on Layer 1 and 2 services at the most, even then not including (yet?) all Layer 2 services.  Additional layers can only be added once a project is part of the stable release used as the Grenade ``base`` release.
+Grenade only performs upgrade runs on Layer 1 and 2 services at the most, even then not including (yet?) all Layer 2 services.  Additional layers can only be added once a project is part of the DevStack stable release used as the Grenade ``base`` release.
 
 OpenStackClient
 ---------------
 
 OSC is not an official OpenStack project or program despite its existence in the OpenStack namespace on GitHub as it began before those concepts were fully-formed.  So in some regards it is not bound to the rules and conventions that apply to the other projects.  However, to do otherwise would be foolish.
 
-OSC uses the Layers in determining the priorities for implementation of client commands.  It currently has implementations for Identity, Image, Volume and Compute APIs with plans for Object and Network to come.  It does have a simple plug-in capability that allows additional modules to be added independently wihtout being part of the OSC repo.
+OSC uses the Layers in determining the priorities for implementation of client commands.  It currently has implementations for Identity, Image, Volume and Compute APIs with plans for Object and Network to come.  It does have a simple plug-in capability that allows additional modules to be added independently without being part of the OSC repo.
 
 Epilogue
 ========
 
-[This has not been a Quinn-Martin Production.  Remember those?]
+[Quinn Martin Productions TV shows always had these, remember? Anyone?]
 
-The purpose here is to provide a nomenclature useful to discuss the hierarchy of projects as reflected in the projects above.  I'm including these three due to m direct involvement in them, this may also apply to Tempest or something else I am not aware of but I can not speak for those projects.
+Other projects may or may not pick up this terminology, it depends on if it turns out to be useful to them.  There is a technical hierarchy of projects even if not everyone wants to acknowledge it, and the need for avoiding the existing hot-button terms seems to be increasing.
+
+
+________
+
+.. [1] Stolen directly from `openstack.org`_
+
+.. _`openstack.org`: http://www.openstack.org/
