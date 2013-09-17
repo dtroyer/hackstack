@@ -109,8 +109,8 @@
 <pre class="literal-block">
 [[ &lt;group&gt; | &lt;filename&gt; ]]
 </pre>
-<p>where &lt;group&gt; is the usual DevStack project name (<tt class="docutils literal">nova</tt>, <tt class="docutils literal">cinder</tt>, etc) and &lt;filename&gt; is the config filename.  The filename is eval'ed in the <tt class="docutils literal">stack.sh</tt> context so all environment variables are available and may be used (see example below).</p>
-<p>The file is processed strictly in sequence.  Meta-sections may be specified more than once, if any settings are duplicated the last to appear in the file will be used:</p>
+<p>where &lt;group&gt; is the usual DevStack project name (<tt class="docutils literal">nova</tt>, <tt class="docutils literal">cinder</tt>, etc) and &lt;filename&gt; is the config filename.  The filename is eval'ed in the <tt class="docutils literal">stack.sh</tt> context so all environment variables are available and may be used (see example below).  Using the project config file variables in the header is strongly suggested (see example of NOVA_CONF below).</p>
+<p>The file is processed strictly in sequence; meta-sections may be specified more than once but if any settings are duplicated the last to appear in the file will be used:</p>
 <pre class="literal-block">
 [[nova|$NOVA_CONF]]
 [DEFAULT]
@@ -119,7 +119,7 @@ use_syslog = True
 [osapi_v3]
 enabled = False
 </pre>
-<p>A special meta-section <tt class="docutils literal">[[local:localrc]]</tt> is used to provide a default localrc file.  This allows all custom settings for DevStack to be contained in a single file:</p>
+<p>A specific meta-section <tt class="docutils literal">[[local:localrc]]</tt> is used to provide the default <tt class="docutils literal">localrc</tt> file.  This allows all custom settings for DevStack to be contained in a single file.  <tt class="docutils literal">localrc</tt> is not overwritten if it exists to preserve compatability:</p>
 <pre class="literal-block">
 [[local|localrc]]
 FIXED_RANGE=10.254.1.0/24

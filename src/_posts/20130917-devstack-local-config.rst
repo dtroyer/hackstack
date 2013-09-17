@@ -26,9 +26,9 @@ A new master local configuration file is supported (but like ``localrc`` is not 
 
     [[ <group> | <filename> ]]
 
-where <group> is the usual DevStack project name (``nova``, ``cinder``, etc) and <filename> is the config filename.  The filename is eval'ed in the ``stack.sh`` context so all environment variables are available and may be used (see example below).
+where <group> is the usual DevStack project name (``nova``, ``cinder``, etc) and <filename> is the config filename.  The filename is eval'ed in the ``stack.sh`` context so all environment variables are available and may be used (see example below).  Using the project config file variables in the header is strongly suggested (see example of NOVA_CONF below).
 
-The file is processed strictly in sequence.  Meta-sections may be specified more than once, if any settings are duplicated the last to appear in the file will be used::
+The file is processed strictly in sequence; meta-sections may be specified more than once but if any settings are duplicated the last to appear in the file will be used::
 
     [[nova|$NOVA_CONF]]
     [DEFAULT]
@@ -37,7 +37,7 @@ The file is processed strictly in sequence.  Meta-sections may be specified more
     [osapi_v3]
     enabled = False
 
-A special meta-section ``[[local:localrc]]`` is used to provide a default localrc file.  This allows all custom settings for DevStack to be contained in a single file::
+A specific meta-section ``[[local:localrc]]`` is used to provide the default ``localrc`` file.  This allows all custom settings for DevStack to be contained in a single file.  ``localrc`` is not overwritten if it exists to preserve compatability::
 
     [[local|localrc]]
     FIXED_RANGE=10.254.1.0/24
