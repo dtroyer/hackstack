@@ -7,7 +7,7 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2013-09-17T17:00:03Z</updated>
+  <updated>2013-10-18T17:20:04Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
@@ -27,35 +27,44 @@
     <category scheme="http://hackstack.org/x/blog" term="devstack" />
     <summary type="html"><![CDATA[DevStack Local Config]]></summary>
     <content type="html" xml:base="http://hackstack.org/x/blog/2013/09/07/devstack-local-config"><![CDATA[<div class="document">
-<p>DevStack has long had an extremely simple mechanism to add arbitrary configuration entries to nova.con, <tt class="docutils literal">EXTRA_OPTS</tt>.  It was handy and even emulated in the Neutron configuration in a number of places.  However, it did not scale well: a new variable and expansion loop is required for each file/section combination.  And now the time has come for a replacement...</p>
+<p><em>[Updated 10 Oct 2013 to reflect the released state of ``local.conf``]</em></p>
+<p>DevStack has long had an extremely simple mechanism to add arbitrary configuration entries to <tt class="docutils literal">nova.conf</tt>, <tt class="docutils literal">EXTRA_OPTS</tt>.  It was handy and even duplicated in the Neutron configuration in a number of places.  However, it did not scale well: a new variable and expansion loop is required for each file/section combination.  And now the time has come for a replacement...</p>
 <div class="section" id="requirements">
 <h1>Requirements</h1>
 <blockquote>
 <ul class="simple">
-<li><tt class="docutils literal">localrc</tt> has served well in its capacity of the sole container of local configuration.  Being a single file makes it easy to track and share known working DevStack configurations.  Any new configuration scheme must at least attempt to preserve this property.</li>
-<li>In order to be able to set configuration attributes in arbitrary files and sections, those bits of information must be encoded in the new format.</li>
+<li><tt class="docutils literal">localrc</tt> has served well in its capacity of the sole container of local configuration.  Being a single file makes it easy to track and share known working DevStack configurations.  Any new configuration scheme must preserve this property.</li>
+<li>In order to be able to set attributes in arbitrary configuration files and sections, those bits of information must be encoded in the new format.</li>
 <li>There must be a mechanism to selectively merge the configuration values into their destination files rather than do them all at once.</li>
 <li>Reduce the number of configuration variables in general that are simply passed-through to project config files.  They are being set in localrc anyway, moving that to another section of local.conf is not a difficult transition.</li>
+<li>Backward-compatibility is a must; existing <tt class="docutils literal">localrc</tt> files must continue to work as expected.  In order to utilize any of the new capability, <tt class="docutils literal">localrc</tt> must be converted to the <tt class="docutils literal">local.conf</tt> <tt class="docutils literal">local</tt> section.</li>
 </ul>
 </blockquote>
 </div>
 <div class="section" id="solution">
 <h1>Solution</h1>
-<p>A new master local configuration file is supported (but like <tt class="docutils literal">localrc</tt> is not included in the DevStack repo) that all local configuration for DevStack, including the master copy of <tt class="docutils literal">localrc</tt>.  <tt class="docutils literal">local.conf</tt> is an extended-INI format that introduces a new meta-section header that contains the additional required information: a group name and destination configuration filename.  It has the form:</p>
+<p>Support has been added for a new master local configuration file <tt class="docutils literal">local.conf</tt> that, like <tt class="docutils literal">localrc</tt>, resides in the root DevStack directory and is not included in the DevStack repo. <tt class="docutils literal">local.conf</tt> contains all local configuration for DevStack, including a direct replacement for <tt class="docutils literal">localrc</tt>.  It is an extended-INI format that introduces a new meta-section header containing the additional information required: a phase name and destination configuration filename.  It has the form:</p>
 <pre class="literal-block">
-[[ &lt;group&gt; | &lt;filename&gt; ]]
+[[ &lt;phase&gt; | &lt;filename&gt; ]]
 </pre>
-<p>where &lt;group&gt; is the usual DevStack project name (<tt class="docutils literal">nova</tt>, <tt class="docutils literal">cinder</tt>, etc) and &lt;filename&gt; is the config filename.  The filename is eval'ed in the <tt class="docutils literal">stack.sh</tt> context so all environment variables are available and may be used (see example below).  Using the project config file variables in the header is strongly suggested (see example of NOVA_CONF below).</p>
-<p>The file is processed strictly in sequence; meta-sections may be specified more than once but if any settings are duplicated the last to appear in the file will be used:</p>
-<pre class="literal-block">
-[[nova|$NOVA_CONF]]
+<p>where &lt;phase&gt; is one of a set of phase names defined below by <tt class="docutils literal">stack.sh</tt> and &lt;filename&gt; is the configuration filename.  The filename is eval'ed in the <tt class="docutils literal">stack.sh</tt> context so all environment variables are available and may be used (see example below).  Using the configuration variables from the project library scripts (e.g. <tt class="docutils literal">lib/nova</tt>) in the header is strongly suggested (see example of <tt class="docutils literal">NOVA_CONF</tt> below).</p>
+<p>Configuration files specifying a path that does not exist are skipped.  This allows services to be disabled and still have configuration files present in <tt class="docutils literal">local.conf</tt>.  For example, if Nova is not enabled and <tt class="docutils literal">/etc/nova</tt> does not exist, attempts to set a value in <tt class="docutils literal">/etc/nova/nova.conf</tt> will be skipped.  If <tt class="docutils literal">/etc/nova</tt> does exist, <tt class="docutils literal">nova.conf</tt> will be created if it does not exist.  This should be mostly harmless.</p>
+<p>The defined phases are:</p>
+<ul class="simple">
+<li><strong>local</strong> - extracts the <tt class="docutils literal">localrc</tt> section from <tt class="docutils literal">local.conf</tt> before <tt class="docutils literal">stackrc</tt> is sourced</li>
+<li><strong>post-config</strong> - runs after the <a class="reference external" href="/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service/">layer 2 services</a> are configured and before they are started</li>
+<li><strong>extra</strong> - runs after services are started and before any files in <tt class="docutils literal">extra.d</tt> are executed</li>
+</ul>
+<p><tt class="docutils literal">local.conf</tt> is processed strictly in sequence; meta-sections may be specified more than once but if any settings are duplicated the last to appear in the file will survive.</p>
+<p>The <tt class="docutils literal"><span class="pre">post-config</span></tt> phase is where most of the configuration-setting activity takes place.  In the following example, syslog and the Compute v3 API are enabled.  Note the use of <tt class="docutils literal">$NOVA_CONF</tt> to properly locate <tt class="docutils literal">nova.conf</tt>.</p>
+<blockquote>
+<p>[[post-config|$NOVA_CONF]]
 [DEFAULT]
-use_syslog = True
-
-[osapi_v3]
-enabled = False
-</pre>
-<p>A specific meta-section <tt class="docutils literal">[[local:localrc]]</tt> is used to provide the default <tt class="docutils literal">localrc</tt> file.  This allows all custom settings for DevStack to be contained in a single file.  <tt class="docutils literal">localrc</tt> is not overwritten if it exists to preserve compatability:</p>
+use_syslog = True</p>
+<p>[osapi_v3]
+enabled = False</p>
+</blockquote>
+<p>A special meta-section <tt class="docutils literal">[[local|localrc]]</tt> is used to replace the function of the old <tt class="docutils literal">localrc</tt> file.  This section is written to <tt class="docutils literal">.localrc.auto</tt> if <tt class="docutils literal">locarc</tt> does not exist; if it does exist <tt class="docutils literal">localrc</tt> is not overwritten to preserve compatability:</p>
 <pre class="literal-block">
 [[local|localrc]]
 FIXED_RANGE=10.254.1.0/24
@@ -65,7 +74,7 @@ LOGFILE=$DEST/logs/stack.sh.log
 </div>
 <div class="section" id="implementation">
 <h1>Implementation</h1>
-<p>Four new functions were added to parse and merge <tt class="docutils literal">local.conf</tt> into the existing INI-style config files.  The base <tt class="docutils literal">functions</tt> file is getting way too large so these functions are in <tt class="docutils literal">lib/config</tt> which will only contain functions related to config file manipulation.  There shall also be no side-effects from any of these functions.  The existing <tt class="docutils literal">iniXXX()</tt> functions may also eventually move here.</p>
+<p>Four new functions were added to parse and merge <tt class="docutils literal">local.conf</tt> into existing INI-style config files.  The base <tt class="docutils literal">functions</tt> file is getting way too large so these functions are in <tt class="docutils literal">lib/config</tt> which will contain functions related to config file manipulation.  The existing <tt class="docutils literal">iniXXX()</tt> functions may also eventually move here.  There shall be no side-effects or global dependencies from any of the functions in <tt class="docutils literal">lib/config</tt>.</p>
 <blockquote>
 <ul class="simple">
 <li><tt class="docutils literal">get_meta_section()</tt> - Returns an INI fragment for a specific group/filename combination</li>
@@ -76,11 +85,12 @@ LOGFILE=$DEST/logs/stack.sh.log
 </blockquote>
 <p>The merge is performed after the <tt class="docutils literal">install_XXX()</tt> and <tt class="docutils literal">configure_XXX()</tt> functions for all layer 1 and 2 projects are complete and before any services are started.</p>
 </div>
-<div class="section" id="use-it-or-lose-it">
-<h1>Use It Or Lose It</h1>
-<p>The list of existing variables that will be deprecated in favor of using <tt class="docutils literal">local.conf</tt> has not been completed yet but includes <tt class="docutils literal">EXTRA_OPTS</tt> and a handful of <tt class="docutils literal">Q_XXX_XXX_OPTS</tt> variables in Neutron.  These are listed at the end of <tt class="docutils literal">stack.sh</tt> runs as deprecated and will be removed sometime in the Icehouse development cycle after DevStack's stable/havana branch is in place and Grenade's Grizzly-&gt;Havana upgrade is operational.</p>
+<div class="section" id="the-deprecated-variables">
+<h1>The Deprecated Variables</h1>
+<p>The list of existing variables that will be deprecated in favor of using <tt class="docutils literal">local.conf</tt> currently includes <tt class="docutils literal">EXTRA_OPTS</tt> and a handful of <tt class="docutils literal">Q_XXX_XXX_OPTS</tt> variables in Neutron.  These are listed at the end of <tt class="docutils literal">stack.sh</tt> runs as deprecated and will be removed sometime in the Icehouse development cycle after DevStack's stable/havana branch is in place and Grenade's Grizzly-&gt;Havana upgrade is operational.</p>
+</div>
 <div class="section" id="examples">
-<h2>Examples</h2>
+<h1>Examples</h1>
 <ul>
 <li><p class="first">Convert EXTRA_OPTS from:</p>
 <pre class="literal-block">
@@ -88,28 +98,40 @@ EXTRA_OPTS=api_rate_limit=False
 
 to
 
-[[nova|$NOVA_CONF]]
+[[post-config|$NOVA_CONF]]
 [DEFAULT]
 api_rate_limit = False
 </pre>
 </li>
+<li><p class="first">Convert multiple EXTRA_OPTS values from:</p>
+<pre class="literal-block">
+EXTRA_OPTS=(api_rate_limit=False default_log_levels=sqlalchemy=WARN)
+
+to
+
+[[post-config|$NOVA_CONF]]
+[DEFAULT]
+api_rate_limit = False
+default_log_levels = sqlalchemy=WARN
+</pre>
+</li>
 <li><p class="first">Eliminate a Cinder pass-through (<tt class="docutils literal">CINDER_PERIODIC_INTERVAL</tt>):</p>
 <pre class="literal-block">
-[[cinder|$CINDER_CONF]]
+[[post-config|$CINDER_CONF]]
 [DEFAULT]
 periodic_interval = 60
 </pre>
 </li>
 <li><p class="first">Change a setting that has no variable:</p>
 <pre class="literal-block">
-[[cinder|$CINDER_CONF]]
+[[post-config|$CINDER_CONF]]
 [DEFAULT]
 iscsi_helper = new-tgtadm
 </pre>
 </li>
 <li><p class="first">Basic complete config:</p>
 <pre class="literal-block">
-[[nova|$NOVA_CONF]]
+[[post-config|$NOVA_CONF]]
 [DEFAULT]
 api_rate_limit = False
 
@@ -119,7 +141,7 @@ host_username = root
 host_password = deepdarkunknownsecret
 
 
-[[cinder|$CINDER_CONF]]
+[[post-config|$CINDER_CONF]]
 [DEFAULT]
 periodic_interval = 60
 
@@ -140,7 +162,6 @@ RABBIT_PASSWORD=$ADMIN_PASSWORD
 </pre>
 </li>
 </ul>
-</div>
 </div>
 </div>
 ]]></content>
@@ -629,6 +650,7 @@ Optional arguments:
     <category scheme="http://hackstack.org/x/blog" term="centos" />
     <summary type="html"><![CDATA[A CentOS 6 Image for OpenStack]]></summary>
     <content type="html" xml:base="http://hackstack.org/x/blog/2013/04/25/a-centos-6-image-for-openstack"><![CDATA[<div class="document">
+<p><em>[Updated 01Oct2013 to correct spelling and command formatting]</em></p>
 <p>This is the next installment in the never-ending series of OpenStack image builds.  Today's
 target: CentOS</p>
 <div class="section" id="image-characteristics">
@@ -710,7 +732,9 @@ sudo virt-sparsify --convert qcow2 --compress /var/lib/libvirt/images/centos-6-x
 </li>
 <li><p class="first">Kick it into the cloud image repository:</p>
 <pre class="literal-block">
-glance image-create --name &quot;CentOS 6 x86_64&quot; --disk-format qcow2 --container-format bare --is-public false --file centos-6-x86_64.qcow2
+glance image-create --name &quot;CentOS 6 x86_64&quot; \
+    --disk-format qcow2 --container-format bare \
+    --is-public false --file centos-6-x86_64.qcow2
 </pre>
 </li>
 </ul>
@@ -843,8 +867,8 @@ that provided an energetic open to the keynotes.  Stay tuned for some deeper tho
     <category scheme="http://hackstack.org/x/blog" term="fedora" />
     <summary type="html"><![CDATA[A Fedora 18 Image for OpenStack]]></summary>
     <content type="html" xml:base="http://hackstack.org/x/blog/2013/01/25/a-fedora-18-image-for-openstack"><![CDATA[<div class="document">
-<p>Building images to boot in a cloud can be a lot of fun, especially since now two clouds are built alike.
-Now fortunately the differences are mostly minor, but some of the minor differences can be fatal. Ugh.</p>
+<p><em>[Updated 01Oct2013 to correct spelling and command formatting]</em></p>
+<p>Building images to boot in a cloud can be a lot of fun, especially since no two clouds are built alike.  Now fortunately the differences are mostly minor, but some of the minor differences can be fatal. Ugh.</p>
 <div class="section" id="good-news">
 <h1>Good News</h1>
 <p>The recent release of Fedora 18 brought with it a pleasant surprise, the build of some images suitable for loading into your favorite cloud, ala Ubuntu's UEC images.
@@ -863,15 +887,20 @@ The <a class="reference external" href="http://lists.fedoraproject.org/pipermail
 sudo yum install -y appliance-tools.noarch
 wget -N http://git.fedorahosted.org/cgit/cloud-kickstarts.git/plain/generic/fedora-18-x86_64-cloud.ks
 # make kickstart changes
-sudo appliance-creator --config fedora-18-x86_64-cloud-dt1.ks --name fedora18-x86_64-cloud-dt1 --format raw
+sudo appliance-creator --config fedora-18-x86_64-cloud-dt1.ks \
+  --name fedora18-x86_64-cloud-dt1 --format raw
 </pre>
 <p>The conversion to qcow2 is done separately as <tt class="docutils literal"><span class="pre">appliance-creator</span></tt> doesn't compress qcow2 images:</p>
 <pre class="literal-block">
-qemu-img convert -c -f raw -O qcow2 fedora-18-x86_64-cloud-dt1.raw fedora-18-x86_64-cloud-dt1.qcow2
+qemu-img convert -c -f raw -O qcow2 \
+  fedora-18-x86_64-cloud-dt1.raw \
+  fedora-18-x86_64-cloud-dt1.qcow2
 </pre>
 <p>Kick it into the cloud image repository:</p>
 <pre class="literal-block">
-glance image-create --name &quot;Fedora 18 x86_64 cloudimg&quot; --disk-format qcow2 --container-format bare --is-public false --file fedora-18-x86_64-cloud-dt1/fedora-18-x86_64-cloud-dt1-sda.qcow2
+glance image-create --name &quot;Fedora 18 x86_64 cloudimg&quot; \
+  --disk-format qcow2 --container-format bare \
+  --is-public false --file fedora-18-x86_64-cloud-dt1-sda.qcow2
 </pre>
 <div class="section" id="kickstart-details">
 <h2>Kickstart Details</h2>
@@ -892,7 +921,7 @@ Append to the bootloader:</p>
 -bootloader --timeout=0 --location=mbr --driveorder=sda
 +bootloader --timeout=0 --location=mbr --driveorder=sda --append=&quot;console=tty console=ttyS0&quot;
 </pre>
-<p>Configuring Grub takes a little more effort. The original kickstart only worked in the chroot-ed %post but <tt class="docutils literal"><span class="pre">grub2-mkconfig</span></tt> failed because /dev was not complete.
+<p>Configuring Grub takes a little more effort. The original kickstart only worked in the chroot-ed <tt class="docutils literal">%post</tt> but <tt class="docutils literal"><span class="pre">grub2-mkconfig</span></tt> failed because /dev was not complete.
 By adding a <tt class="docutils literal">%post <span class="pre">--nochroot</span></tt> section /dev can be bind-mounted into the chroot so <tt class="docutils literal"><span class="pre">grub2-mkconfig</span></tt> is happy.
 I probably went a little overboard in setting up the proper serial console arguments to the kernel command line but the following worked:</p>
 <pre class="literal-block">

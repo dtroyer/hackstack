@@ -90,7 +90,7 @@
     </header>
     <div class="post_prose">
       
-  DevStack has long had an extremely simple mechanism to add arbitrary configuration entries to nova.con, EXTRA_OPTS. It was handy and even emulated in the Neutron configuration in a number of places. However, it did not scale well: a new variable and expansion loop is required for each file/section combination. And now the time has come for a replacement... Requirements localrc has served well in its capacity of the sole container of local configuration. Being a single file makes it easy to track and share known working DevStack configurations. Any new configuration scheme must at least attempt to preserve this property.
+  [Updated 10 Oct 2013 to reflect the released state of ``local.conf``] DevStack has long had an extremely simple mechanism to add arbitrary configuration entries to nova.conf, EXTRA_OPTS. It was handy and even duplicated in the Neutron configuration in a number of places. However, it did not scale well: a new variable and expansion loop is required for each file/section combination. And now the time has come for a replacement... Requirements localrc has served well in its capacity of the sole container of local configuration. Being a single file makes it easy to track and share known working DevStack configurations. Any
 
     </div>
   </div>
@@ -186,7 +186,7 @@
     </header>
     <div class="post_prose">
       
-  This is the next installment in the never-ending series of OpenStack image builds. Today's target: CentOS Image Characteristics The usual suspects are present: minimal package install serial console support timezone is Etc/UTC hostname set to instance name a single partition with root filesystem, no swap grow root filesystem to device size enable EPEL (install epel-release) enable could-init repo to get 0.7.1 A few things are still lacking: selinux is in permissive mode, make enforcing strengthen default firewall Build Tools like Oz are a good idea in theory but in practice seem to be quite picky about the environment they will
+  [Updated 01Oct2013 to correct spelling and command formatting] This is the next installment in the never-ending series of OpenStack image builds. Today's target: CentOS Image Characteristics The usual suspects are present: minimal package install serial console support timezone is Etc/UTC hostname set to instance name a single partition with root filesystem, no swap grow root filesystem to device size enable EPEL (install epel-release) enable could-init repo to get 0.7.1 A few things are still lacking: selinux is in permissive mode, make enforcing strengthen default firewall Build Tools like Oz are a good idea in theory but in practice seem to
 
     </div>
   </div>

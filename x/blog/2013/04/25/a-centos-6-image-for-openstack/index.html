@@ -91,6 +91,7 @@
     <div class="post_prose">
       
 <div class="document">
+<p><em>[Updated 01Oct2013 to correct spelling and command formatting]</em></p>
 <p>This is the next installment in the never-ending series of OpenStack image builds.  Today's
 target: CentOS</p>
 <div class="section" id="image-characteristics">
@@ -172,7 +173,9 @@ sudo virt-sparsify --convert qcow2 --compress /var/lib/libvirt/images/centos-6-x
 </li>
 <li><p class="first">Kick it into the cloud image repository:</p>
 <pre class="literal-block">
-glance image-create --name &quot;CentOS 6 x86_64&quot; --disk-format qcow2 --container-format bare --is-public false --file centos-6-x86_64.qcow2
+glance image-create --name &quot;CentOS 6 x86_64&quot; \
+    --disk-format qcow2 --container-format bare \
+    --is-public false --file centos-6-x86_64.qcow2
 </pre>
 </li>
 </ul>
