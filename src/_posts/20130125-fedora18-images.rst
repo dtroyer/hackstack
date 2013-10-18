@@ -6,8 +6,9 @@ categories: Fedora, OpenStack
 tags: fedora images
 xdraft: true
 ---
-Building images to boot in a cloud can be a lot of fun, especially since now two clouds are built alike.
-Now fortunately the differences are mostly minor, but some of the minor differences can be fatal. Ugh.
+*[Updated 01Oct2013 to correct spelling and command formatting]*
+
+Building images to boot in a cloud can be a lot of fun, especially since no two clouds are built alike.  Now fortunately the differences are mostly minor, but some of the minor differences can be fatal. Ugh.
 
 Good News
 =========
@@ -35,15 +36,20 @@ And here is what it took to get ``appliance-creator`` running on a fresh Fedora 
     sudo yum install -y appliance-tools.noarch
     wget -N http://git.fedorahosted.org/cgit/cloud-kickstarts.git/plain/generic/fedora-18-x86_64-cloud.ks
     # make kickstart changes
-    sudo appliance-creator --config fedora-18-x86_64-cloud-dt1.ks --name fedora18-x86_64-cloud-dt1 --format raw
+    sudo appliance-creator --config fedora-18-x86_64-cloud-dt1.ks \
+      --name fedora18-x86_64-cloud-dt1 --format raw
 
 The conversion to qcow2 is done separately as ``appliance-creator`` doesn't compress qcow2 images::
 
-    qemu-img convert -c -f raw -O qcow2 fedora-18-x86_64-cloud-dt1.raw fedora-18-x86_64-cloud-dt1.qcow2
+    qemu-img convert -c -f raw -O qcow2 \
+      fedora-18-x86_64-cloud-dt1.raw \
+      fedora-18-x86_64-cloud-dt1.qcow2
 
 Kick it into the cloud image repository::
 
-    glance image-create --name "Fedora 18 x86_64 cloudimg" --disk-format qcow2 --container-format bare --is-public false --file fedora-18-x86_64-cloud-dt1/fedora-18-x86_64-cloud-dt1-sda.qcow2
+    glance image-create --name "Fedora 18 x86_64 cloudimg" \
+      --disk-format qcow2 --container-format bare \
+      --is-public false --file fedora-18-x86_64-cloud-dt1-sda.qcow2
 
 Kickstart Details
 -----------------
@@ -67,7 +73,7 @@ Append to the bootloader::
     -bootloader --timeout=0 --location=mbr --driveorder=sda
     +bootloader --timeout=0 --location=mbr --driveorder=sda --append="console=tty console=ttyS0"
 
-Configuring Grub takes a little more effort. The original kickstart only worked in the chroot-ed %post but ``grub2-mkconfig`` failed because /dev was not complete.
+Configuring Grub takes a little more effort. The original kickstart only worked in the chroot-ed ``%post`` but ``grub2-mkconfig`` failed because /dev was not complete.
 By adding a ``%post --nochroot`` section /dev can be bind-mounted into the chroot so ``grub2-mkconfig`` is happy.
 I probably went a little overboard in setting up the proper serial console arguments to the kernel command line but the following worked::
 

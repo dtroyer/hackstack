@@ -5,6 +5,7 @@ date: 2013-04-25 04:25:00
 categories: CentOS, RHEL, OpenStack
 tags: centos rhel images
 ---
+*[Updated 01Oct2013 to correct spelling and command formatting]*
 
 This is the next installment in the never-ending series of OpenStack image builds.  Today's
 target: CentOS
@@ -84,7 +85,9 @@ Let's get started.
 
 * Kick it into the cloud image repository::
 
-    glance image-create --name "CentOS 6 x86_64" --disk-format qcow2 --container-format bare --is-public false --file centos-6-x86_64.qcow2
+    glance image-create --name "CentOS 6 x86_64" \
+        --disk-format qcow2 --container-format bare \
+        --is-public false --file centos-6-x86_64.qcow2
 
 
 .. save for selinux enforcing
