@@ -1,0 +1,24 @@
+---
+title: OpenStack Needs A Proven Electoral Model
+author: dtroyer
+date: 2013-10-08 10:08:00
+categories: OpenStack
+tags: steam
+draft: true
+---
+
+Sigh.  Here we go again with the debates on governance models and election stuffing and ballot buying.  Rather than break new ground (the 'core' discussion is already doing that) maybe we can adopt a proven model for determining OpenStack leadership.
+
+* bi-cameral representation:
+
+  * the technical leadership is determined by direct (technical-)community-wide election of individuals
+
+  * the political leadership is determined by foundation membership election
+
+    * the foundation membership is divided into districts along natural boundaries such as employment affiliation as already defined by the bylaws
+
+    * the electorate within each district votes on their representation
+
+    * board seats directly purchased count toward the district's representation; i.e. a platinum member has purchased a seat and is guaranteed representation
+
+ok, carry on...    

@@ -63,7 +63,7 @@
       </li>
       <li>
         
-        <a href="/x/blog" class="">Blog</a>
+        <a href="/x/blog" class="selected">Blog</a>
       </li>
       <li>
         
@@ -75,22 +75,47 @@
 
           <div id="prose_block" class="grid_11">
             
-  
+
 
 
 
 <article>
   <div class="blog_post">
     <header>
-      <div id="openstack-clients-on-windows"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2013/06/20/openstack-clients-on-windows/" rel="bookmark" title="Permanent Link to OpenStack Clients on Windows">OpenStack Clients on Windows</a></h1>
-      <p><small><span class="blog_post_date">June 20, 2013 at 06:20 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a></span>
+      <div id="cloud-image-updates"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2013/10/21/cloud-image-updates/" rel="bookmark" title="Permanent Link to Cloud Image Updates">Cloud Image Updates</a></h1>
+      <p><small><span class="blog_post_date">October 21, 2013 at 10:21 AM</span> | categories: 
+        <span class="blog_post_categories">openstack, fedora, ubuntu</span>
       </small></p>
     </header>
     <div class="post_prose">
       
-  OpenStack command line clients are a pile of Python modules and dependencies and can be a real joy to install. On Linux there are often vendor-maintained packages available to simplify the task and capture all of the dependencies, while on Windows it is a completely different story as no version of Windows includes any version of Python out of the box. There are three layers to the Python stack to get the OpenStack clients (or any Python app really) installed and working on Windows: a Python interpreter/runtime, the Python modules that provide an interface to PyPI, and the client libraries
+<div class="document">
+<p>Update!  Update!  Update!</p>
+<p>A while back I started documenting the image build process I've been using for building OpenStack cloud images:</p>
+<ul class="simple">
+<li><a class="reference external" href="/x/blog/2012/01/25/a-fedora-18-image-for-openstack/">A Fedora 18 Image for OpenStack</a></li>
+<li><a class="reference external" href="/x/blog/2013/04/25/a-centos-6-image-for-openstack/">A CentOS 6 Image for OpenStack</a></li>
+</ul>
+<p>Note that Ubuntu is missing from that list, due mostly to their published UEC images being generally good enough as a starting point.  Fedora 19 finally has a similar image published, let's see how different it is and if it is useful for my purposed...</p>
+<div class="section" id="fedora-19">
+<h1>Fedora 19</h1>
+<p>Grab the new F19 cloud image; the QCOW2 version is ready to go!  <a class="reference external" href="http://download.fedoraproject.org/pub/fedora/linux/releases/19/Images/x86_64/Fedora-x86_64-19-20130627-sda.qcow2">http://download.fedoraproject.org/pub/fedora/linux/releases/19/Images/x86_64/Fedora-x86_64-19-20130627-sda.qcow2</a>.</p>
+<p>It's surprisingly close!  There aren't any standout differences save for the inclusion of sendmail and procmail, which I've specifically removed in my kickstart.</p>
+</div>
+<div class="section" id="centos-6">
+<h1>CentOS 6</h1>
+</div>
+<div class="section" id="ubuntu-13-04">
+<h1>Ubuntu 13.04</h1>
+<p>Just for completeness I'll list what I do:</p>
+<ul class="simple">
+<li>install rng-tools
+useful on clouds that provide a usable virtualized /dev/random in their hypervisor</li>
+</ul>
+</div>
+</div>
+
 
     </div>
   </div>
@@ -98,31 +123,6 @@
 
 
 
-  <hr class="interblog" />
-  
-
-
-
-<article>
-  <div class="blog_post">
-    <header>
-      <div id="openstack-clients"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2013/06/20/openstack-clients/" rel="bookmark" title="Permanent Link to OpenStack Clients">OpenStack Clients</a></h1>
-      <p><small><span class="blog_post_date">June 20, 2013 at 06:20 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a></span>
-      </small></p>
-    </header>
-    <div class="post_prose">
-      
-  OpenStack Client Projects The developers of OpenStack maintain a series of library projects which are the Python interfaces to the OpenStack REST APIs and also include command-line clients: python-ceilometerclient python-cinderclient python-glanceclient python-heatclient python-keystoneclient python-novaclient python-quantumclient python-swiftclient Each project is managed through the same development process as the integrated OpenStack projects so you can expect to find the latest source on GitHub. The master branch in the project repositories should theoretically never be 'broken,' but realistically they are not tested between releases with the same vigor as the core projects. The bug and feature tracking happens on Launchpad; each of the
-
-    </div>
-  </div>
-</article>
-
-
-
-  <hr class="interblog" />
 
           </div>
           <div id="sidebar" class="grid_1">

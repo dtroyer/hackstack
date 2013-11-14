@@ -19,7 +19,7 @@ OpenStackClient.
 DevStack
 ========
 
-This is the first summit where DevStack as program status and thus its own
+This is the first summit where DevStack has program status and thus its own
 track of two back-to-back sessions.  I hear russellb is jealous...
 
 New Bits
