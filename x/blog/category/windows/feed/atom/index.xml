@@ -7,7 +7,7 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2013-11-14T19:04:59Z</updated>
+  <updated>2014-01-14T17:07:33Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
@@ -164,8 +164,7 @@ pip install python-keystoneclient python-novaclient python-cinderclient \
 <p>Linux distributions usually include Python installed by default.  While all recent releases are Python 2.6 or 2.7, some long-term-support distributions may still contain Python 2.5 or older and require a newer Python runtime.  For example, <a href="https://wiki.openstack.org/wiki/NovaInstall/CentOSNotes#CentOS_5.2F_RHEL_5_.2F_Oracle_Enterprise_Linux_5">the OpenStack wiki</a> documents installing Nova on RHEL 5 and friends.  From that document the steps to enable the EPEL repo and install Python 2.6 are sufficient to support installing the client libraries.</p>
 <h4 id="os-x-installation">OS X Installation</h4>
 <p>All OS X releases since 10.6 (Snow Leopard) include a supported Python runtime although it is usually a few minor versions behind the current release.  Alternatives are available to install current versions of Python but are out of scope here.</p>
-<p>OS X 10.5 (Leopard) includes Python 2.5.1 and needs to have particular considerations addressed in order to update it.  See the <a href="http://wiki.python.org/moin/MacPython/Leopard">Leopard wiki page</a> for more information.<br />
-</p>
+<p>OS X 10.5 (Leopard) includes Python 2.5.1 and needs to have particular considerations addressed in order to update it.  See the <a href="http://wiki.python.org/moin/MacPython/Leopard">Leopard wiki page</a> for more information.  </p>
 <h4 id="windows-installation">Windows Installation</h4>
 <p>Windows has a couple of options for Python installations.  Each Python release includes official Python binaries for both 32-bit and 64-bit Windows. The python.org <a href="http://www.python.org/getit/windows/">Windows releases</a> page lists some of the other Python runtime packages that are available.  One additional that will be familiar to UNIX users living in a Windows world is the <a href="http://www.cygwin.com/">Cygwin</a> Python port. Once Cygwin's Python interpreter is installed the rest is very similar to the steps here.</p>
 <p>This guide will use the official 32 bit 2.7.5 runtime on Windows 7 as the example installation but it also works on XP and Vista.  The Python interpreter can be installed anywhere, the default folder is <code>C:\Python27</code>.  If you change it remember to make the corresponding change in the rest of this guide.  Also, be aware that putting it in certain places, such as <code>Program files</code>, will cause Windows UAC in Vista and newer to require an administrative token to perform module installs.  While not impossible to deal with, this is currently beyond the scope of this guide.</p>

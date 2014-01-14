@@ -10,7 +10,7 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Thu, 14 Nov 2013 19:04:59 GMT</pubDate>
+    <pubDate>Tue, 14 Jan 2014 17:07:33 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -33,7 +33,7 @@ the expo hall and seeing some familiar vendor faces.</p>
 OpenStackClient.</p>
 <div class="section" id="devstack">
 <h1>DevStack</h1>
-<p>This is the first summit where DevStack as program status and thus its own
+<p>This is the first summit where DevStack has program status and thus its own
 track of two back-to-back sessions.  I hear russellb is jealous...</p>
 <div class="section" id="new-bits">
 <h2>New Bits</h2>

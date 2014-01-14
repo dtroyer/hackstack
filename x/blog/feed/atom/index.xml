@@ -7,12 +7,133 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2013-11-14T19:04:59Z</updated>
+  <updated>2014-01-14T17:07:33Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
   <id>http://hackstack.org/x/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[OpenStackClient Plugins]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2014/01/14/openstackclient-plugins" />
+    <id>http://hackstack.org/x/blog/2014/01/14/openstackclient-plugins</id>
+    <updated>2014-01-14T01:14:00Z</updated>
+    <published>2014-01-14T01:14:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstackclient" />
+    <summary type="html"><![CDATA[OpenStackClient Plugins]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2014/01/14/openstackclient-plugins"><![CDATA[<div class="document">
+<p>OpenStackClient (OSC) has been in my project queue for almost two years now.  It was Feb 2012 that I stayed up all night mucking about with something called DrStack with the goal of combining the then four OpenStack CLI binaries into a single command set.</p>
+<p>OSC is the second major realization of that goal having a greatly improved internal command architecture courtesy of dhellmann's Cliff framework.  It also somehow got an informal blessing without becoming an official project, a status that it still carries.  We have a roadmap of where to go with that but that is a topic for another day.</p>
+<p>Today we talk plugins!</p>
+<p>Yes, I know, that is an overused term in OpenStack, where everything seems to be a plugin or an extension or optional in some way.  But I don't have anything better at the moment so plugin it is.</p>
+<div class="section" id="openstackclient-plugins">
+<h1>OpenStackClient Plugins</h1>
+<p>OSC development has been a series of quiet periods interspersed with bouts of furious activity.  Fast-forward to last month (Dec 2013) and the introduction of a viable command plugin system for OSC first released in version 0.3.0.  The OSC side is documented in the <a class="reference external" href="http://docs.openstack.org/developer/python-openstackclient/plugins.html">OpenStackClient Developer Documentation</a>.</p>
+<div class="section" id="goals">
+<h2>Goals</h2>
+<p>The previous OSC plugin mechanism was too naive and did not allow for adding client objects to the ClientManager. We needed to:</p>
+<ul class="simple">
+<li>define an initialization to add global options for API versions and whatnot (parser phase)</li>
+<li>define an initialization function(s) to select an API version add an appropriate client to the ClientManager (client phase)</li>
+</ul>
+</div>
+<div class="section" id="implementation">
+<h2>Implementation</h2>
+<p>As an exercise to validate the completeness of the plugin mechanism, the Compute, Image and Volume API commands were converted to initialize via the plugin mechanism.  The only difference from an external plugin is that they are included in the OSC repo.</p>
+<p>The new plugin mechanism builds on the use of <a class="reference external" href="https://pypi.python.org/pypi/cliff‎">Cliff</a> to dynamically load the command classes and modifies the existing OSC <tt class="docutils literal">ClientManager</tt> to define the client objects to be instantiated at run-time.  This allows additional clients to insert themselves into the <tt class="docutils literal">ClientManager</tt>.</p>
+<p>OSC looks for plugins that register their client class under <tt class="docutils literal">openstack.cli.extension</tt>.  The key is the API name and must be unique for all plugins, the value is the module name that contains the public initialization functions.</p>
+<p>The initialization module is typically names <tt class="docutils literal"><span class="pre">&lt;project-name&gt;.client</span></tt>, although there is no technical requirement to follow this convention.  It was adopted as that was already the name of the modules used by the built-in API classes.</p>
+<p>The initialization module must implement a set of constants that are used to identify the plugin and two functions that instantiate the actual API client class and define any global options required.</p>
+</div>
+</div>
+<div class="section" id="python-oscplugin">
+<h1>python-oscplugin</h1>
+<p>Since most actual OSC plugins are not going to be part of the repo, we created a sample plugin in a stand-alone project to demonstrate the bits required.  <a class="reference external" href="https://github.com/dtroyer/python-oscplugin">python-oscplugin</a> began life as a <a class="reference external" href="https://github.com/openstack-dev/cookiecutter">cookiecutter</a> project (worth using to bootstrap a project in the OpenStack-way) and expanded to become a simple demonstration of an OSC command plugin.</p>
+<p>So let's walk through the sample plugin to see how this works...</p>
+<div class="section" id="plugin-initialization">
+<h2>Plugin Initialization</h2>
+<p>It all starts with the initialization module, here named <tt class="docutils literal">oscplugin.plugin</tt>, defining the rest of the identifiers used to locate plugin bits.  Naming this module is flexible, it just needs to be specified in the <tt class="docutils literal">openstack.cli.extension</tt> entry point group.</p>
+<ul class="simple">
+<li><tt class="docutils literal">API_NAME</tt> - A short string describing the API or command set name.  It is used in the entry point group name and is the key name in the <tt class="docutils literal">openstack.cli.extension</tt> group to identify the plugin.  Must be a valid Python identifier string.</li>
+<li><tt class="docutils literal">API_VERSION_OPTION</tt> - An optional name of the API version attribute used in the global command-line options to specify an API version.  It will be used in <tt class="docutils literal">build_option_parser()</tt> if setting an API version is required.  Must be a valid Python identifier string.</li>
+<li><tt class="docutils literal">API_VERSIONS</tt> - A dict mapping version strings to client class names.</li>
+</ul>
+<p>Two functions are required that perform the initialization work for the plugin.</p>
+<ul class="simple">
+<li><tt class="docutils literal">build_option_parser()</tt> - The top-level parser object is passed in and available to add plugin-specific options, usually an API version selector.</li>
+<li><tt class="docutils literal">make_client()</tt> - Instantiate the actual client object taking in to consideration any version that may be specified.  The mapping of version to client class is handled here.  Also, any authentication or service selection the specific client requires is passed in here.</li>
+</ul>
+</div>
+<div class="section" id="client-api">
+<h2>Client API</h2>
+<p><tt class="docutils literal"><span class="pre">python-oscplugin</span></tt> contains its own equivalent to a client API object.  In this case it is just a placeholder as the <tt class="docutils literal">plugin</tt> commands do not have an external client library.  For most API clients this is the actual client class, such as <tt class="docutils literal">glanceclient.v2.client.Client</tt> for the Image v2 API.</p>
+<p>There are cases where the API client class is insufficient for some reason and adaptations are required.  The Image v1 client is a good example.  The ImageManager class in <tt class="docutils literal">glanceclient</tt> does not have a <tt class="docutils literal">find()</tt> method so we implemented one in <tt class="docutils literal">openstackclient.image.client.Client_v1</tt> that uses <tt class="docutils literal">openstackclient.image.client.ImageManager_v1</tt> with added <tt class="docutils literal">find()</tt> and <tt class="docutils literal">findall()</tt> methods.</p>
+</div>
+<div class="section" id="commands">
+<h2>Commands</h2>
+<p>The commands implemented in <tt class="docutils literal"><span class="pre">python-oscplugin</span></tt> are in <tt class="docutils literal">oscplugin.v1.plugin</tt> and follow the basic pattern used by the other OSC command classes.  Again they are mostly placeholders here.</p>
+</div>
+<div class="section" id="tests">
+<h2>Tests</h2>
+<p>The structure of the tests also follows that of the existing OSC API commands.  They use <tt class="docutils literal">mock</tt> and fakes to perform unit tests on the command classes.</p>
+</div>
+<div class="section" id="project-stuff">
+<h2>Project Stuff</h2>
+<p>Ad <tt class="docutils literal"><span class="pre">python-oscplugin</span></tt> was created using <a class="reference external" href="https://github.com/openstack-dev/cookiecutter">cookiecutter</a> it includes the usual OpenStack features such as <tt class="docutils literal">pbr</tt> and friends.  The specific bits pertaining to an OSC plugin:</p>
+<ul>
+<li><p class="first"><tt class="docutils literal">setup.cfg</tt> - All of the plugin-specific content is in the <tt class="docutils literal">[entry_points]</tt> section:</p>
+<pre class="literal-block">
+[entry_points]
+openstack.cli.extension =
+    oscplugin = oscplugin.plugin
+
+openstack.oscplugin.v1 =
+    plugin_list = oscplugin.v1.plugin:ListPlugin
+    plugin_show = oscplugin.v1.plugin:ShowPlugin
+</pre>
+</li>
+</ul>
+<p>Note that OSC defines the group name as <tt class="docutils literal"><span class="pre">openstack.&lt;api-name&gt;.v&lt;version&gt;</span></tt>
+so the version should not contain the leading 'v' character.</p>
+<ul class="simple">
+<li><tt class="docutils literal">requirements.txt</tt> - We've added  <tt class="docutils literal">openstackclient</tt> as <tt class="docutils literal"><span class="pre">python-oscplugin</span></tt> is useless without it.  <tt class="docutils literal">keystoneclient</tt> is here too, while <tt class="docutils literal"><span class="pre">python-oscplugin</span></tt> does not require it, most OpenStack API clients will.  <tt class="docutils literal">cliff</tt> is also needed here.</li>
+<li><tt class="docutils literal"><span class="pre">test-requirements.txt</span></tt> - <tt class="docutils literal">mock</tt> is required for testing.</li>
+</ul>
+</div>
+<div class="section" id="a-note-about-versions">
+<h2>A Note About Versions</h2>
+<p>Internally OSC uses the convention <tt class="docutils literal">vXXX</tt> for version identifiers, where <tt class="docutils literal">XXX</tt> is a valid Python identifier in its own right (i.e., uses '_' rather than '.' internally).  OSC adds the leading 'v' so versions expressed in constant declarations should not include it.</p>
+</div>
+</div>
+<div class="section" id="eot">
+<h1>EOT</h1>
+<p>The plugin structure should allow any base install of OSC to be extended simply by installing the desired client package.  Af of right now there are no other clients that implement the plugin, but that will be changing soon.  Film at eleven...</p>
+</div>
+</div>
+]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[OpenStack Layers From Outer Space]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2014/01/09/openstack-layers-from-outer-space" />
+    <id>http://hackstack.org/x/blog/2014/01/09/openstack-layers-from-outer-space</id>
+    <updated>2014-01-09T01:09:00Z</updated>
+    <published>2014-01-09T01:09:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="layers" />
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <summary type="html"><![CDATA[OpenStack Layers From Outer Space]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2014/01/09/openstack-layers-from-outer-space"><![CDATA[<div class="document">
+<p>Back in (xxxx) I started talking about conceptually organizing the OpenStack services using a layered model almost but not totally unlike the OSI network stack.</p>
+</div>
+]]></content>
+  </entry>
   <entry>
     <author>
       <name>dtroyer</name>
@@ -37,7 +158,7 @@ the expo hall and seeing some familiar vendor faces.</p>
 OpenStackClient.</p>
 <div class="section" id="devstack">
 <h1>DevStack</h1>
-<p>This is the first summit where DevStack as program status and thus its own
+<p>This is the first summit where DevStack has program status and thus its own
 track of two back-to-back sessions.  I hear russellb is jealous...</p>
 <div class="section" id="new-bits">
 <h2>New Bits</h2>
@@ -626,8 +747,7 @@ pip install python-keystoneclient python-novaclient python-cinderclient \
 <p>Linux distributions usually include Python installed by default.  While all recent releases are Python 2.6 or 2.7, some long-term-support distributions may still contain Python 2.5 or older and require a newer Python runtime.  For example, <a href="https://wiki.openstack.org/wiki/NovaInstall/CentOSNotes#CentOS_5.2F_RHEL_5_.2F_Oracle_Enterprise_Linux_5">the OpenStack wiki</a> documents installing Nova on RHEL 5 and friends.  From that document the steps to enable the EPEL repo and install Python 2.6 are sufficient to support installing the client libraries.</p>
 <h4 id="os-x-installation">OS X Installation</h4>
 <p>All OS X releases since 10.6 (Snow Leopard) include a supported Python runtime although it is usually a few minor versions behind the current release.  Alternatives are available to install current versions of Python but are out of scope here.</p>
-<p>OS X 10.5 (Leopard) includes Python 2.5.1 and needs to have particular considerations addressed in order to update it.  See the <a href="http://wiki.python.org/moin/MacPython/Leopard">Leopard wiki page</a> for more information.<br />
-</p>
+<p>OS X 10.5 (Leopard) includes Python 2.5.1 and needs to have particular considerations addressed in order to update it.  See the <a href="http://wiki.python.org/moin/MacPython/Leopard">Leopard wiki page</a> for more information.  </p>
 <h4 id="windows-installation">Windows Installation</h4>
 <p>Windows has a couple of options for Python installations.  Each Python release includes official Python binaries for both 32-bit and 64-bit Windows. The python.org <a href="http://www.python.org/getit/windows/">Windows releases</a> page lists some of the other Python runtime packages that are available.  One additional that will be familiar to UNIX users living in a Windows world is the <a href="http://www.cygwin.com/">Cygwin</a> Python port. Once Cygwin's Python interpreter is installed the rest is very similar to the steps here.</p>
 <p>This guide will use the official 32 bit 2.7.5 runtime on Windows 7 as the example installation but it also works on XP and Vista.  The Python interpreter can be installed anywhere, the default folder is <code>C:\Python27</code>.  If you change it remember to make the corresponding change in the rest of this guide.  Also, be aware that putting it in certain places, such as <code>Program files</code>, will cause Windows UAC in Vista and newer to require an administrative token to perform module installs.  While not impossible to deal with, this is currently beyond the scope of this guide.</p>
@@ -1167,493 +1287,6 @@ I probably went a little overboard in setting up the proper serial console argum
 </pre>
 </div>
 </div>
-</div>
-</div>
-]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>dtroyer</name>
-      <uri>http://hackstack.org/x/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Securing OpenStack Client Connections Part 2]]></title>
-    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2012/12/21/securing-openstack-client-connections-part-2" />
-    <id>http://hackstack.org/x/blog/2012/12/21/securing-openstack-client-connections-part-2</id>
-    <updated>2012-12-21T12:12:12Z</updated>
-    <published>2012-12-21T12:12:12Z</published>
-    <category scheme="http://hackstack.org/x/blog" term="openstack" />
-    <category scheme="http://hackstack.org/x/blog" term="devstack" />
-    <summary type="html"><![CDATA[Securing OpenStack Client Connections Part 2]]></summary>
-    <content type="html" xml:base="http://hackstack.org/x/blog/2012/12/21/securing-openstack-client-connections-part-2"><![CDATA[<div class="document">
-<p>In the first part of this series we covered creating a pair of certificate authorities and a signed certificate with the same attributes commonly found in commercial certificates.  This part covers the OpenStack Python clients and proper certificate verification.</p>
-<p>The OpenStack client repositories (or packages) include both the Python API bindings and the reference command line interface (CLI) implementation to communicate with the OpenStack APIs.   Client support for modern encrypted connections, i.e SSLv3 and/or TLSv1, has been spotty at best.</p>
-<p>Most of the clients are capable of using SSL for encryption but often the certificate verification part of the protocol did not work properly for tier-2 or privately signed certificates, prompting the addition of the <tt class="docutils literal"><span class="pre">--insecure</span></tt> option to some of the clients to sidestep the problem altogether.  In addition, most of the clients had no mechanism to specify an alternate CA bundle file to enable certificate verification for certificates not signed by the commercial CAs.</p>
-<p>Python has historically had incomplete X.509 certificate support in its standard library.  For example, <tt class="docutils literal">ssl</tt> and <tt class="docutils literal">httplib</tt> do not verify the hostname as part of certificate verification. Four of the clients (keystone, nova, cinder, quantum) use <tt class="docutils literal">httplib2</tt> which had no hostname verification before version 0.7.0 and what it currently has is also incomplete. The other two clients (glance and swift) use <tt class="docutils literal">httplib</tt> directly and either have no hostname verification (swift) or implement it locally (glance).</p>
-<div class="section" id="issue-summary">
-<h1>Issue Summary</h1>
-<ul class="simple">
-<li>Python's <tt class="docutils literal">ssl</tt> module does no certificate hostname verification in 2.7.x; it has been added in 3.2 but will not be backported. <a class="footnote-reference" href="#id3" id="id1">[1]</a></li>
-<li><tt class="docutils literal">ssl</tt> is pinned to using protocol version <tt class="docutils literal">SSLv23</tt> and must be directly patched to override it.</li>
-<li><tt class="docutils literal">httplib</tt> uses <tt class="docutils literal">ssl</tt> and adds no hostname verification.  In addition it only uses the default <tt class="docutils literal">SSLV23</tt> protocol version set by <tt class="docutils literal">ssl</tt>.  We don't want this as SSLv2 is deprecated and insecure.  Patching that value directly into the <tt class="docutils literal">ssl</tt> module works but is suboptimal.</li>
-<li><tt class="docutils literal">httplib2</tt> implements a basic hostname verification but it has some problems such as only checking <tt class="docutils literal">commonName</tt> if the certificate's <tt class="docutils literal">subjectAltNames</tt> is not present and handling wildcards differently than specified in RFC-2818.</li>
-<li><tt class="docutils literal">httplib2</tt> uses an internal ca bundle (<tt class="docutils literal">cacert.txt</tt>) if the <tt class="docutils literal">ca_certs</tt> argument is not given to <tt class="docutils literal">HTTPSConnectionWithTimeout.__init__()</tt>.</li>
-<li>In other news, <tt class="docutils literal">httplib2</tt> only supports 3xx redirects for GET method.</li>
-</ul>
-<div class="section" id="additional-notes">
-<h2>Additional Notes</h2>
-<p>glanceclient has patched the <tt class="docutils literal">ssl</tt> module out of <tt class="docutils literal">httplib</tt> in favor of <tt class="docutils literal">pyOpenSSL</tt>.  Stuart McLaren added <tt class="docutils literal">http.VerifiedHTTPSConnection.host_matches_cert()</tt> to validate <tt class="docutils literal">commonName</tt> and <tt class="docutils literal">subjectAltName</tt> for <tt class="docutils literal">httplib</tt> connections but it doesn't handle wildcards.</p>
-</div>
-</div>
-<div class="section" id="why-requests-2">
-<h1>Why requests? <a class="footnote-reference" href="#id4" id="id2">[2]</a></h1>
-<p>The <tt class="docutils literal">requests</tt> module backported <tt class="docutils literal">match_hostname()</tt> from Python 3.2.  Like the rest of the modules here it does not handle the <tt class="docutils literal">iPAddress</tt> attribute in <tt class="docutils literal">subjectAltName</tt>. This is mostly relevant in development and testing use cases like with DevStack.  The 3.2 <tt class="docutils literal">match_hostname()</tt> implementation however does allow IP addresses as a <tt class="docutils literal">dNSName</tt>.</p>
-<p><tt class="docutils literal">requests</tt> also brings a number of other features to the table that may or may not have been implemented individually in the existing clients such as JSON encoding/decoding and 3xx redirection support for POST, PUT, PATCH DELETE, and HEAD.  Plus it is stable (notwithstanding the recent 1.0 release) and the developer is known in the OS community.</p>
-</div>
-<div class="section" id="the-cli-solution">
-<h1>The CLI Solution</h1>
-<p>There has recently been a round of patches to the CLIs to get them all up to the same level of support for TLSv1 to be used for authentication at a minimum.  Glance and Swift continue to use <tt class="docutils literal">httplib</tt> directly for their data transfer connections (really, all connections to their respective services) and these already support SSLv3.</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="11%" />
-<col width="16%" />
-<col width="44%" />
-<col width="16%" />
-<col width="13%" />
-</colgroup>
-<thead valign="bottom">
-<tr><th class="head">Client</th>
-<th class="head">HTTP Module</th>
-<th class="head">Client object</th>
-<th class="head">CLI Arg</th>
-<th class="head">Env Var</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr><td>keystone</td>
-<td>httplib2</td>
-<td>class.HTTPClient(httplib2.Http)</td>
-<td>--os-cacert</td>
-<td>OS_CACERT</td>
-</tr>
-<tr><td>nova</td>
-<td>httplib2</td>
-<td>class.HTTPClient(httplib2.Http)</td>
-<td>n/a</td>
-<td>n/a</td>
-</tr>
-<tr><td>cinder</td>
-<td>httplib2</td>
-<td>class.HTTPClient(httplib2.Http)</td>
-<td>n/a</td>
-<td>n/a</td>
-</tr>
-<tr><td>glance</td>
-<td>httplib</td>
-<td>class.HTTPClient(object)</td>
-<td>--ca-file</td>
-<td>n/a</td>
-</tr>
-<tr><td>swift</td>
-<td>httplib</td>
-<td>class Connection(object)</td>
-<td>n/a</td>
-<td>n/a</td>
-</tr>
-<tr><td>quantum</td>
-<td>httplib2</td>
-<td>class.HTTPClient(httplib2.Http)</td>
-<td>n/a</td>
-<td>n/a</td>
-</tr>
-</tbody>
-</table>
-<p>The approach taken for the <tt class="docutils literal">httplib2</tt> subclasses is to change the parent class to <tt class="docutils literal">object</tt> and rework the <tt class="docutils literal">request()</tt> method to call <tt class="docutils literal">requests.request()</tt>.  Some of the differences for <tt class="docutils literal">requests</tt> leaked out of that method but have been mostly containd within the <tt class="docutils literal">HTTPClient</tt> class.  All four of the clients (formerly) using <tt class="docutils literal">httplib2</tt> have implemented one or more features that can easily be handled by <tt class="docutils literal">requests</tt> (redirection) or should also be propogated to the other clients.  This is ripe for a refactor of <tt class="docutils literal">HTTPClient</tt> to a common module but that effort is not in scope here.</p>
-<div class="section" id="keystoneclient">
-<h2>keystoneclient</h2>
-<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/17624/">https://review.openstack.org/#/c/17624/</a> <em>(complete)</em></p>
-<ul class="simple">
-<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
-</ul>
-</div>
-<div class="section" id="novaclient">
-<h2>novaclient</h2>
-<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/18257/">https://review.openstack.org/#/c/18257/</a> <em>(complete)</em></p>
-<ul class="simple">
-<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
-<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
-<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
-</ul>
-</div>
-<div class="section" id="cinderclient">
-<h2>cinderclient</h2>
-<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/18278/">https://review.openstack.org/#/c/18278/</a> <em>(complete)</em></p>
-<ul class="simple">
-<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
-<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
-<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
-</ul>
-</div>
-<div class="section" id="glanceclient">
-<h2>glanceclient</h2>
-<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/17698/">https://review.openstack.org/#/c/17698/</a> <em>(complete)</em></p>
-<ul class="simple">
-<li>rename <tt class="docutils literal"><span class="pre">--ca-cert</span></tt> to <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and add <tt class="docutils literal">OS_CACERT</tt></li>
-<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
-</ul>
-</div>
-<div class="section" id="swiftclient">
-<h2>swiftclient</h2>
-<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/18393/">https://review.openstack.org/#/c/18393/</a> <em>(complete)</em></p>
-<ul class="simple">
-<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
-<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
-</ul>
-</div>
-<div class="section" id="quantumclient">
-<h2>quantumclient</h2>
-<p><em>(not started)</em></p>
-<ul class="simple">
-<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
-<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
-<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
-</ul>
-</div>
-<div class="section" id="testing">
-<h2>Testing</h2>
-<p>Aside from the usual unit tests, support for a TLS proxy is being added to DevStack to demonstrate and test a TLS-enabled OpenStack configuration.  It uses <tt class="docutils literal">stud</tt> as the TLS endpoint that proxies to the usual service endpoints.  The most interesting challenge here is doing it all on a single host and making the service catalog work.  Yay!  This will be described in (hopefully) the next post in this series.</p>
-<p>The TLS-in-DevStack also builds a two-tiered CA (root and intermediate) for testing proper certificate chain validation as described in <a class="reference external" href="/x/blog/2012/12/18/securing-openstack-client-connections-part-1/">the first installment</a>.</p>
-</div>
-</div>
-<div class="section" id="links">
-<h1>Links</h1>
-<ul class="simple">
-<li>glanceclient <tt class="docutils literal">host_matches_cert()</tt>: <a class="reference external" href="https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py">https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py</a></li>
-<li><tt class="docutils literal">request</tt>'s <tt class="docutils literal">urllib3.ssl_match_hostname.match_hostname()</tt>: <a class="reference external" href="https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72">https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72</a> <a class="reference external" href="https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23">https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23</a></li>
-</ul>
-<hr class="docutils" />
-<table class="docutils footnote" frame="void" id="id3" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><a class="reference external" href="http://bugs.python.org/issue1589">Python issue 1589</a>, the comments about 2.x <a class="reference external" href="http://bugs.python.org/issue1589#msg120946">begin here</a>.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="id4" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The patches for the OpenStack CLIs were engineered and implemented before the release of <tt class="docutils literal">requests</tt> 1.0 which is a significantly different implementation and is untested in our application.</td></tr>
-</tbody>
-</table>
-</div>
-</div>
-]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>dtroyer</name>
-      <uri>http://hackstack.org/x/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Securing OpenStack Client Connections Part 1]]></title>
-    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2012/12/18/securing-openstack-client-connections-part-1" />
-    <id>http://hackstack.org/x/blog/2012/12/18/securing-openstack-client-connections-part-1</id>
-    <updated>2012-12-18T12:12:12Z</updated>
-    <published>2012-12-18T12:12:12Z</published>
-    <category scheme="http://hackstack.org/x/blog" term="openstack" />
-    <category scheme="http://hackstack.org/x/blog" term="devstack" />
-    <summary type="html"><![CDATA[Securing OpenStack Client Connections Part 1]]></summary>
-    <content type="html" xml:base="http://hackstack.org/x/blog/2012/12/18/securing-openstack-client-connections-part-1"><![CDATA[<div class="document">
-<p>We all know that the difference between <tt class="docutils literal">https</tt> and <tt class="docutils literal">http</tt> is the addition of encryption, right?  Of course, but less attention is paid to the other purposes of SSL and TLS: to verify one or both of the parties involved in the connection and to validate that the objects used in the verification meet certain criteria. <a class="footnote-reference" href="#id3" id="id1">[1]</a>  In the common case of a user directing a web browser to a 'secure' site, only one side is potentially validated, that being the server.  Maybe.</p>
-<p>Browsers generally go a good job of performing server certificate verification and validation but other https clients may not do so well.  Sometimes the web browser will pop up a box saying that the server is untrusted for one reason or another.  This can be the result of a failure to validate the server certificate or verifying that the name used to reach the server matches who the server claims to be.  It will usually contain the reason for the failure but generally it also contains a button to click on that allows the connection to proceed.  This effectively neuters the validation process and opens the door for server spoofing and man-in-the-middle attacks.</p>
-<p>The point here is not to rehash the merits of that behaviour but to investigate the use of <tt class="docutils literal">https</tt> in the OpenStack Python clients and to validate their certificate verification.  And validation.  Mmmmmm...recursion...</p>
-<div class="section" id="but-first">
-<h1>But First</h1>
-<p>Before we can delve into the world of Python modules and SSL wrappers we must first have a way to test against some known secure servers.  This means uncorking some OpenSSL-foo and entering the dark world of certificate authorities (CA).  &quot;But that's been covered to death!&quot; you may say.  Yes it has <a class="footnote-reference" href="#id4" id="id2">[2]</a>, but generally only to the level of self-sigining a cert for use in private servers.  I believe the common name for these certs is 'snakeoil'.  However, certificates in the real world are not only self-signed, but often signed by a CA that is itself signed by one or more parent CAs.  The root CA certificates are included in the lists shipped with most operating systems, browsers and even some programming libraries.</p>
-<p>Our goal then is to build a server certificate that is a) signed by an intermediate CA and b) has the basic attributes and extensions common in real-world certificates.  To get that we need a root CA and an intermediate CA.  To get that we need some shell scripts and OpenSSL configuration files for each operation.</p>
-<p>Note that in this exercise we do not encrypt the private keys as this is all used for development and testing of the SSL/TLS connections and should not be used for production.</p>
-</div>
-<div class="section" id="root-ca">
-<h1>Root CA</h1>
-<p>A self-signed certificate has the unique characteristic of the Issuer matches the Subject.  Creating a self-signed root CA is a common operation and has been covered many times elsewhere.  So here are the basics:</p>
-<ul>
-<li><p class="first">Create the root CA directory structure:</p>
-<pre class="literal-block">
-for i in certs crl newcerts private; do
-    mkdir -p CA/root-ca/$i
-done
-chmod 710 CA/root-ca/private
-echo &quot;01&quot; &gt;CA/root-ca/serial
-touch CA/root-ca/index.txt
-</pre>
-</li>
-<li><p class="first">Generate the root CA configuration file <tt class="docutils literal"><span class="pre">CA/root-ca/ca.conf</span></tt>:</p>
-<pre class="literal-block">
-echo '
-[ ca ]
-default_ca = CA_default
-
-[ CA_default ]
-dir                     = ./CA/root-ca
-policy                  = policy_match
-database                = $dir/index.txt
-serial                  = $dir/serial
-certs                   = $dir/certs
-crl_dir                 = $dir/crl
-new_certs_dir           = $dir/newcerts
-certificate             = $dir/cacert.pem
-private_key             = $dir/private/cacert.key
-RANDFILE                = $dir/private/.rand
-default_md              = default
-
-[ req ]
-default_bits            = 1024
-default_md              = sha1
-
-prompt                  = no
-distinguished_name      = ca_distinguished_name
-
-x509_extensions         = ca_extensions
-
-[ ca_distinguished_name ]
-organizationName        = Example Inc.
-organizationalUnitName  = Certificate Authority
-emailAddress            = ca&#64;example.com
-commonName              = Example Inc Root CA
-
-[ policy_match ]
-countryName             = optional
-stateOrProvinceName     = optional
-organizationName        = match
-organizationalUnitName  = optional
-commonName              = supplied
-emailAddress            = optional
-
-[ ca_extensions ]
-basicConstraints        = critical,CA:true
-subjectKeyIdentifier    = hash
-authorityKeyIdentifier  = keyid:always, issuer
-keyUsage                = cRLSign, keyCertSign
-
-' &gt;CA/root-ca/ca.conf
-</pre>
-<p>The <tt class="docutils literal">ca_distinguished_name</tt> section defines the full name of the root CA.</p>
-</li>
-<li><p class="first">Generate a private key and self-signed certificate:</p>
-<pre class="literal-block">
-openssl req -config CA/root-ca/ca.conf \
-    -x509 \
-    -nodes \
-    -newkey rsa \
-    -days 21360 \
-    -keyout CA/root-ca/private/cacert.key \
-    -out CA/root-ca/cacert.pem \
-    -outform PEM
-</pre>
-</li>
-<li><p class="first">Take a peek at the root certificate:</p>
-<pre class="literal-block">
-openssl x509 -noout -text -in CA/root-ca/cacert.pem
-</pre>
-</li>
-</ul>
-</div>
-<div class="section" id="intermediate-ca">
-<h1>Intermediate CA</h1>
-<p>Creating an Intermediate CA is very similar except the root CA must do the signing so the process takes a couple of additional steps:</p>
-<ul>
-<li><p class="first">Create the intermediate CA directory structure:</p>
-<pre class="literal-block">
-for i in certs crl newcerts private; do
-    mkdir -p CA/int-ca/$i
-done
-chmod 710 CA/int-ca/private
-echo &quot;01&quot; &gt;CA/int-ca/serial
-touch CA/int-ca/index.txt
-</pre>
-</li>
-<li><p class="first">Generate the intermediate CA configuration file <tt class="docutils literal"><span class="pre">CA/int-ca/ca.conf</span></tt>:</p>
-<pre class="literal-block">
-echo '
-[ ca ]
-default_ca = CA_default
-
-[ CA_default ]
-dir                     = ./CA/int-ca
-policy                  = policy_match
-database                = $dir/index.txt
-serial                  = $dir/serial
-certs                   = $dir/certs
-crl_dir                 = $dir/crl
-new_certs_dir           = $dir/newcerts
-certificate             = $dir/cacert.pem
-private_key             = $dir/private/cacert.key
-RANDFILE                = $dir/private/.rand
-default_md              = default
-
-[ req ]
-default_bits            = 1024
-default_md              = sha1
-
-prompt                  = no
-distinguished_name      = ca_distinguished_name
-
-x509_extensions         = ca_extensions
-
-[ ca_distinguished_name ]
-organizationName        = Example Inc.
-organizationalUnitName  = Certificate Authority
-emailAddress            = ca&#64;example.com
-commonName              = Example Inc Intermediate CA
-
-[ policy_match ]
-countryName             = optional
-stateOrProvinceName     = optional
-organizationName        = match
-organizationalUnitName  = optional
-commonName              = supplied
-emailAddress            = optional
-
-[ ca_extensions ]
-basicConstraints        = critical,CA:true
-subjectKeyIdentifier    = hash
-authorityKeyIdentifier  = keyid:always, issuer
-keyUsage                = cRLSign, keyCertSign
-
-' &gt;CA/int-ca/ca.conf
-</pre>
-<p>Note that the <tt class="docutils literal">commonName</tt> in the <tt class="docutils literal">ca_distinguished_name</tt> section is different than the root CA.  The <tt class="docutils literal">ca_extensions</tt> section is also critical here, specifically the <tt class="docutils literal">keyUsage</tt> attribute containing the <tt class="docutils literal">keyCertSign</tt> so the certificate signed can be used itself to sign other certificates.</p>
-</li>
-<li><p class="first">Generate a private key and certificate signing request:</p>
-<pre class="literal-block">
-openssl req -config CA/int-ca/ca.conf \
-    -sha1 \
-    -nodes \
-    -newkey rsa \
-    -keyout CA/int-ca/private/cacert.key \
-    -out CA/int-ca/int-ca.csr \
-    -outform PEM
-</pre>
-</li>
-<li><p class="first">Sign the CSR:</p>
-<pre class="literal-block">
-openssl ca -config CA/root-ca/ca.conf \
-    -extensions ca_extensions \
-    -days 365 \
-    -notext \
-    -in CA/int-ca/int-ca.csr \
-    -out CA/int-ca/cacert.pem \
-    -batch
-</pre>
-</li>
-<li><p class="first">Create a trust chain, a file that contains the CA certificates from the immediate signing CA back to the root CA:</p>
-<pre class="literal-block">
-cat CA/root-ca/cacert.pem CA/int-ca/cacert.pem &gt;&gt;CA/int-ca/ca-chain.pem
-</pre>
-</li>
-<li><p class="first">Take a peek at the intermediate certificate:</p>
-<pre class="literal-block">
-openssl x509 -noout -text -in CA/int-ca/cacert.pem
-</pre>
-</li>
-</ul>
-</div>
-<div class="section" id="server-certificate">
-<h1>Server Certificate</h1>
-<p>This process is repeated for every server that needs a certificate.</p>
-<ul>
-<li><p class="first">Generate the intermediate CA signing configuration file <tt class="docutils literal"><span class="pre">CA/int-ca/sign.conf</span></tt>:</p>
-<pre class="literal-block">
-echo '
-[ ca ]
-default_ca = CA_default
-
-[ CA_default ]
-dir                     = ./CA/int-ca
-policy                  = policy_match
-database                = $dir/index.txt
-serial                  = $dir/serial
-certs                   = $dir/certs
-crl_dir                 = $dir/crl
-new_certs_dir           = $dir/newcerts
-certificate             = $dir/cacert.pem
-private_key             = $dir/private/cacert.key
-RANDFILE                = $dir/private/.rand
-default_md              = default
-
-[ req ]
-default_bits            = 1024
-default_md              = sha1
-
-prompt                  = no
-distinguished_name      = req_distinguished_name
-
-x509_extensions         = req_extensions
-
-[ req_distinguished_name ]
-organizationName        = Example Inc.
-
-[ policy_match ]
-countryName             = optional
-stateOrProvinceName     = optional
-organizationName        = match
-organizationalUnitName  = optional
-commonName              = supplied
-
-[ req_extensions ]
-basicConstraints        = CA:false
-subjectKeyIdentifier    = hash
-authorityKeyIdentifier  = keyid:always, issuer
-keyUsage                = digitalSignature, keyEncipherment, keyAgreement
-extendedKeyUsage        = serverAuth, clientAuth
-subjectAltName          = $ENV::SUBJECT_ALT_NAME
-
-' &gt;CA/int-ca/sign.conf
-</pre>
-<p>The primary difference is in the <tt class="docutils literal">req_extensions</tt> section setting up for the certificates signed by this CA.  One of the bits often missed is the inclusion of the <tt class="docutils literal">subjectAltName</tt> that matches the <tt class="docutils literal">commonName</tt> and optionally includes additional names that the certificate is valid for.</p>
-</li>
-<li><p class="first">Generate a signing request:</p>
-<pre class="literal-block">
-openssl req \
-    -sha1 \
-    -nodes \
-    -newkey rsa \
-    -keyout CA/int-ca/private/cert.example.com.key \
-    -out CA/int-ca/cert.example.com.csr \
-    -subj '/O=Example Inc./OU=Servers/CN=cert.example.com'
-</pre>
-</li>
-<li><p class="first">Sign the CSR, with an optional value for <tt class="docutils literal">subjectAltName</tt>:</p>
-<pre class="literal-block">
-SUBJECT_ALT_NAME=&quot;DNS: cert.example.com&quot; \
-openssl ca -config CA/int-ca/sign.conf -extensions req_extensions -days 365 -notext \
-    -out CA/int-ca/cert.example.com.crt \
-    -in CA/int-ca/cert.example.com.csr \
-    -batch
-</pre>
-<p>Setting the <tt class="docutils literal">SUBJECT_ALT_NAME</tt> environment variable is the easiest way to set <tt class="docutils literal">subjectAltName</tt> without rewriting the config file for each certificate.</p>
-</li>
-<li><p class="first">Take a peek at the server certificate:</p>
-<pre class="literal-block">
-openssl x509 -noout -text -in CA/int-ca/cert.example.com.pem
-</pre>
-</li>
-</ul>
-</div>
-<div class="section" id="setting-up-the-server">
-<h1>Setting Up the Server</h1>
-<p>Server configurations differ but most will require the server certificate fiel created in the last step, the provate key file created in the CSR step and the CA chain file created in the previous section.  This is where encrypting the private key can make testing difficult and why we did not do that here.</p>
-<p>Later installations in this series will demonstrate how to do this using the SSL/TLS proxy server <tt class="docutils literal">stud</tt>.</p>
-<hr class="docutils" />
-<table class="docutils footnote" frame="void" id="id3" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><a class="reference external" href="https://www.google.com/search?q=http+vs+https">Find more about http vs https</a></td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="id4" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><a class="reference external" href="http://www.google.com/search?q=openssl+certificate+authority">Find more about creating a CA with OpenSSL</a></td></tr>
-</tbody>
-</table>
 </div>
 </div>
 ]]></content>
