@@ -85,7 +85,7 @@
       <div id="cloud-image-updates"></div>
       <h1 class="blog_post_title"><a href="/x/blog/2013/10/21/cloud-image-updates/" rel="bookmark" title="Permanent Link to Cloud Image Updates">Cloud Image Updates</a></h1>
       <p><small><span class="blog_post_date">October 21, 2013 at 10:21 AM</span> | categories: 
-        <span class="blog_post_categories">openstack, fedora, ubuntu</span>
+        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/fedora/'>fedora</a>, <a href='/x/blog/category/ubuntu/'>ubuntu</a></span>
       </small></p>
     </header>
     <div class="post_prose">
@@ -94,24 +94,38 @@
 <p>Update!  Update!  Update!</p>
 <p>A while back I started documenting the image build process I've been using for building OpenStack cloud images:</p>
 <ul class="simple">
-<li><a class="reference external" href="/x/blog/2012/01/25/a-fedora-18-image-for-openstack/">A Fedora 18 Image for OpenStack</a></li>
+<li><a class="reference external" href="/x/blog/2013/01/25/a-fedora-18-image-for-openstack/">A Fedora 18 Image for OpenStack</a></li>
 <li><a class="reference external" href="/x/blog/2013/04/25/a-centos-6-image-for-openstack/">A CentOS 6 Image for OpenStack</a></li>
 </ul>
 <p>Note that Ubuntu is missing from that list, due mostly to their published UEC images being generally good enough as a starting point.  Fedora 19 finally has a similar image published, let's see how different it is and if it is useful for my purposed...</p>
+<p>Also, all of these images have rng-tools added as it is useful on clouds that provide a usable virtualized /dev/random in their hypervisor.</p>
 <div class="section" id="fedora-19">
 <h1>Fedora 19</h1>
 <p>Grab the new F19 cloud image; the QCOW2 version is ready to go!  <a class="reference external" href="http://download.fedoraproject.org/pub/fedora/linux/releases/19/Images/x86_64/Fedora-x86_64-19-20130627-sda.qcow2">http://download.fedoraproject.org/pub/fedora/linux/releases/19/Images/x86_64/Fedora-x86_64-19-20130627-sda.qcow2</a>.</p>
 <p>It's surprisingly close!  There aren't any standout differences save for the inclusion of sendmail and procmail, which I've specifically removed in my kickstart.</p>
+<ul class="simple">
+<li>install rng-tools</li>
+<li>remove sendmail and/or procmail if present</li>
+<li>clean up OpenSSH host keys</li>
+</ul>
 </div>
 <div class="section" id="centos-6">
 <h1>CentOS 6</h1>
+<p>This is still a basic installation with a bunch of cruft removes such as all of the firmware packages that are useless in a virtual environment.</p>
+<ul class="simple">
+<li>stop getty on all vconsoles except /dev/tty1</li>
+<li>install rng-tools</li>
+<li>install cloud-init</li>
+<li>teach device mapper to not auto-generate virtual network devices</li>
+<li>add support for growing the root filesystem at first boot</li>
+</ul>
 </div>
-<div class="section" id="ubuntu-13-04">
-<h1>Ubuntu 13.04</h1>
+<div class="section" id="ubuntu-12-04">
+<h1>Ubuntu 12.04</h1>
 <p>Just for completeness I'll list what I do:</p>
 <ul class="simple">
-<li>install rng-tools
-useful on clouds that provide a usable virtualized /dev/random in their hypervisor</li>
+<li>install rng-tools</li>
+<li>clean up Device Mapper and OpenSSH host keys</li>
 </ul>
 </div>
 </div>
@@ -131,11 +145,11 @@ useful on clouds that provide a usable virtualized /dev/random in their hypervis
 <!--
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
+      <li><a href="/x/blog/2014/02/11/client-layers/">Client Layers</a></li>
       <li><a href="/x/blog/2014/01/14/openstackclient-plugins/">OpenStackClient Plugins</a></li>
-      <li><a href="/x/blog/2014/01/09/openstack-layers-from-outer-space/">OpenStack Layers From Outer Space</a></li>
       <li><a href="/x/blog/2013/11/10/openstack-icehouse-developer-summit/">OpenStack Icehouse Developer Summit</a></li>
+      <li><a href="/x/blog/2013/10/21/cloud-image-updates/">Cloud Image Updates</a></li>
       <li><a href="/x/blog/2013/09/07/devstack-local-config/">DevStack Local Config</a></li>
-      <li><a href="/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service/">OpenStack - Seven Layer Dip as a Service</a></li>
     </ul>
 -->
   </section>

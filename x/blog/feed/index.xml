@@ -10,10 +10,174 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Tue, 14 Jan 2014 17:07:33 GMT</pubDate>
+    <pubDate>Fri, 14 Feb 2014 22:12:37 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Client Layers</title>
+      <link>http://hackstack.org/x/blog/2014/02/11/client-layers</link>
+      <pubDate>Tue, 11 Feb 2014 02:11:00 CST</pubDate>
+      <category><![CDATA[openstackclient sdk]]></category>
+      <guid isPermaLink="false">Pw-YTmh6zBnZVMMNm4kmIzUYZ78=</guid>
+      <description>Client Layers</description>
+      <content:encoded><![CDATA[<div class="document">
+<p>[Work In Progress, you have been warned]</p>
+<p>So clients are like pie.  Creamy, gooey, butterscotch cream pie with meringue.  Known at the in-laws house as Baby Bear Pie for reasons unknown-to-me.  Meringue is yummy but not much by itself.  Pie crust does its job most of the time without being noticed, unless it is sub-par.  It's the cream filling that gets all of the attention.  Butterscotch, lemon or chocolate, that's where the glory is.</p>
+<p>REST clients are like pie, what with their multiple layers of communication handlers, data marshallers and output formatters and all.  So lets talk client crust.  It is the least sexy of the layers, going about its job, semi-appreciated when it is right, scorned when it is bad and otherwise taken for granted.  In OpenStack we have a large number of client projects that all talk to REST APIs.  Without going too far into the history, most of these are forks of forks and all have been independently enhanced and updated and none of them have more than a familial resemblance to each other.</p>
+<p>Alessio Ababilov tried to fix this, actually making a working common REST layer for the (at the time) 5 or so client libraries.  This was proposed to oslo-incubator and has gained some traction of late.  Some things that did get merged early on were the change to use the Requests package to replace httplib2, but that did nothing to unify the low-level internal API.</p>
+<p>Rather than try to fix the legacy clients the right solution here is to define some requirements and build a solid common foundation that API libraries can build on.  Rather than call it crust, let's use the even-less-sexy 'transport layer' name, totally mis-appropriated from the OSI stack.</p>
+<p>Independent of the Oslo apiclient work, Jamie Lennox rebuilt the transport layer of keystoneclient as part of a refactor of the authentication bits into pluggable classes.  This happens to be excitingly close to what I had been prototyping in OpenStackClient and was possibly the biggest highlight of the week in Hong Kong.</p>
+<p>So lets see if we can't turn that into a generic SDK-style transport layer for our clients.  On top of that we will layer the basic OpenStack API version discovery, authentication and service catalog.</p>
+<div class="section" id="layer-1-transport-layer">
+<h1>Layer 1: Transport Layer</h1>
+<p>The Transport Layer includes the basic components that implement the REST API client and essentially is a wrapper around the Python Requests package with some additional header handling and logging built in.</p>
+<div class="section" id="design-notes">
+<h2>Design Notes</h2>
+<p>The rationale for some of the differences from the 'traditional' client structure:</p>
+<ul class="simple">
+<li>There is only 1 client (HTTPClient) instance.  This takes the role similar to OpenStackClient's ClientManager class.  It handles the authentication for all APIs one time and contains the instances of the specific API client objects, which now are little more than containers for their Manager class instances.</li>
+</ul>
+</div>
+<div class="section" id="namespace">
+<h2>Namespace</h2>
+<p>Everything lives under the top-level <tt class="docutils literal">openstack</tt> namespace</p>
+<ul class="simple">
+<li><tt class="docutils literal">openstack.restapi</tt> - The layer 1 transport and base classes (session, exceptions) and  base layer 2 classes (discovery, base clients, service catalog)</li>
+<li><tt class="docutils literal">openstack.restapi.auth</tt> - The base authentication classes</li>
+<li><tt class="docutils literal">openstack.restapi.identity</tt>  - API-specific classes required for layer 2 operation (identity client)</li>
+<li><tt class="docutils literal">openstack.client.identity</tt> - The layer 2 classes for the Identity API (<tt class="docutils literal">.v2_0</tt>, <tt class="docutils literal">.v3</tt>)</li>
+<li><tt class="docutils literal"><span class="pre">openstack.client.&lt;api&gt;</span></tt> - Other layer 2 API classes</li>
+</ul>
+</div>
+<div class="section" id="openstack-restapi-session-session">
+<h2>openstack.restapi.session.Session</h2>
+<p>Session is the lowest layer, basically a wrapper that adds the following to requests.Session:</p>
+<ul class="simple">
+<li>create a new requests.Session instance if one is not supplied (using requests.Session implies the TLS control lies here and is one reason for passing in an existing Session)</li>
+<li>populate the X-Auth-Token header from an auth object contained by the Session that implements a get_token() method</li>
+<li>populate headers as required: User-Agent, Forwarded, Content-Type</li>
+<li>change requests' redirect handling to be more appropriate for an API</li>
+<li>include wrappers for the REST methods: head(), get(), post(), put(), delete(), patch()</li>
+<li>debug logging of request/response data</li>
+</ul>
+</div>
+<div class="section" id="openstack-restapi-baseclient-client">
+<h2>openstack.restapi.baseclient.Client</h2>
+<p>The base Client class defines the methods that reflect into the Session.</p>
+<ul class="simple">
+<li>create a new Session instance if one is not supplied</li>
+<li>contains a ServiceCatalog instance (applications requiring multiple identity contexts at a time should use multiple Client instances)</li>
+<li>performs the API version discovery (see ApiVersion class below)</li>
+<li>define the cache interface for client-side caching of API data</li>
+<li>include wrappers for the REST methods: head(), get(), post(), put(), delete(), patch()</li>
+</ul>
+</div>
+<div class="section" id="openstack-restapi-base-baseauthplugin">
+<h2>openstack.restapi.base.BaseAuthPlugin</h2>
+<p>The abstract auth plugin class</p>
+<blockquote>
+<ul class="simple">
+<li>handles the specifics of authenticating a user and providing a token to Session when requested via get_token()</li>
+</ul>
+</blockquote>
+</div>
+<div class="section" id="openstack-restapi-httpclient-httpclient-baseclient-client-base-baseauthplugin">
+<h2>openstack.restapi.httpclient.HTTPClient(baseclient.Client, base.BaseAuthPlugin)</h2>
+<p>HTTPClient is the primary interface used by the project API layers (gooey-creamy!).</p>
+<ul class="simple">
+<li>creates a ServiceCatalog from the token received from Identity</li>
+<li>uses <tt class="docutils literal">keyring</tt> to cache tokens</li>
+<li>authenticate() calls get_raw_token_from_identity_service()</li>
+</ul>
+</div>
+<div class="section" id="openstack-restapi-access-accessinfo">
+<h2>openstack.restapi.access.AccessInfo</h2>
+<p>Base class for auth plugins</p>
+<ul class="simple">
+<li>defines the basic auth interface</li>
+<li>AccessInfoV2</li>
+<li>AccessInfoV3</li>
+</ul>
+</div>
+</div>
+<div class="section" id="layer-2-discovery">
+<h1>Layer 2: Discovery</h1>
+<p>Discovery rides just above the transport layer and is the logic used to determine the best API version available between those support by the server and the client.</p>
+<div class="section" id="openstack-restapi-api-discovery-apiversion">
+<h2>openstack.restapi.api_discovery.ApiVersion</h2>
+<p>A resource class for API versions used by BaseVersion</p>
+<ul class="simple">
+<li>normalizes version information</li>
+</ul>
+</div>
+<div class="section" id="openstack-restapi-api-discovery-baseversion">
+<h2>openstack.restapi.api_discovery.BaseVersion</h2>
+<p>The root class for API version discovery.</p>
+<ul class="simple">
+<li>queries API server for supported version information</li>
+<li>normalizes both server and client versions</li>
+<li>select the appropriate version from those availalble (if possible)</li>
+</ul>
+</div>
+<div class="section" id="openstack-restapi-identity-client-identityversion-api-discovery-baseversion">
+<h2>openstack.restapi.identity.client.IdentityVersion(api_discovery.BaseVersion)</h2>
+<p>A Version discovery class that handles the peculiarities of Keystone</p>
+<ul class="simple">
+<li>optionally removes 'v2.0' from the auth_url to do proper discovery on old-style deployment configurations</li>
+<li>normalizes the returned dict to remove the <tt class="docutils literal">values</tt> key</li>
+</ul>
+</div>
+</div>
+<div class="section" id="layer-2-authentication">
+<h1>Layer 2: Authentication</h1>
+</div>
+<div class="section" id="layer-2-service-catalog">
+<h1>Layer 2: Service Catalog</h1>
+</div>
+<div class="section" id="examples">
+<h1>Examples</h1>
+<div class="section" id="create-a-session-with-private-ca-certificates">
+<h2>Create A Session With Private CA Certificates</h2>
+<pre class="literal-block">
+session = api_session.Session(
+    verify=ca_certificate_file,
+    user_agent=USER_AGENT,
+)
+</pre>
+</div>
+<div class="section" id="add-a-base-client">
+<h2>Add A Base Client</h2>
+<pre class="literal-block">
+client = httpclient.HTTPClient(
+    session=session,
+    auth_url=&quot;https://localhost:5000&quot;,
+    project_name=&quot;sez-me-street&quot;,
+    username=&quot;bert&quot;,
+    password=&quot;pidgeon&quot;,
+)
+</pre>
+</div>
+<div class="section" id="identity-version-discovery">
+<h2>Identity Version Discovery</h2>
+<pre class="literal-block">
+# Supported Identity client classes
+API_VERSIONS = {
+    '2.0': 'keystoneclient.v2_0.client.Client',
+    '3': 'keystoneclient.v3.client.Client',
+}
+
+ver = identity.client.IdentityVersion(
+    clients=API_VERSIONS.keys(),
+    auth_url=&quot;https://localhost:5000&quot;,
+)
+print &quot;client class: %s=%s&quot; % (ver.client_version.id, API_VERSIONS[ver.server_version.id])
+</pre>
+</div>
+</div>
+</div>
+]]></content:encoded>
+    </item>
     <item>
       <title>OpenStackClient Plugins</title>
       <link>http://hackstack.org/x/blog/2014/01/14/openstackclient-plugins</link>
@@ -109,19 +273,6 @@ so the version should not contain the leading 'v' character.</p>
 <h1>EOT</h1>
 <p>The plugin structure should allow any base install of OSC to be extended simply by installing the desired client package.  Af of right now there are no other clients that implement the plugin, but that will be changing soon.  Film at eleven...</p>
 </div>
-</div>
-]]></content:encoded>
-    </item>
-    <item>
-      <title>OpenStack Layers From Outer Space</title>
-      <link>http://hackstack.org/x/blog/2014/01/09/openstack-layers-from-outer-space</link>
-      <pubDate>Thu, 09 Jan 2014 01:09:00 CST</pubDate>
-      <category><![CDATA[layers]]></category>
-      <category><![CDATA[openstack]]></category>
-      <guid isPermaLink="false">oJnqdb9QY3e5vr3U9h7s68S_n5Q=</guid>
-      <description>OpenStack Layers From Outer Space</description>
-      <content:encoded><![CDATA[<div class="document">
-<p>Back in (xxxx) I started talking about conceptually organizing the OpenStack services using a layered model almost but not totally unlike the OSI network stack.</p>
 </div>
 ]]></content:encoded>
     </item>
@@ -314,6 +465,56 @@ watching people trying to keep track of the Savanna Savannah release.  Or
 would that be the Savannah Savanna release?  See, the fun we could have!</p>
 <p>'J': Not Jacksonville, they are both in the wrong state and I don't want to
 type that many letters.  Let's start a campaign for 'Joyland'!</p>
+</div>
+</div>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>Cloud Image Updates</title>
+      <link>http://hackstack.org/x/blog/2013/10/21/cloud-image-updates</link>
+      <pubDate>Mon, 21 Oct 2013 10:21:00 CDT</pubDate>
+      <category><![CDATA[openstack]]></category>
+      <category><![CDATA[fedora]]></category>
+      <category><![CDATA[ubuntu]]></category>
+      <guid isPermaLink="false">mZYbQCavtoqgCL-_uWb2raiP9mw=</guid>
+      <description>Cloud Image Updates</description>
+      <content:encoded><![CDATA[<div class="document">
+<p>Update!  Update!  Update!</p>
+<p>A while back I started documenting the image build process I've been using for building OpenStack cloud images:</p>
+<ul class="simple">
+<li><a class="reference external" href="/x/blog/2013/01/25/a-fedora-18-image-for-openstack/">A Fedora 18 Image for OpenStack</a></li>
+<li><a class="reference external" href="/x/blog/2013/04/25/a-centos-6-image-for-openstack/">A CentOS 6 Image for OpenStack</a></li>
+</ul>
+<p>Note that Ubuntu is missing from that list, due mostly to their published UEC images being generally good enough as a starting point.  Fedora 19 finally has a similar image published, let's see how different it is and if it is useful for my purposed...</p>
+<p>Also, all of these images have rng-tools added as it is useful on clouds that provide a usable virtualized /dev/random in their hypervisor.</p>
+<div class="section" id="fedora-19">
+<h1>Fedora 19</h1>
+<p>Grab the new F19 cloud image; the QCOW2 version is ready to go!  <a class="reference external" href="http://download.fedoraproject.org/pub/fedora/linux/releases/19/Images/x86_64/Fedora-x86_64-19-20130627-sda.qcow2">http://download.fedoraproject.org/pub/fedora/linux/releases/19/Images/x86_64/Fedora-x86_64-19-20130627-sda.qcow2</a>.</p>
+<p>It's surprisingly close!  There aren't any standout differences save for the inclusion of sendmail and procmail, which I've specifically removed in my kickstart.</p>
+<ul class="simple">
+<li>install rng-tools</li>
+<li>remove sendmail and/or procmail if present</li>
+<li>clean up OpenSSH host keys</li>
+</ul>
+</div>
+<div class="section" id="centos-6">
+<h1>CentOS 6</h1>
+<p>This is still a basic installation with a bunch of cruft removes such as all of the firmware packages that are useless in a virtual environment.</p>
+<ul class="simple">
+<li>stop getty on all vconsoles except /dev/tty1</li>
+<li>install rng-tools</li>
+<li>install cloud-init</li>
+<li>teach device mapper to not auto-generate virtual network devices</li>
+<li>add support for growing the root filesystem at first boot</li>
+</ul>
+</div>
+<div class="section" id="ubuntu-12-04">
+<h1>Ubuntu 12.04</h1>
+<p>Just for completeness I'll list what I do:</p>
+<ul class="simple">
+<li>install rng-tools</li>
+<li>clean up Device Mapper and OpenSSH host keys</li>
+</ul>
 </div>
 </div>
 ]]></content:encoded>
@@ -1124,121 +1325,6 @@ that provided an energetic open to the keynotes.  Stay tuned for some deeper tho
 <tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Sorry VMS DCL fans, I tried.</td></tr>
 </tbody>
 </table>
-</div>
-]]></content:encoded>
-    </item>
-    <item>
-      <title>A Fedora 18 Image for OpenStack</title>
-      <link>http://hackstack.org/x/blog/2013/01/25/a-fedora-18-image-for-openstack</link>
-      <pubDate>Fri, 25 Jan 2013 01:25:00 CST</pubDate>
-      <category><![CDATA[openstack]]></category>
-      <category><![CDATA[fedora]]></category>
-      <guid isPermaLink="false">1jKqR7FTq7lyLCIBc9iAX1D25Bg=</guid>
-      <description>A Fedora 18 Image for OpenStack</description>
-      <content:encoded><![CDATA[<div class="document">
-<p><em>[Updated 01Oct2013 to correct spelling and command formatting]</em></p>
-<p>Building images to boot in a cloud can be a lot of fun, especially since no two clouds are built alike.  Now fortunately the differences are mostly minor, but some of the minor differences can be fatal. Ugh.</p>
-<div class="section" id="good-news">
-<h1>Good News</h1>
-<p>The recent release of Fedora 18 brought with it a pleasant surprise, the build of some images suitable for loading into your favorite cloud, ala Ubuntu's UEC images.
-The <a class="reference external" href="http://lists.fedoraproject.org/pipermail/cloud/2013-January/002192.html">mailing list notice</a> gives the background and a reply in that thread mentions some desirable changes.  So in order to make those changes I decided to roll my own using the FCI <a class="reference external" href="/x/files/fedora-18-x86_64-cloud.ks">kickstart</a> as a base.</p>
-<p>The <a class="reference external" href="/x/files/fedora-18-x86_64-cloud-dt1.ks">new kickstart</a> file is pretty straightforward and mostly self-explanatory.  Here is what I changed:</p>
-<pre class="literal-block">
-* Set the timezone to ``Etc/UTC``
-* Configure for serial console
-* Create a default ``fedora`` user (instead of ``ec2-user``)
-* Leave behind a build timestamp in /etc/.build
-* Remove sendmail
-* Add ??
-</pre>
-<p>And here is what it took to get <tt class="docutils literal"><span class="pre">appliance-creator</span></tt> running on a fresh Fedora 17 VM:</p>
-<pre class="literal-block">
-sudo yum install -y appliance-tools.noarch
-wget -N http://git.fedorahosted.org/cgit/cloud-kickstarts.git/plain/generic/fedora-18-x86_64-cloud.ks
-# make kickstart changes
-sudo appliance-creator --config fedora-18-x86_64-cloud-dt1.ks \
-  --name fedora18-x86_64-cloud-dt1 --format raw
-</pre>
-<p>The conversion to qcow2 is done separately as <tt class="docutils literal"><span class="pre">appliance-creator</span></tt> doesn't compress qcow2 images:</p>
-<pre class="literal-block">
-qemu-img convert -c -f raw -O qcow2 \
-  fedora-18-x86_64-cloud-dt1.raw \
-  fedora-18-x86_64-cloud-dt1.qcow2
-</pre>
-<p>Kick it into the cloud image repository:</p>
-<pre class="literal-block">
-glance image-create --name &quot;Fedora 18 x86_64 cloudimg&quot; \
-  --disk-format qcow2 --container-format bare \
-  --is-public false --file fedora-18-x86_64-cloud-dt1-sda.qcow2
-</pre>
-<div class="section" id="kickstart-details">
-<h2>Kickstart Details</h2>
-<p>All of the excerpts below are shown in diff(1) format to illustrate the changes made to the original kickstart file.</p>
-<div class="section" id="timezone">
-<h3>Timezone</h3>
-<p>Set the timezone to <tt class="docutils literal">Etc/UTC</tt>:</p>
-<pre class="literal-block">
--timezone --utc America/New_York
-+timezone --utc Etc/UTC
-</pre>
-</div>
-<div class="section" id="serial-console">
-<h3>Serial Console</h3>
-<p>There are a couple of things that need to be updated to properly get a serial console in Linux.
-Append to the bootloader:</p>
-<pre class="literal-block">
--bootloader --timeout=0 --location=mbr --driveorder=sda
-+bootloader --timeout=0 --location=mbr --driveorder=sda --append=&quot;console=tty console=ttyS0&quot;
-</pre>
-<p>Configuring Grub takes a little more effort. The original kickstart only worked in the chroot-ed <tt class="docutils literal">%post</tt> but <tt class="docutils literal"><span class="pre">grub2-mkconfig</span></tt> failed because /dev was not complete.
-By adding a <tt class="docutils literal">%post <span class="pre">--nochroot</span></tt> section /dev can be bind-mounted into the chroot so <tt class="docutils literal"><span class="pre">grub2-mkconfig</span></tt> is happy.
-I probably went a little overboard in setting up the proper serial console arguments to the kernel command line but the following worked:</p>
-<pre class="literal-block">
-+%post --nochroot
-+echo &quot;Configure GRUB2 for serial console&quot;
-+echo GRUB_TIMEOUT=0 &gt; $INSTALL_ROOT/etc/default/grub
-+echo GRUB_TERMINAL=console &gt;&gt;$INSTALL_ROOT/etc/default/grub
-+echo GRUB_CMDLINE_LINUX=\&quot;console=ttyS0 console=tty\&quot; &gt;&gt;$INSTALL_ROOT/etc/default/grub
-+echo GRUB_CMDLINE_LINUX_DEFAULT=\&quot;console=ttyS0\&quot; &gt;&gt;$INSTALL_ROOT/etc/default/grub
-+mount -o bind /dev $INSTALL_ROOT/dev
-+/usr/sbin/chroot $INSTALL_ROOT /sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
-+umount $INSTALL_ROOT/dev
-+%end
-</pre>
-<p>The following lines were also removed from the original <tt class="docutils literal">%post</tt> Grub section:</p>
-<pre class="literal-block">
--echo GRUB_TIMEOUT=0 &gt; /etc/default/grub
--sed -i 's/^set timeout=5/set timeout=0/' /boot/grub2/grub.cfg
-</pre>
-</div>
-<div class="section" id="default-account">
-<h3>Default Account</h3>
-<p><tt class="docutils literal"><span class="pre">cloud-init</span></tt> creates an <tt class="docutils literal"><span class="pre">ec2-user</span></tt> account by default.  The account is useful but this isn't EC2 so the account is renamed to <tt class="docutils literal">fedora</tt>:</p>
-<pre class="literal-block">
--# Uncomment this if you want to use cloud init but suppress the creation
--# of an &quot;ec2-user&quot; account. This will, in the absence of further config,
--# cause the ssh key from a metadata source to be put in the root account.
--#cat &lt;&lt;EOF &gt; /etc/cloud/cloud.cfg.d/50_suppress_ec2-user_use_root.cfg
--#users: []
--#disable_root: 0
--#EOF
-+# Rename the 'ec2-user' account to 'fedora'
-+sed -i '
-+  s/name: ec2-user/name: fedora/g
-+  s/gecos: EC2/gecos: Fedora/g
-+' /etc/cloud/cloud.cfg
-</pre>
-</div>
-<div class="section" id="build-stamp">
-<h3>Build Stamp</h3>
-<p>Leave a file containing the build version and timestamp just in case it might be useful from inside the VM:</p>
-<pre class="literal-block">
-+# Leave behind a build stamp
-+echo &quot;build=nebula1 $(date +%F.%T)&quot; &gt;/etc/.build
-</pre>
-</div>
-</div>
-</div>
 </div>
 ]]></content:encoded>
     </item>

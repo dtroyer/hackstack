@@ -7,12 +7,67 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2014-01-14T17:07:33Z</updated>
+  <updated>2014-02-14T22:12:37Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
   <id>http://hackstack.org/x/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Cloud Image Updates]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2013/10/21/cloud-image-updates" />
+    <id>http://hackstack.org/x/blog/2013/10/21/cloud-image-updates</id>
+    <updated>2013-10-21T10:21:00Z</updated>
+    <published>2013-10-21T10:21:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <category scheme="http://hackstack.org/x/blog" term="fedora" />
+    <category scheme="http://hackstack.org/x/blog" term="ubuntu" />
+    <summary type="html"><![CDATA[Cloud Image Updates]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2013/10/21/cloud-image-updates"><![CDATA[<div class="document">
+<p>Update!  Update!  Update!</p>
+<p>A while back I started documenting the image build process I've been using for building OpenStack cloud images:</p>
+<ul class="simple">
+<li><a class="reference external" href="/x/blog/2013/01/25/a-fedora-18-image-for-openstack/">A Fedora 18 Image for OpenStack</a></li>
+<li><a class="reference external" href="/x/blog/2013/04/25/a-centos-6-image-for-openstack/">A CentOS 6 Image for OpenStack</a></li>
+</ul>
+<p>Note that Ubuntu is missing from that list, due mostly to their published UEC images being generally good enough as a starting point.  Fedora 19 finally has a similar image published, let's see how different it is and if it is useful for my purposed...</p>
+<p>Also, all of these images have rng-tools added as it is useful on clouds that provide a usable virtualized /dev/random in their hypervisor.</p>
+<div class="section" id="fedora-19">
+<h1>Fedora 19</h1>
+<p>Grab the new F19 cloud image; the QCOW2 version is ready to go!  <a class="reference external" href="http://download.fedoraproject.org/pub/fedora/linux/releases/19/Images/x86_64/Fedora-x86_64-19-20130627-sda.qcow2">http://download.fedoraproject.org/pub/fedora/linux/releases/19/Images/x86_64/Fedora-x86_64-19-20130627-sda.qcow2</a>.</p>
+<p>It's surprisingly close!  There aren't any standout differences save for the inclusion of sendmail and procmail, which I've specifically removed in my kickstart.</p>
+<ul class="simple">
+<li>install rng-tools</li>
+<li>remove sendmail and/or procmail if present</li>
+<li>clean up OpenSSH host keys</li>
+</ul>
+</div>
+<div class="section" id="centos-6">
+<h1>CentOS 6</h1>
+<p>This is still a basic installation with a bunch of cruft removes such as all of the firmware packages that are useless in a virtual environment.</p>
+<ul class="simple">
+<li>stop getty on all vconsoles except /dev/tty1</li>
+<li>install rng-tools</li>
+<li>install cloud-init</li>
+<li>teach device mapper to not auto-generate virtual network devices</li>
+<li>add support for growing the root filesystem at first boot</li>
+</ul>
+</div>
+<div class="section" id="ubuntu-12-04">
+<h1>Ubuntu 12.04</h1>
+<p>Just for completeness I'll list what I do:</p>
+<ul class="simple">
+<li>install rng-tools</li>
+<li>clean up Device Mapper and OpenSSH host keys</li>
+</ul>
+</div>
+</div>
+]]></content>
+  </entry>
   <entry>
     <author>
       <name>dtroyer</name>
