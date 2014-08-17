@@ -82,6 +82,54 @@
 <article>
   <div class="blog_post">
     <header>
+      <div id="openwrt-images-for-openstack"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/" rel="bookmark" title="Permanent Link to OpenWRT Images for OpenStack">OpenWRT Images for OpenStack</a></h1>
+      <p><small><span class="blog_post_date">August 17, 2014 at 08:17 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/openwrt/'>openwrt</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  I've been playing with OpenWRT since <mumble>-<mumble> and have enjoyed building some of the smallest Linux images around. While targeted at low-end home router platforms, it also runs on a wide variety of small SoC boards including the near-ubiqutious Raspberry Pi and my fave BeagleBone Black. I've also been using an incredibly tiny OpenWRT instance on my laptop for years now to work around the 'interesting' network configuration of VirtualBox. Building a set of VMs that need to talk to each other and to the outside world shouldn't be hard, so I added a router just like I have at
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
+      <div id="windows-images-for-openstack"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2014/07/07/windows-images-for-openstack/" rel="bookmark" title="Permanent Link to Windows Images for OpenStack">Windows Images for OpenStack</a></h1>
+      <p><small><span class="blog_post_date">July 07, 2014 at 07:07 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/virtualbox/'>virtualbox</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  There is no shortage of articles online about building Windows images for use in various clouds. What there is a shortage of are working articles on building these images unattended. The Windows unattended install process has been basically solved, even if still a bit arcane. But finding more than a trivial example of doing it in a cloud is sparse. Cloudbase has shared the tooling they created for building their Windows images. That makes a good base for an automated build process that can be tailored to your particular needs. in addition to being the authors of cloudbase-init, their GitHub
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
       <div id="openstack-icehouse-developer-summit"></div>
       <h1 class="blog_post_title"><a href="/x/blog/2013/11/10/openstack-icehouse-developer-summit/" rel="bookmark" title="Permanent Link to OpenStack Icehouse Developer Summit">OpenStack Icehouse Developer Summit</a></h1>
       <p><small><span class="blog_post_date">November 10, 2013 at 11:10 AM</span> | categories: 
@@ -147,54 +195,6 @@
 
 
   <hr class="interblog" />
-  
-
-
-
-<article>
-  <div class="blog_post">
-    <header>
-      <div id="openstack-seven-layer-dip-as-a-service"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service/" rel="bookmark" title="Permanent Link to OpenStack - Seven Layer Dip as a Service">OpenStack - Seven Layer Dip as a Service</a></h1>
-      <p><small><span class="blog_post_date">September 05, 2013 at 09:05 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/rant/'>rant</a></span>
-      </small></p>
-    </header>
-    <div class="post_prose">
-      
-  OpenStack is, as it name implies, a stack of services to provide "components for a cloud infrastructure solution". [1] There are layers of services, some interdependent on each other, some only dependent on the layers below it. For some time there has been a PC dance around 'labelling' projects that may or may not be at a layer that it wants to be in. Back in the day, the term 'core' was thrown around to identify the services necessary to build an OpenStack deployment. That term has been so misused and coopted and stomped on as to become unusable for
-
-    </div>
-  </div>
-</article>
-
-
-
-  <hr class="interblog" />
-  
-
-
-
-<article>
-  <div class="blog_post">
-    <header>
-      <div id="openstack-clients-on-windows"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2013/06/20/openstack-clients-on-windows/" rel="bookmark" title="Permanent Link to OpenStack Clients on Windows">OpenStack Clients on Windows</a></h1>
-      <p><small><span class="blog_post_date">June 20, 2013 at 06:20 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a></span>
-      </small></p>
-    </header>
-    <div class="post_prose">
-      
-  OpenStack command line clients are a pile of Python modules and dependencies and can be a real joy to install. On Linux there are often vendor-maintained packages available to simplify the task and capture all of the dependencies, while on Windows it is a completely different story as no version of Windows includes any version of Python out of the box. There are three layers to the Python stack to get the OpenStack clients (or any Python app really) installed and working on Windows: a Python interpreter/runtime, the Python modules that provide an interface to PyPI, and the client libraries
-
-    </div>
-  </div>
-</article>
-
-
-
-  <hr class="interblog" />
  <a href="/x/blog/category/openstack/2">Next Page »</a>
 
           </div>
@@ -204,11 +204,11 @@
 <!--
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
+      <li><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/">OpenWRT Images for OpenStack</a></li>
+      <li><a href="/x/blog/2014/07/07/windows-images-for-openstack/">Windows Images for OpenStack</a></li>
+      <li><a href="/x/blog/2014/03/15/beta/">Beta</a></li>
       <li><a href="/x/blog/2014/02/11/client-layers/">Client Layers</a></li>
       <li><a href="/x/blog/2014/01/14/openstackclient-plugins/">OpenStackClient Plugins</a></li>
-      <li><a href="/x/blog/2013/11/10/openstack-icehouse-developer-summit/">OpenStack Icehouse Developer Summit</a></li>
-      <li><a href="/x/blog/2013/10/21/cloud-image-updates/">Cloud Image Updates</a></li>
-      <li><a href="/x/blog/2013/09/07/devstack-local-config/">DevStack Local Config</a></li>
     </ul>
 -->
   </section>

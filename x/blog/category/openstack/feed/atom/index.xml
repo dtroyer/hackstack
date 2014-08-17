@@ -7,12 +7,319 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2014-02-14T22:12:37Z</updated>
+  <updated>2014-08-17T22:35:50Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
   <id>http://hackstack.org/x/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[OpenWRT Images for OpenStack]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2014/08/17/openwrt-images-for-openstack" />
+    <id>http://hackstack.org/x/blog/2014/08/17/openwrt-images-for-openstack</id>
+    <updated>2014-08-17T08:17:00Z</updated>
+    <published>2014-08-17T08:17:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <category scheme="http://hackstack.org/x/blog" term="openwrt" />
+    <summary type="html"><![CDATA[OpenWRT Images for OpenStack]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2014/08/17/openwrt-images-for-openstack"><![CDATA[<div class="document">
+<p>I've been playing with <a class="reference external" href="http://openwrt.org">OpenWRT</a> since &lt;mumble&gt;-&lt;mumble&gt; and have enjoyed building some of the smallest Linux images around.  While targeted at low-end home router platforms, it also runs on a wide variety of small SoC boards including the near-ubiqutious Raspberry Pi and my fave BeagleBone Black.</p>
+<p>I've also been using an incredibly tiny OpenWRT instance on my laptop for years now to work around the 'interesting' network configuration of VirtualBox.  Building a set of VMs that need to talk to each other and to the outside world shouldn't be hard, so I added a router just like I have at home in a 48Mb VM.</p>
+<p>While OpenStack typically doesn't have that need (but you never know how Neutron might be configured!) there are plenty of other purposes for such a small single-purpose VM.  So let's build one!</p>
+<p>The magic in this cloud build is having an analogue to smoser's <a class="reference external" href="https://launchpad.net/cloud-init">cloud-init</a>.  The original is written in Python and has a lot of very useful features, but requiring the Python stdlib and <tt class="docutils literal"><span class="pre">cloud-init</span></tt> dependencies to be installed expands the size of the root image considerably.   My version, called <a class="reference external" href="https://github.com/dtroyer/openwrt-packages/tree/master/rc.cloud">rc.cloud</a>, is a set of shell scripts that implement a small subset of <tt class="docutils literal"><span class="pre">cloud-init</span></tt> capabilities.  [Note: I 'borrowed' the original scripts from somewhere over three years ago and for the life of me can't find out where now.  Pointers welcome.]</p>
+<p>One of the most important features of <tt class="docutils literal"><span class="pre">cloud-init</span></tt> and <tt class="docutils literal">rc.cloud</tt> is configuring a network interface and enabling remote access.  OpenWRT defaults to no root password so I have to telnet to 192.168.1.1 to set root's password before Dropbear (a tiny ssh2 implementation) allows logins. Doing it with <tt class="docutils literal"><span class="pre">cloud-init</span></tt> or <tt class="docutils literal">rc.cloud</tt> instead allows automation and is a Wonderful Thing(TM).</p>
+<p>This isn't a detailed How-To on building OpenWRT, there are a lot of <a class="reference external" href="http://wiki.openwrt.org/doc/howto/build">good docs</a> covering that topic.  It _is_ however, the steps I use plus some additional tweaks useful in a KVM-based OpenStack cloud.</p>
+<div class="section" id="build-image-from-source">
+<h1>Build Image From Source</h1>
+<p>The basic build is straight out of the <a class="reference external" href="http://wiki.openwrt.org/doc/howto/build">OpenWRT wiki</a>.  I could have used the Image Builder, but I have some additional packages to include and like having control over the build configuration, such as either making sure IPv6 is present, or making sure it isn't.  And so on.</p>
+<p>Configuring the OpenWRT buildroot can be a daunting task so starting with a minimal configuration is very helpful.  For a guest VM image there are a few things to consider:</p>
+<ul class="simple">
+<li>the VM target (Xen, KVM, etc)</li>
+<li>root device name (vda2 for KVM, sda2 for others like VirtualBox)</li>
+</ul>
+<p>Traditionally OpenWRT has used Subversion for source control.  A move (or mirror?) on GitHub makes things easier for those of us who it it regualrly in other projects.  The <a class="reference external" href="http://wiki.openwrt.org/doc/howto/buildroot.exigence">buildroot doc</a> uses GitHub as the source so I've followed that convention.</p>
+<ul>
+<li><p class="first">Clone the repo:</p>
+<pre class="literal-block">
+git clone git://git.openwrt.org/openwrt.git
+cd openwrt
+</pre>
+</li>
+<li><p class="first">Install custom feed:</p>
+<pre class="literal-block">
+echo &quot;src-git dtroyer https://github.com/dtroyer/openwrt-packages&quot; &gt;&gt;feeds.conf.default
+</pre>
+</li>
+<li><p class="first">Install packages:</p>
+<pre class="literal-block">
+./scripts/feeds update -a
+./scripts/feeds install -a
+</pre>
+</li>
+<li><p class="first">Check for missing packages:</p>
+<pre class="literal-block">
+make defconfig
+</pre>
+</li>
+</ul>
+<div class="section" id="configuration">
+<h2>Configuration</h2>
+<ul>
+<li><p class="first">Configure:</p>
+<pre class="literal-block">
+make menuconfig
+</pre>
+</li>
+<li><p class="first">Enable the following:</p>
+<ul class="simple">
+<li>Target System: x86</li>
+<li>Subtarget: KVM guest</li>
+<li>Target Images<ul>
+<li><tt class="docutils literal">[*] ext4</tt></li>
+<li><tt class="docutils literal">(48)</tt> Root filesystem partition size (in MB)</li>
+<li><tt class="docutils literal">(/dev/vda2)</tt> Root partition on target device</li>
+</ul>
+</li>
+<li>Base System<ul>
+<li><tt class="docutils literal">{*} <span class="pre">block-mount</span></tt>  (not sure, if yes to support root fs, parted too)</li>
+<li><tt class="docutils literal">&lt;*&gt; rc.cloud</tt></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>Notes:</p>
+<ul class="simple">
+<li>Increase the root filesystem size if you do not intend to move root to another partition or increase the existing one to fit the flavor's disk size.</li>
+</ul>
+</div>
+<div class="section" id="build">
+<h2>Build</h2>
+<p>It's pretty simple:</p>
+<pre class="literal-block">
+make -j 4
+</pre>
+<p>Adjust the argument to <tt class="docutils literal"><span class="pre">-j</span></tt> as appropriate for the number of CPUs on your build system.</p>
+<p>When build errors occur, you'll need to run with output turned on:</p>
+<pre class="literal-block">
+make V=99
+</pre>
+</div>
+</div>
+<div class="section" id="configuring-the-image-for-openstack">
+<h1>Configuring the Image for OpenStack</h1>
+<p>As I mentioned earlier, there are a handful of changes to make to the resulting image that makes it ready for an OpenStack cloud.</p>
+<ul class="simple">
+<li>Set a root password - Without a root password your newly minted VM is vulnerable to a password-less telnet login if your security group rules allow that.  But more importantly, Dropbear will not allow an ssh login without a rot password.  Edit <tt class="docutils literal">/etc/shadow</tt> to set a root password</li>
+<li>Configure a network interface for DHCP - This allows the first interface to obtain its IP automatically for OpenStack clouds that provide it.  Otherwise...</li>
+<li>Configure <tt class="docutils literal">/etc/opkg.conf</tt> to my package repo - Packages usually need to be matched for not only their architecture but also other build flags.  Kernel modules are particularly rigid about how they can be loaded.</li>
+</ul>
+<div class="section" id="image-update">
+<h2>Image Update</h2>
+<p>All of the interesting parts below must be done as root.  So be careful.</p>
+<ul>
+<li><p class="first">Uncompress and copy the original image to a workspace, mount it and chroot into it:</p>
+<pre class="literal-block">
+gzip -dc bin/x86/openwrt-x86-kvm_guest-combined-ext4.img.gz &gt;openwrt-x86-kvm_guest-combined-ext4.img
+sudo kpartx -av openwrt-x86-kvm_guest-combined-ext4.img
+mkdir -p imgroot
+sudo mount -o loop /dev/mapper/loop0p2 imgroot
+sudo chroot imgroot
+</pre>
+</li>
+<li><p class="first">Make the desired changes:</p>
+<ul>
+<li><p class="first">Set root password:</p>
+<pre class="literal-block">
+sed -e '/^root/ s|^root.*$|root:\!:16270:0:99999:7:::|' -i /etc/shadow
+</pre>
+</li>
+<li><p class="first">Configure DHCP:</p>
+<pre class="literal-block">
+uci set network.lan.proto=dhcp; uci commit
+</pre>
+</li>
+<li><p class="first">Configure opkg:</p>
+<pre class="literal-block">
+sed -e &quot;s|http.*/x86/|http://bogus.hackstack.org/openwrt/x86/|&quot; -i /etc/opkg.conf
+</pre>
+</li>
+</ul>
+</li>
+<li><p class="first">Unwind the mounted image:</p>
+<pre class="literal-block">
+sudo umount imgroot
+sudo kpartx -av openwrt-x86-kvm_guest-combined-ext4.img
+</pre>
+</li>
+<li><p class="first">Upload it into Glance:</p>
+<pre class="literal-block">
+openstack image create --file openwrt-x86-kvm_guest-combined-ext4.img --property os-distro=OpenWRT OpenWRT
+
+# Glance CLI
+glance image-create --file openwrt-x86-kvm_guest-combined-ext4.img --name OpenWRT
+</pre>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="additional-modifications">
+<h1>Additional Modifications</h1>
+<div class="section" id="extending-root-filesystem">
+<h2>Extending Root Filesystem</h2>
+<p>Even the smallest flavor gets a root disk a good bit larger than the typocal OpenWRT disk image.  One way to use that space is to increase the root filesystem.  OpenWRT has something called <tt class="docutils literal">extroot</tt> that is currently experimental and semi-undocumented, so I just took the radical move of partitioning the unused space and moving the root filesystem to the new partition.</p>
+<p>Of course a real root expansion should be automated and added to <tt class="docutils literal">rc.cloud</tt> to mirror the <tt class="docutils literal"><span class="pre">cloud-init</span></tt> functionality.  Someday...</p>
+<ul>
+<li><p class="first">Install required packages if they're not part of the base build:</p>
+<pre class="literal-block">
+opkg update
+opkg install block-mount parted
+</pre>
+</li>
+<li><p class="first">Create a filesystem on the remaining disk and mount it:</p>
+<pre class="literal-block">
+parted /dev/vda -s -- mkpart primary  $(parted /dev/vda -m print | tail -1 | cut -d':' -f3) -0
+mkfs.ext4 -L newroot /dev/vda3
+mkdir -p /tmp/newroot
+mount /dev/vda3 /tmp/newroot
+</pre>
+</li>
+<li><p class="first">Copy the root filesystem:</p>
+<pre class="literal-block">
+mkdir -p /tmp/oldroot
+mount --bind / /tmp/oldroot
+tar -C /tmp/oldroot -cvf - . | tar -C /tmp/newroot -xf -
+umount /tmp/oldroot
+umount /tmp/newroot
+</pre>
+</li>
+<li><p class="first">Update the GRUB bootloader to use the new partition:</p>
+<pre class="literal-block">
+mkdir -p /tmp/boot
+mount /dev/vda1 /tmp/boot
+sed -e 's/vda2/vda3/' -i /tmp/boot/boot/grub/grub.cfg
+umount /tmp/boot
+</pre>
+</li>
+<li><p class="first">Reboot</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Windows Images for OpenStack]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2014/07/07/windows-images-for-openstack" />
+    <id>http://hackstack.org/x/blog/2014/07/07/windows-images-for-openstack</id>
+    <updated>2014-07-07T07:07:00Z</updated>
+    <published>2014-07-07T07:07:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="windows" />
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <category scheme="http://hackstack.org/x/blog" term="virtualbox" />
+    <summary type="html"><![CDATA[Windows Images for OpenStack]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2014/07/07/windows-images-for-openstack"><![CDATA[<div class="document">
+<p>There is no shortage of articles online about building Windows images for use in various clouds.  What there is a shortage of are working articles on building these images unattended.  The Windows unattended install process has been basically solved, even if still a bit arcane.  But finding more than a trivial example of doing it in a cloud is sparse.</p>
+<p>Cloudbase has <a class="reference external" href="https://github.com/cloudbase/windows-openstack-imaging-tools">shared the tooling</a> they created for building their Windows images.  That makes a good base for an automated build process that can be tailored to your particular needs.  in addition to being the authors of cloudbase-init, their GitHub account is a trove of resources for Windows admins.</p>
+<p>Since I had a Windows 7 Professional ISO handy I used that for the example...</p>
+<div class="section" id="requirements">
+<h1>Requirements</h1>
+<p>The resulting image must:</p>
+<ul class="simple">
+<li>have RedHat's VirtIO drivers installed</li>
+<li>use <tt class="docutils literal"><span class="pre">cloudbase-init</span></tt> for metadata handling</li>
+</ul>
+</div>
+<div class="section" id="build-in-virtualbox">
+<h1>Build In VirtualBox</h1>
+<p>The Cloudbase process is designed to perform the build using KVM.  Ideally, it would be possible to boot a VM in an OpenStack cloud from the install ISO and let it go, but it turns out this is hard.  The unattended install process  requires two ISO images and a floppy image attached to the VM in addition to the target disk device. OpenStack currently has no way to do all of these attachments.  The alternative is to stash autounattend.xml and the virtio drivers in the Windows install ISO, but this requires a rebuild/upload for _every_ change to the install scripts.</p>
+<p>So normally this means a Linux on bare-metal install is required.  How hard is it to dig up a laptop with Trusty on it?  Hard, if you're me.</p>
+<p>I've heard that using VirtualBox doesn't work for some reason, but these reasons haven't been made clear to me so I didn't know I couldn't do what I'm describing here.</p>
+<div class="section" id="auto-answer-changes">
+<h2>Auto Answer Changes</h2>
+<p>One of the main change to Cloudbase's setup is to put the PowerShell scripts on the floppy with Autounattend.xml.  This ensures that the files are matched together and changes in the repo doesn't break our working setup.</p>
+<p>The Autounattend.xml file has a couple of changes other than those required to run the script from the floppy:</p>
+<ul class="simple">
+<li>Add the MetaData value for Win7</li>
+<li>Since this is Win7, we need to enable the account stanza</li>
+<li>Install a public product key</li>
+<li>Fix a spacing error in the Microsoft-Windows-International-Core-WinPE component element</li>
+</ul>
+</div>
+<div class="section" id="powershell-script-changes">
+<h2>PowerShell Script Changes</h2>
+<p>The primary change to the PowerShell scripts is to remove the file downloads and retrieve them from the floppy instead.</p>
+</div>
+<div class="section" id="make-the-floppy-image">
+<h2>Make the Floppy Image</h2>
+<p>I used <a class="reference external" href="/x/files/make-floppy.sh">this script</a> to create the floppy image, it builds a new image, mounts it, copies the appropriate Autounattend.xml and PowerShell scripts and other files, then umnounts the image.</p>
+</div>
+<div class="section" id="build-vm-configuration">
+<h2>Build VM Configuration</h2>
+<p>Automating a VBox build includes creating the VM to be used.  The <tt class="docutils literal">VBoxManage</tt> tool is the simple way to do this from a script and that's exactly what I've done here.</p>
+<p>It turns out that 16Gb is not enough for Windows 7 installation once all of the updates are installed.  There are a LOT of them, 157 at this writing.  Even though this only needs to be done once, it takes a long time to apply them and it might be worthwhile to obtain media with the updates pre-applied.</p>
+<p>The commands here are taken from the <tt class="docutils literal"><span class="pre">build-vb.sh</span></tt> script.</p>
+<p>Create a new empty VM and disk:</p>
+<pre class="literal-block">
+BASE_NAME='win-build'
+# Create a new empty VM
+VBoxManage createvm --name &quot;$BASE_NAME&quot; --ostype &quot;$OS_TYPE&quot; --register
+VBoxManage createhd --filename &quot;$VM_DIR/$BASE_NAME.vdi&quot; --size $DISK_SIZE
+</pre>
+<p>The disk configuration is an important part of this process so everything is found as required.  In addition to the install disk and install ISO a second ISO must be mounted containing the VirtIO drivers and a floppy image with the Autounattend.xml and Powershell scripts:</p>
+<pre class="literal-block">
+# SATA Controller
+VBoxManage storagectl &quot;$BASE_NAME&quot; --name &quot;SATA&quot; --add sata
+VBoxManage storageattach &quot;$BASE_NAME&quot; --storagectl &quot;SATA&quot; --type hdd \
+    --port 0 --device 0 --medium &quot;$VM_DIR/$BASE_NAME.vdi&quot;
+
+# Make IDE disks
+VBoxManage storagectl &quot;$BASE_NAME&quot; --name &quot;IDE&quot; --add ide
+VBoxManage storageattach &quot;$BASE_NAME&quot; --storagectl &quot;IDE&quot;  --type dvddrive \
+    --port 0  --device 0 --medium &quot;$WIN_ISO&quot;
+VBoxManage storageattach &quot;$BASE_NAME&quot; --storagectl &quot;IDE&quot;  --type dvddrive \
+    --port 1  --device 0 --medium &quot;$VIRTIO_ISO&quot;
+
+# Floppy disk image
+VBoxManage storagectl &quot;$BASE_NAME&quot; --name &quot;Floppy&quot; --add floppy
+VBoxManage storageattach &quot;$BASE_NAME&quot; --storagectl &quot;Floppy&quot; --type fdd \
+    --port 0 --device 0 --medium &quot;$FLOPPY&quot;
+</pre>
+<p>Do the remaining basic configuration, including a virtio NIC to tickle Windows to install the drivers:</p>
+<pre class="literal-block">
+# General Config
+VBoxManage modifyvm &quot;$BASE_NAME&quot; --cpus 2
+VBoxManage modifyvm &quot;$BASE_NAME&quot; --memory $RAM_SIZE --vram 24
+VBoxManage modifyvm &quot;$BASE_NAME&quot; --ioapic on
+
+VBoxManage modifyvm &quot;$BASE_NAME&quot; --nic1 nat --bridgeadapter1 e1000g0
+VBoxManage modifyvm &quot;$BASE_NAME&quot; --nic2 nat
+VBoxManage modifyvm &quot;$BASE_NAME&quot; --nictype2 virtio
+
+VBoxManage modifyvm &quot;$BASE_NAME&quot; --boot1 dvd --boot2 disk --boot3 none --boot4 none
+</pre>
+<p>Kick off the build process:</p>
+<pre class="literal-block">
+VBoxManage startvm &quot;$BASE_NAME&quot; --type gui
+</pre>
+<p>Convert the disk from VDI to QCOW2 format for uploading into the image store:</p>
+<pre class="literal-block">
+qemu-img convert -p -O qcow &quot;$VM_DIR/$BASE_NAME.vdi&quot; &quot;$VM_DIR/$BASE_NAME.qcow&quot;
+</pre>
+</div>
+</div>
+</div>
+]]></content>
+  </entry>
   <entry>
     <author>
       <name>dtroyer</name>
@@ -1102,302 +1409,6 @@ that provided an energetic open to the keynotes.  Stay tuned for some deeper tho
 <tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Sorry VMS DCL fans, I tried.</td></tr>
 </tbody>
 </table>
-</div>
-]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>dtroyer</name>
-      <uri>http://hackstack.org/x/blog</uri>
-    </author>
-    <title type="html"><![CDATA[A Fedora 18 Image for OpenStack]]></title>
-    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2013/01/25/a-fedora-18-image-for-openstack" />
-    <id>http://hackstack.org/x/blog/2013/01/25/a-fedora-18-image-for-openstack</id>
-    <updated>2013-01-25T01:25:00Z</updated>
-    <published>2013-01-25T01:25:00Z</published>
-    <category scheme="http://hackstack.org/x/blog" term="openstack" />
-    <category scheme="http://hackstack.org/x/blog" term="fedora" />
-    <summary type="html"><![CDATA[A Fedora 18 Image for OpenStack]]></summary>
-    <content type="html" xml:base="http://hackstack.org/x/blog/2013/01/25/a-fedora-18-image-for-openstack"><![CDATA[<div class="document">
-<p><em>[Updated 01Oct2013 to correct spelling and command formatting]</em></p>
-<p>Building images to boot in a cloud can be a lot of fun, especially since no two clouds are built alike.  Now fortunately the differences are mostly minor, but some of the minor differences can be fatal. Ugh.</p>
-<div class="section" id="good-news">
-<h1>Good News</h1>
-<p>The recent release of Fedora 18 brought with it a pleasant surprise, the build of some images suitable for loading into your favorite cloud, ala Ubuntu's UEC images.
-The <a class="reference external" href="http://lists.fedoraproject.org/pipermail/cloud/2013-January/002192.html">mailing list notice</a> gives the background and a reply in that thread mentions some desirable changes.  So in order to make those changes I decided to roll my own using the FCI <a class="reference external" href="/x/files/fedora-18-x86_64-cloud.ks">kickstart</a> as a base.</p>
-<p>The <a class="reference external" href="/x/files/fedora-18-x86_64-cloud-dt1.ks">new kickstart</a> file is pretty straightforward and mostly self-explanatory.  Here is what I changed:</p>
-<pre class="literal-block">
-* Set the timezone to ``Etc/UTC``
-* Configure for serial console
-* Create a default ``fedora`` user (instead of ``ec2-user``)
-* Leave behind a build timestamp in /etc/.build
-* Remove sendmail
-* Add ??
-</pre>
-<p>And here is what it took to get <tt class="docutils literal"><span class="pre">appliance-creator</span></tt> running on a fresh Fedora 17 VM:</p>
-<pre class="literal-block">
-sudo yum install -y appliance-tools.noarch
-wget -N http://git.fedorahosted.org/cgit/cloud-kickstarts.git/plain/generic/fedora-18-x86_64-cloud.ks
-# make kickstart changes
-sudo appliance-creator --config fedora-18-x86_64-cloud-dt1.ks \
-  --name fedora18-x86_64-cloud-dt1 --format raw
-</pre>
-<p>The conversion to qcow2 is done separately as <tt class="docutils literal"><span class="pre">appliance-creator</span></tt> doesn't compress qcow2 images:</p>
-<pre class="literal-block">
-qemu-img convert -c -f raw -O qcow2 \
-  fedora-18-x86_64-cloud-dt1.raw \
-  fedora-18-x86_64-cloud-dt1.qcow2
-</pre>
-<p>Kick it into the cloud image repository:</p>
-<pre class="literal-block">
-glance image-create --name &quot;Fedora 18 x86_64 cloudimg&quot; \
-  --disk-format qcow2 --container-format bare \
-  --is-public false --file fedora-18-x86_64-cloud-dt1-sda.qcow2
-</pre>
-<div class="section" id="kickstart-details">
-<h2>Kickstart Details</h2>
-<p>All of the excerpts below are shown in diff(1) format to illustrate the changes made to the original kickstart file.</p>
-<div class="section" id="timezone">
-<h3>Timezone</h3>
-<p>Set the timezone to <tt class="docutils literal">Etc/UTC</tt>:</p>
-<pre class="literal-block">
--timezone --utc America/New_York
-+timezone --utc Etc/UTC
-</pre>
-</div>
-<div class="section" id="serial-console">
-<h3>Serial Console</h3>
-<p>There are a couple of things that need to be updated to properly get a serial console in Linux.
-Append to the bootloader:</p>
-<pre class="literal-block">
--bootloader --timeout=0 --location=mbr --driveorder=sda
-+bootloader --timeout=0 --location=mbr --driveorder=sda --append=&quot;console=tty console=ttyS0&quot;
-</pre>
-<p>Configuring Grub takes a little more effort. The original kickstart only worked in the chroot-ed <tt class="docutils literal">%post</tt> but <tt class="docutils literal"><span class="pre">grub2-mkconfig</span></tt> failed because /dev was not complete.
-By adding a <tt class="docutils literal">%post <span class="pre">--nochroot</span></tt> section /dev can be bind-mounted into the chroot so <tt class="docutils literal"><span class="pre">grub2-mkconfig</span></tt> is happy.
-I probably went a little overboard in setting up the proper serial console arguments to the kernel command line but the following worked:</p>
-<pre class="literal-block">
-+%post --nochroot
-+echo &quot;Configure GRUB2 for serial console&quot;
-+echo GRUB_TIMEOUT=0 &gt; $INSTALL_ROOT/etc/default/grub
-+echo GRUB_TERMINAL=console &gt;&gt;$INSTALL_ROOT/etc/default/grub
-+echo GRUB_CMDLINE_LINUX=\&quot;console=ttyS0 console=tty\&quot; &gt;&gt;$INSTALL_ROOT/etc/default/grub
-+echo GRUB_CMDLINE_LINUX_DEFAULT=\&quot;console=ttyS0\&quot; &gt;&gt;$INSTALL_ROOT/etc/default/grub
-+mount -o bind /dev $INSTALL_ROOT/dev
-+/usr/sbin/chroot $INSTALL_ROOT /sbin/grub2-mkconfig -o /boot/grub2/grub.cfg
-+umount $INSTALL_ROOT/dev
-+%end
-</pre>
-<p>The following lines were also removed from the original <tt class="docutils literal">%post</tt> Grub section:</p>
-<pre class="literal-block">
--echo GRUB_TIMEOUT=0 &gt; /etc/default/grub
--sed -i 's/^set timeout=5/set timeout=0/' /boot/grub2/grub.cfg
-</pre>
-</div>
-<div class="section" id="default-account">
-<h3>Default Account</h3>
-<p><tt class="docutils literal"><span class="pre">cloud-init</span></tt> creates an <tt class="docutils literal"><span class="pre">ec2-user</span></tt> account by default.  The account is useful but this isn't EC2 so the account is renamed to <tt class="docutils literal">fedora</tt>:</p>
-<pre class="literal-block">
--# Uncomment this if you want to use cloud init but suppress the creation
--# of an &quot;ec2-user&quot; account. This will, in the absence of further config,
--# cause the ssh key from a metadata source to be put in the root account.
--#cat &lt;&lt;EOF &gt; /etc/cloud/cloud.cfg.d/50_suppress_ec2-user_use_root.cfg
--#users: []
--#disable_root: 0
--#EOF
-+# Rename the 'ec2-user' account to 'fedora'
-+sed -i '
-+  s/name: ec2-user/name: fedora/g
-+  s/gecos: EC2/gecos: Fedora/g
-+' /etc/cloud/cloud.cfg
-</pre>
-</div>
-<div class="section" id="build-stamp">
-<h3>Build Stamp</h3>
-<p>Leave a file containing the build version and timestamp just in case it might be useful from inside the VM:</p>
-<pre class="literal-block">
-+# Leave behind a build stamp
-+echo &quot;build=nebula1 $(date +%F.%T)&quot; &gt;/etc/.build
-</pre>
-</div>
-</div>
-</div>
-</div>
-]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>dtroyer</name>
-      <uri>http://hackstack.org/x/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Securing OpenStack Client Connections Part 2]]></title>
-    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2012/12/21/securing-openstack-client-connections-part-2" />
-    <id>http://hackstack.org/x/blog/2012/12/21/securing-openstack-client-connections-part-2</id>
-    <updated>2012-12-21T12:12:12Z</updated>
-    <published>2012-12-21T12:12:12Z</published>
-    <category scheme="http://hackstack.org/x/blog" term="openstack" />
-    <category scheme="http://hackstack.org/x/blog" term="devstack" />
-    <summary type="html"><![CDATA[Securing OpenStack Client Connections Part 2]]></summary>
-    <content type="html" xml:base="http://hackstack.org/x/blog/2012/12/21/securing-openstack-client-connections-part-2"><![CDATA[<div class="document">
-<p>In the first part of this series we covered creating a pair of certificate authorities and a signed certificate with the same attributes commonly found in commercial certificates.  This part covers the OpenStack Python clients and proper certificate verification.</p>
-<p>The OpenStack client repositories (or packages) include both the Python API bindings and the reference command line interface (CLI) implementation to communicate with the OpenStack APIs.   Client support for modern encrypted connections, i.e SSLv3 and/or TLSv1, has been spotty at best.</p>
-<p>Most of the clients are capable of using SSL for encryption but often the certificate verification part of the protocol did not work properly for tier-2 or privately signed certificates, prompting the addition of the <tt class="docutils literal"><span class="pre">--insecure</span></tt> option to some of the clients to sidestep the problem altogether.  In addition, most of the clients had no mechanism to specify an alternate CA bundle file to enable certificate verification for certificates not signed by the commercial CAs.</p>
-<p>Python has historically had incomplete X.509 certificate support in its standard library.  For example, <tt class="docutils literal">ssl</tt> and <tt class="docutils literal">httplib</tt> do not verify the hostname as part of certificate verification. Four of the clients (keystone, nova, cinder, quantum) use <tt class="docutils literal">httplib2</tt> which had no hostname verification before version 0.7.0 and what it currently has is also incomplete. The other two clients (glance and swift) use <tt class="docutils literal">httplib</tt> directly and either have no hostname verification (swift) or implement it locally (glance).</p>
-<div class="section" id="issue-summary">
-<h1>Issue Summary</h1>
-<ul class="simple">
-<li>Python's <tt class="docutils literal">ssl</tt> module does no certificate hostname verification in 2.7.x; it has been added in 3.2 but will not be backported. <a class="footnote-reference" href="#id3" id="id1">[1]</a></li>
-<li><tt class="docutils literal">ssl</tt> is pinned to using protocol version <tt class="docutils literal">SSLv23</tt> and must be directly patched to override it.</li>
-<li><tt class="docutils literal">httplib</tt> uses <tt class="docutils literal">ssl</tt> and adds no hostname verification.  In addition it only uses the default <tt class="docutils literal">SSLV23</tt> protocol version set by <tt class="docutils literal">ssl</tt>.  We don't want this as SSLv2 is deprecated and insecure.  Patching that value directly into the <tt class="docutils literal">ssl</tt> module works but is suboptimal.</li>
-<li><tt class="docutils literal">httplib2</tt> implements a basic hostname verification but it has some problems such as only checking <tt class="docutils literal">commonName</tt> if the certificate's <tt class="docutils literal">subjectAltNames</tt> is not present and handling wildcards differently than specified in RFC-2818.</li>
-<li><tt class="docutils literal">httplib2</tt> uses an internal ca bundle (<tt class="docutils literal">cacert.txt</tt>) if the <tt class="docutils literal">ca_certs</tt> argument is not given to <tt class="docutils literal">HTTPSConnectionWithTimeout.__init__()</tt>.</li>
-<li>In other news, <tt class="docutils literal">httplib2</tt> only supports 3xx redirects for GET method.</li>
-</ul>
-<div class="section" id="additional-notes">
-<h2>Additional Notes</h2>
-<p>glanceclient has patched the <tt class="docutils literal">ssl</tt> module out of <tt class="docutils literal">httplib</tt> in favor of <tt class="docutils literal">pyOpenSSL</tt>.  Stuart McLaren added <tt class="docutils literal">http.VerifiedHTTPSConnection.host_matches_cert()</tt> to validate <tt class="docutils literal">commonName</tt> and <tt class="docutils literal">subjectAltName</tt> for <tt class="docutils literal">httplib</tt> connections but it doesn't handle wildcards.</p>
-</div>
-</div>
-<div class="section" id="why-requests-2">
-<h1>Why requests? <a class="footnote-reference" href="#id4" id="id2">[2]</a></h1>
-<p>The <tt class="docutils literal">requests</tt> module backported <tt class="docutils literal">match_hostname()</tt> from Python 3.2.  Like the rest of the modules here it does not handle the <tt class="docutils literal">iPAddress</tt> attribute in <tt class="docutils literal">subjectAltName</tt>. This is mostly relevant in development and testing use cases like with DevStack.  The 3.2 <tt class="docutils literal">match_hostname()</tt> implementation however does allow IP addresses as a <tt class="docutils literal">dNSName</tt>.</p>
-<p><tt class="docutils literal">requests</tt> also brings a number of other features to the table that may or may not have been implemented individually in the existing clients such as JSON encoding/decoding and 3xx redirection support for POST, PUT, PATCH DELETE, and HEAD.  Plus it is stable (notwithstanding the recent 1.0 release) and the developer is known in the OS community.</p>
-</div>
-<div class="section" id="the-cli-solution">
-<h1>The CLI Solution</h1>
-<p>There has recently been a round of patches to the CLIs to get them all up to the same level of support for TLSv1 to be used for authentication at a minimum.  Glance and Swift continue to use <tt class="docutils literal">httplib</tt> directly for their data transfer connections (really, all connections to their respective services) and these already support SSLv3.</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="11%" />
-<col width="16%" />
-<col width="44%" />
-<col width="16%" />
-<col width="13%" />
-</colgroup>
-<thead valign="bottom">
-<tr><th class="head">Client</th>
-<th class="head">HTTP Module</th>
-<th class="head">Client object</th>
-<th class="head">CLI Arg</th>
-<th class="head">Env Var</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr><td>keystone</td>
-<td>httplib2</td>
-<td>class.HTTPClient(httplib2.Http)</td>
-<td>--os-cacert</td>
-<td>OS_CACERT</td>
-</tr>
-<tr><td>nova</td>
-<td>httplib2</td>
-<td>class.HTTPClient(httplib2.Http)</td>
-<td>n/a</td>
-<td>n/a</td>
-</tr>
-<tr><td>cinder</td>
-<td>httplib2</td>
-<td>class.HTTPClient(httplib2.Http)</td>
-<td>n/a</td>
-<td>n/a</td>
-</tr>
-<tr><td>glance</td>
-<td>httplib</td>
-<td>class.HTTPClient(object)</td>
-<td>--ca-file</td>
-<td>n/a</td>
-</tr>
-<tr><td>swift</td>
-<td>httplib</td>
-<td>class Connection(object)</td>
-<td>n/a</td>
-<td>n/a</td>
-</tr>
-<tr><td>quantum</td>
-<td>httplib2</td>
-<td>class.HTTPClient(httplib2.Http)</td>
-<td>n/a</td>
-<td>n/a</td>
-</tr>
-</tbody>
-</table>
-<p>The approach taken for the <tt class="docutils literal">httplib2</tt> subclasses is to change the parent class to <tt class="docutils literal">object</tt> and rework the <tt class="docutils literal">request()</tt> method to call <tt class="docutils literal">requests.request()</tt>.  Some of the differences for <tt class="docutils literal">requests</tt> leaked out of that method but have been mostly containd within the <tt class="docutils literal">HTTPClient</tt> class.  All four of the clients (formerly) using <tt class="docutils literal">httplib2</tt> have implemented one or more features that can easily be handled by <tt class="docutils literal">requests</tt> (redirection) or should also be propogated to the other clients.  This is ripe for a refactor of <tt class="docutils literal">HTTPClient</tt> to a common module but that effort is not in scope here.</p>
-<div class="section" id="keystoneclient">
-<h2>keystoneclient</h2>
-<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/17624/">https://review.openstack.org/#/c/17624/</a> <em>(complete)</em></p>
-<ul class="simple">
-<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
-</ul>
-</div>
-<div class="section" id="novaclient">
-<h2>novaclient</h2>
-<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/18257/">https://review.openstack.org/#/c/18257/</a> <em>(complete)</em></p>
-<ul class="simple">
-<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
-<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
-<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
-</ul>
-</div>
-<div class="section" id="cinderclient">
-<h2>cinderclient</h2>
-<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/18278/">https://review.openstack.org/#/c/18278/</a> <em>(complete)</em></p>
-<ul class="simple">
-<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
-<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
-<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
-</ul>
-</div>
-<div class="section" id="glanceclient">
-<h2>glanceclient</h2>
-<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/17698/">https://review.openstack.org/#/c/17698/</a> <em>(complete)</em></p>
-<ul class="simple">
-<li>rename <tt class="docutils literal"><span class="pre">--ca-cert</span></tt> to <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and add <tt class="docutils literal">OS_CACERT</tt></li>
-<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
-</ul>
-</div>
-<div class="section" id="swiftclient">
-<h2>swiftclient</h2>
-<p>Implemented in <a class="reference external" href="https://review.openstack.org/#/c/18393/">https://review.openstack.org/#/c/18393/</a> <em>(complete)</em></p>
-<ul class="simple">
-<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
-<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
-</ul>
-</div>
-<div class="section" id="quantumclient">
-<h2>quantumclient</h2>
-<p><em>(not started)</em></p>
-<ul class="simple">
-<li>replace <tt class="docutils literal">httplib2</tt> with <tt class="docutils literal">requests</tt></li>
-<li>add <tt class="docutils literal"><span class="pre">--os-cacert</span></tt> and <tt class="docutils literal">OS_CACERT</tt> support</li>
-<li>provide <tt class="docutils literal">ca_cert</tt> to keystone client for authentication</li>
-</ul>
-</div>
-<div class="section" id="testing">
-<h2>Testing</h2>
-<p>Aside from the usual unit tests, support for a TLS proxy is being added to DevStack to demonstrate and test a TLS-enabled OpenStack configuration.  It uses <tt class="docutils literal">stud</tt> as the TLS endpoint that proxies to the usual service endpoints.  The most interesting challenge here is doing it all on a single host and making the service catalog work.  Yay!  This will be described in (hopefully) the next post in this series.</p>
-<p>The TLS-in-DevStack also builds a two-tiered CA (root and intermediate) for testing proper certificate chain validation as described in <a class="reference external" href="/x/blog/2012/12/18/securing-openstack-client-connections-part-1/">the first installment</a>.</p>
-</div>
-</div>
-<div class="section" id="links">
-<h1>Links</h1>
-<ul class="simple">
-<li>glanceclient <tt class="docutils literal">host_matches_cert()</tt>: <a class="reference external" href="https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py">https://review.openstack.org/#/c/16305/4/glanceclient/common/http.py</a></li>
-<li><tt class="docutils literal">request</tt>'s <tt class="docutils literal">urllib3.ssl_match_hostname.match_hostname()</tt>: <a class="reference external" href="https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72">https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/connectionpool.py#L72</a> <a class="reference external" href="https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23">https://github.com/kennethreitz/requests/blob/master/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py#L23</a></li>
-</ul>
-<hr class="docutils" />
-<table class="docutils footnote" frame="void" id="id3" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><a class="reference external" href="http://bugs.python.org/issue1589">Python issue 1589</a>, the comments about 2.x <a class="reference external" href="http://bugs.python.org/issue1589#msg120946">begin here</a>.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="id4" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>The patches for the OpenStack CLIs were engineered and implemented before the release of <tt class="docutils literal">requests</tt> 1.0 which is a significantly different implementation and is untested in our application.</td></tr>
-</tbody>
-</table>
-</div>
 </div>
 ]]></content>
   </entry>
