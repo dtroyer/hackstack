@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+     xmlns:atom="http://www.w3.org/2005/Atom"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+     >
+  <channel>
+    <title>HackStack Posts</title>
+    <link>http://hackstack.org/x/blog</link>
+    <description>OpenStack and other hackish things</description>
+    <pubDate>Thu, 21 Aug 2014 18:19:13 GMT</pubDate>
+    <generator>Blogofile</generator>
+    <sy:updatePeriod>hourly</sy:updatePeriod>
+    <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Beta</title>
+      <link>http://hackstack.org/x/blog/2014/03/15/beta</link>
+      <pubDate>Sat, 15 Mar 2014 03:15:00 CDT</pubDate>
+      <category><![CDATA[history]]></category>
+      <guid isPermaLink="false">MBmEpjmOJ7BmgGrub863KlIidm8=</guid>
+      <description>Beta</description>
+      <content:encoded><![CDATA[<div class="document">
+</div>
+]]></content:encoded>
+    </item>
+  </channel>
+</rss>
