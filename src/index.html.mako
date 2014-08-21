@@ -8,7 +8,7 @@ HackStack
 OpenStack hacking and more...
 
 <ul>
-  % for post in bf.config.blog.iter_posts_published(5):
+  % for post in bf.config.blog.iter_posts_published(10):
     <li><a href="${post.path}">${post.title}</a></li>
   % endfor
 </ul>
