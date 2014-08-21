@@ -7,12 +7,159 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2014-08-17T22:35:50Z</updated>
+  <updated>2014-08-21T19:04:10Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
   <id>http://hackstack.org/x/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[More Notes on Windows Images]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2014/07/13/more-notes-on-windows-images" />
+    <id>http://hackstack.org/x/blog/2014/07/13/more-notes-on-windows-images</id>
+    <updated>2014-07-13T07:13:00Z</updated>
+    <published>2014-07-13T07:13:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="windows" />
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <summary type="html"><![CDATA[More Notes on Windows Images]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2014/07/13/more-notes-on-windows-images"><![CDATA[<div class="document">
+<p>This is a follow-up to <a class="reference external" href="/x/blog/2014/07/07/windows-images-for-openstack/">Windows Images for OpenStack</a> that includes some of the notes accumulated along the way.</p>
+<div class="section" id="other-docs">
+<h1>Other Docs</h1>
+<p>Building Windows VM images is a topic that has been done to death, but the working consensus of those I've talked to is that <a class="reference external" href="http://www.florentflament.com/blog/windows-images-for-openstack.html">Florent Flament's post</a> is one of the best guides through this minefield.</p>
+</div>
+<div class="section" id="metadata-server-curl-commands">
+<h1>Metadata Server Curl Commands</h1>
+<p>Instance UUID:</p>
+<blockquote>
+curl <a class="reference external" href="http://169.254.169.254/openstack/latest/meta_data.json">http://169.254.169.254/openstack/latest/meta_data.json</a> | python -c 'import sys, json; print json.load(sys.stdin)[&quot;uuid&quot;]'</blockquote>
+<p>Instance Name:</p>
+<blockquote>
+curl <a class="reference external" href="http://169.254.169.254/openstack/latest/meta_data.json">http://169.254.169.254/openstack/latest/meta_data.json</a> | python -c 'import sys, json; print json.load(sys.stdin)[&quot;name&quot;]'</blockquote>
+<p>Fixed IP:</p>
+<blockquote>
+curl <a class="reference external" href="http://169.254.169.254/latest/meta-data/local-ipv4">http://169.254.169.254/latest/meta-data/local-ipv4</a></blockquote>
+<p>Floating IP:</p>
+<blockquote>
+curl <a class="reference external" href="http://169.254.169.254/latest/meta-data/public-ipv4">http://169.254.169.254/latest/meta-data/public-ipv4</a></blockquote>
+</div>
+<div class="section" id="building-on-an-openstack-cloud">
+<h1>Building on an OpenStack Cloud</h1>
+<p>One of the changes to the base instructions is to perform the build in an OpenStack cloud.  The compute node must have nested virtualization enabled so KVM will run, otherwise Qemu would be used and we just don't have time for that.</p>
+<p>I'm going to use <a class="reference external" href="https://github.com/cloudenvy/cloudenvy">Cloudenvy</a> to manage the build VM.  It is similar to Vagrant in automating the grunt work of provisioning the VM.  The VM needs to have at least 4Gb RAM and 40Gb disk available in order to boot the seed Windows image.  This is an <tt class="docutils literal">n1.medium</tt> flavor on the private cloud I am using.</p>
+<p>I am also using Ubuntu 14.04 because much of my tooling already assumes an Ubuntu build environment.  There is no technical reason that Fedora 20 could not be used, appropriate adjustments would need to be made, of course.</p>
+<div class="section" id="build-vm">
+<h2>Build VM</h2>
+<p>I am not going to spend much time here explaining Cloudenvy's configuration, but there are two things required to not have a bad time with it.</p>
+<p>Configure your cloud credentials in <tt class="docutils literal"><span class="pre">~/.cloudenvy</span></tt>:</p>
+<pre class="literal-block">
+cloudenvy:
+    keypair_name: dev-key
+    keypair_location: ~/.ssh/id_rsa-dev-key.pub
+    clouds:
+        cloud9:
+            os_auth_url: https://cloud9.slackersatwork.com:2884/v2.0/
+            os_tenant_name: demo
+            os_username: demo
+            os_password: secrete
+</pre>
+<pre class="literal-block">
+project_config:
+    name: imagebuilder
+    image: Ubuntu 14.04
+    remote_user: ubuntu
+    flavor_name: n1.medium
+
+sec_groups: [
+    'tcp, 22, 22, 0.0.0.0/0',
+    'tcp, 5900, 5919, 0.0.0.0/0',
+    'icmp, -1, -1, 0.0.0.0/0'
+]
+
+files:
+    Makefile: '~'
+    ~/.cloud9.conf: '~'
+
+provision_scripts:
+    - install-prereqs.sh
+</pre>
+<p>The <tt class="docutils literal"><span class="pre">~/.cloud9.conf</span></tt> file is a simple script fragment that sets the <tt class="docutils literal">OS_*</tt> environment variable credentials required to authenticate using the OpenStack CLI tools.  It looks something like:</p>
+<pre class="literal-block">
+export OS_AUTH_URL=https://cloud9.slackersatwork.com:2884/v2.0/
+export OS_TENANT_NAME=demo
+export OS_USERNAME=demo
+export OS_PASSWORD=secrete
+</pre>
+<p>Why do we need two sets of credentials?  Because we haven't taught Cloudenvy to read the usual environment variables yet.  I smell a pull request in my future...</p>
+<p>Fire it up and log in:</p>
+<pre class="literal-block">
+envy up
+envy ssh
+</pre>
+<p>At this point we can switch over to Flament's process.</p>
+<p>Or we can use the cloudbase auto-answer template</p>
+<p>Get the ISO:</p>
+<pre class="literal-block">
+&gt;en_windows_7_professional_with_sp1_x64_dvd_u_676939.iso
+for i in aa ab ac ad ae af ag ah; do \
+    swift download windows7 en_windows_7_professional_with_sp1_x64_dvd_u_676939.iso-$i; \
+    cat en_windows_7_professional_with_sp1_x64_dvd_u_676939.iso-$i &gt;&gt;en_windows_7_professional_with_sp1_x64_dvd_u_676939.iso
+done
+</pre>
+<p>sudo ./make-floppy.sh</p>
+<hr class="docutils" />
+<pre class="literal-block">
+# add keypair if not already there
+os keypair create --public-key ~/.ssh/id_rsa.pub $(hostname -s)
+
+# Create VM
+os server create \
+  --image &quot;Ubuntu 14.04&quot; \
+  --flavor n1.tiny \
+  --key-name bunsen \
+  --user-data cconfig.txt \
+  --wait \
+  dt-1
+
+export IP=$(os server show dt-1 -f value -c addresses | cut -d '=' -f2)
+
+# Go to there
+ssh ubuntu&#64;$IP
+</pre>
+<hr class="docutils" />
+<p>Now on to Florent's steps</p>
+<ul>
+<li><p class="first">Create a virtual disk</p>
+<blockquote>
+<p>qemu-img create -f qcow2 Windows-Server-2008-R2.qcow2 9G</p>
+</blockquote>
+</li>
+<li><p class="first">Boot the install VM</p>
+</li>
+</ul>
+<pre class="literal-block">
+kvm \
+    -m 2048 \
+    -cdrom &lt;WINDOWS_INSTALLER_ISO&gt; \
+    -drive file=Windows-Server-2008-R2.qcow2,if=virtio \
+    -drive file=&lt;VIRTIO_DRIVERS_ISO&gt;,index=3,media=cdrom \
+    -net nic,model=virtio \
+    -net user \
+    -nographic \
+    -vnc :9 \
+    -k fr \
+    -usbdevice tablet
+</pre>
+<p>Connect via VNC to :9</p>
+</div>
+</div>
+</div>
+]]></content>
+  </entry>
   <entry>
     <author>
       <name>dtroyer</name>
@@ -117,119 +264,6 @@ qemu-img convert -p -O qcow &quot;$VM_DIR/$BASE_NAME.vdi&quot; &quot;$VM_DIR/$BA
 </pre>
 </div>
 </div>
-</div>
-]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>dtroyer</name>
-      <uri>http://hackstack.org/x/blog</uri>
-    </author>
-    <title type="html"><![CDATA[OpenStack Clients on Windows]]></title>
-    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2013/06/20/openstack-clients-on-windows" />
-    <id>http://hackstack.org/x/blog/2013/06/20/openstack-clients-on-windows</id>
-    <updated>2013-06-20T06:20:00Z</updated>
-    <published>2013-06-20T06:20:00Z</published>
-    <category scheme="http://hackstack.org/x/blog" term="windows" />
-    <category scheme="http://hackstack.org/x/blog" term="openstack" />
-    <summary type="html"><![CDATA[OpenStack Clients on Windows]]></summary>
-    <content type="html" xml:base="http://hackstack.org/x/blog/2013/06/20/openstack-clients-on-windows"><![CDATA[<div class="document">
-<p>OpenStack command line clients are a pile of Python modules and dependencies and can be a real joy to install.  On Linux there are often vendor-maintained packages available to simplify the task and capture all of the dependencies, while on Windows it is a completely different story as no version of Windows includes any version of Python out of the box.</p>
-<p>There are three layers to the Python stack to get the OpenStack clients (or any Python app really) installed and working on Windows: a Python interpreter/runtime, the Python modules that provide an interface to PyPI, and the client libraries and their dependencies.  Actually, all platforms have all of these layers but only Windows doesn't include any of them in the default installation so everything from the ground up needs to be installed.  And there is more than one way to do it. <a class="footnote-reference" href="#id3" id="id1">[1]</a></p>
-<p>The OpenStack client libraries are officially supported on Python 2.6 and 2.7.  While not yet complete, work is underway to support Python 3, the installation of which is left as an exercise for the reader.  (Hint: It's not too different from the below.)</p>
-<p><strong>Python Runtime</strong></p>
-<p>Contrary to <a class="reference external" href="http://www.python.org/dev/peps/pep-0020/">PEP 20</a> (The Zen of Python) <a class="footnote-reference" href="#id4" id="id2">[2]</a> there is not one obvious way to install a Python interpreter on Windows.  Of course, each Python release includes official Python binaries for Windows at python.org, but the <a class="reference external" href="http://www.python.org/getit/windows/">Windows releases</a> page lists some of the other Python runtime packages that are available, each with their own particular set of advantages.  One additional that will be familiar to UNIX users is the <a class="reference external" href="http://www.cygwin.com/">Cygwin</a> Python port; once Cygwin's Python interpreter is installed the rest is very similar to the steps here.</p>
-<p>This guide installs the official 32 bit 2.7.5 runtime on Windows 7.  It also works on XP and presumably Vista although that remains untested for some reason.   The Python runtime can be installed anywhere, the default is <tt class="docutils literal"><span class="pre">C:\Python27</span></tt>.
-If you change it remember to make the corresponding change in the rest of this guide.  Also, be aware that putting it in certain places, such as <tt class="docutils literal">Program files</tt>, will cause Windows UAC (Vista and newer) to require an administrative token to perform module installs.  While not impossible to deal with, this is beyond the scope of this guide for now.</p>
-<ul class="simple">
-<li>Download and install the <a class="reference external" href="http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi">Windows runtime installer</a></li>
-</ul>
-<blockquote>
-<ul class="simple">
-<li><strong>Select whether to install Python for all users of this computer</strong>: Select 'Install for all users'</li>
-<li><strong>Select Destination Directory</strong>: Accept the default Destination Directory <tt class="docutils literal"><span class="pre">C:\Python27\</span></tt>.</li>
-<li><strong>Customize Python</strong>: The default selections are fine.  At a minimum the
-<strong>Register Extensions</strong> and <strong>Utility Scripts</strong> selections should be enabled.</li>
-</ul>
-</blockquote>
-<ul class="simple">
-<li>Add the destination directory to the System PATH via Control Panel<ul>
-<li>On Windows XP: <strong>Control Panel → System → Advanced → Environment Variables</strong></li>
-<li>On Windows 7: <strong>Control Panel → System and Security → System → Advanced system settings → Environment Variables</strong></li>
-<li>Edit the Path entry in the <strong>System variables</strong> list</li>
-<li>Add the Python installation path and the Python scripts directory to the beginning of the Path variable, being careful to not remove the existing value: <tt class="docutils literal"><span class="pre">C:\Python27;C:\Python27\Scripts;</span></tt></li>
-</ul>
-</li>
-</ul>
-<p>Open a command prompt window and test the Python installation:</p>
-<pre class="literal-block">
-Microsoft Windows [Version 6.1.7601]
-Copyright (c) 2009 Microsoft Corporation.  All rights reserved.
-
-C:\Users\dtroyer&gt;python
-Python 2.7.5 (default, May 15 2013, 22:43:36) [MSC v.1500 32 bit (Intel)] on win32
-Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
-&gt;&gt;&gt;
-</pre>
-<p><strong>Additional Python Modules</strong></p>
-<p>In addition to the base Python runtime some additional modules are required to
-bootstrap an environment for the OpenStack client install.  The <tt class="docutils literal">setuptools</tt>
-module contains the <tt class="docutils literal">easy_install</tt> command that we use to install <tt class="docutils literal">pip</tt> which
-is itself used to install additional modules and their dependencies from PyPI.</p>
-<ul>
-<li><p class="first">Install <a class="reference external" href="https://pypi.python.org/pypi/setuptools/0.7.4">setuptools</a> using the <a class="reference external" href="https://bitbucket.org/pypa/setuptools/raw/0.7.4/ez_setup.py">ez_setup.py</a> script:</p>
-<pre class="literal-block">
-python ez_setup.py
-</pre>
-</li>
-</ul>
-<ul>
-<li><p class="first">Install <tt class="docutils literal">pip</tt>:</p>
-<pre class="literal-block">
-easy_install pip
-</pre>
-</li>
-</ul>
-<p>Some common Python modules are not pure Python and require a C compiler to install
-from PyPI.  Fortunately
-many of these packages also have Windows binary installers that can be used with
-the official Python runtime.</p>
-<p>OpenStack's Glance client requires pyOpenSSL which is one of these hybrid packages.
-It can be installed from PyPI directly using the supplied binary Windows installer.</p>
-<ul class="simple">
-<li>Download and install the <a class="reference external" href="https://pypi.python.org/packages/2.7/p/pyOpenSSL/pyOpenSSL-0.13.winxp32-py2.7.msi">pyOpenSSL installer</a><ul>
-<li><strong>Select whether to install Python for all users of this computer</strong>: Select 'Install for all users'</li>
-<li><strong>Select Python Installations</strong>: The default Python installation should be the one installed above.  Use it.</li>
-</ul>
-</li>
-</ul>
-<p><strong>OpenStack Client Libraries</strong></p>
-<p>The OpenStack command line clients are included with the Python API libraries.
-They are released to PyPI independently of the periodic OpenStack releases
-and are backward compatible with older OpenStack releases so it should always
-be safe to upgrade the clients.  So even if you are using a Folsom-era
-OpenStack installation the current client libraries are going to work.</p>
-<ul>
-<li><p class="first">Install the client libraries from PyPI:</p>
-<pre class="literal-block">
-pip install python-keystoneclient python-novaclient python-cinderclient \
-  python-glanceclient python-swiftclient
-</pre>
-</li>
-</ul>
-<hr class="docutils" />
-<table class="docutils footnote" frame="void" id="id3" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Yeah, my Perl is showing...</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="id4" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><tt class="docutils literal">python <span class="pre">-c</span> &quot;import this&quot;</tt></td></tr>
-</tbody>
-</table>
 </div>
 ]]></content>
   </entry>
@@ -476,5 +510,118 @@ Optional arguments:
 <h2 id="troubleshooting">Troubleshooting</h2>
 <p>If you installed the clients using <code>pip</code>, the best thing to do when you feel like your clients are 'broken' is to destroy your virtual environment and reinstall.</p>
 <p>If this doesn't solve your problem, you're unfortunately at the point that you need to use your search of engine of choice to find help, start debugging Python code or file a bug on Launchpad.</p>]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[OpenStack Clients on Windows]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2013/06/20/openstack-clients-on-windows" />
+    <id>http://hackstack.org/x/blog/2013/06/20/openstack-clients-on-windows</id>
+    <updated>2013-06-20T06:20:00Z</updated>
+    <published>2013-06-20T06:20:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="windows" />
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <summary type="html"><![CDATA[OpenStack Clients on Windows]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2013/06/20/openstack-clients-on-windows"><![CDATA[<div class="document">
+<p>OpenStack command line clients are a pile of Python modules and dependencies and can be a real joy to install.  On Linux there are often vendor-maintained packages available to simplify the task and capture all of the dependencies, while on Windows it is a completely different story as no version of Windows includes any version of Python out of the box.</p>
+<p>There are three layers to the Python stack to get the OpenStack clients (or any Python app really) installed and working on Windows: a Python interpreter/runtime, the Python modules that provide an interface to PyPI, and the client libraries and their dependencies.  Actually, all platforms have all of these layers but only Windows doesn't include any of them in the default installation so everything from the ground up needs to be installed.  And there is more than one way to do it. <a class="footnote-reference" href="#id3" id="id1">[1]</a></p>
+<p>The OpenStack client libraries are officially supported on Python 2.6 and 2.7.  While not yet complete, work is underway to support Python 3, the installation of which is left as an exercise for the reader.  (Hint: It's not too different from the below.)</p>
+<p><strong>Python Runtime</strong></p>
+<p>Contrary to <a class="reference external" href="http://www.python.org/dev/peps/pep-0020/">PEP 20</a> (The Zen of Python) <a class="footnote-reference" href="#id4" id="id2">[2]</a> there is not one obvious way to install a Python interpreter on Windows.  Of course, each Python release includes official Python binaries for Windows at python.org, but the <a class="reference external" href="http://www.python.org/getit/windows/">Windows releases</a> page lists some of the other Python runtime packages that are available, each with their own particular set of advantages.  One additional that will be familiar to UNIX users is the <a class="reference external" href="http://www.cygwin.com/">Cygwin</a> Python port; once Cygwin's Python interpreter is installed the rest is very similar to the steps here.</p>
+<p>This guide installs the official 32 bit 2.7.5 runtime on Windows 7.  It also works on XP and presumably Vista although that remains untested for some reason.   The Python runtime can be installed anywhere, the default is <tt class="docutils literal"><span class="pre">C:\Python27</span></tt>.
+If you change it remember to make the corresponding change in the rest of this guide.  Also, be aware that putting it in certain places, such as <tt class="docutils literal">Program files</tt>, will cause Windows UAC (Vista and newer) to require an administrative token to perform module installs.  While not impossible to deal with, this is beyond the scope of this guide for now.</p>
+<ul class="simple">
+<li>Download and install the <a class="reference external" href="http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi">Windows runtime installer</a></li>
+</ul>
+<blockquote>
+<ul class="simple">
+<li><strong>Select whether to install Python for all users of this computer</strong>: Select 'Install for all users'</li>
+<li><strong>Select Destination Directory</strong>: Accept the default Destination Directory <tt class="docutils literal"><span class="pre">C:\Python27\</span></tt>.</li>
+<li><strong>Customize Python</strong>: The default selections are fine.  At a minimum the
+<strong>Register Extensions</strong> and <strong>Utility Scripts</strong> selections should be enabled.</li>
+</ul>
+</blockquote>
+<ul class="simple">
+<li>Add the destination directory to the System PATH via Control Panel<ul>
+<li>On Windows XP: <strong>Control Panel → System → Advanced → Environment Variables</strong></li>
+<li>On Windows 7: <strong>Control Panel → System and Security → System → Advanced system settings → Environment Variables</strong></li>
+<li>Edit the Path entry in the <strong>System variables</strong> list</li>
+<li>Add the Python installation path and the Python scripts directory to the beginning of the Path variable, being careful to not remove the existing value: <tt class="docutils literal"><span class="pre">C:\Python27;C:\Python27\Scripts;</span></tt></li>
+</ul>
+</li>
+</ul>
+<p>Open a command prompt window and test the Python installation:</p>
+<pre class="literal-block">
+Microsoft Windows [Version 6.1.7601]
+Copyright (c) 2009 Microsoft Corporation.  All rights reserved.
+
+C:\Users\dtroyer&gt;python
+Python 2.7.5 (default, May 15 2013, 22:43:36) [MSC v.1500 32 bit (Intel)] on win32
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt;
+</pre>
+<p><strong>Additional Python Modules</strong></p>
+<p>In addition to the base Python runtime some additional modules are required to
+bootstrap an environment for the OpenStack client install.  The <tt class="docutils literal">setuptools</tt>
+module contains the <tt class="docutils literal">easy_install</tt> command that we use to install <tt class="docutils literal">pip</tt> which
+is itself used to install additional modules and their dependencies from PyPI.</p>
+<ul>
+<li><p class="first">Install <a class="reference external" href="https://pypi.python.org/pypi/setuptools/0.7.4">setuptools</a> using the <a class="reference external" href="https://bitbucket.org/pypa/setuptools/raw/0.7.4/ez_setup.py">ez_setup.py</a> script:</p>
+<pre class="literal-block">
+python ez_setup.py
+</pre>
+</li>
+</ul>
+<ul>
+<li><p class="first">Install <tt class="docutils literal">pip</tt>:</p>
+<pre class="literal-block">
+easy_install pip
+</pre>
+</li>
+</ul>
+<p>Some common Python modules are not pure Python and require a C compiler to install
+from PyPI.  Fortunately
+many of these packages also have Windows binary installers that can be used with
+the official Python runtime.</p>
+<p>OpenStack's Glance client requires pyOpenSSL which is one of these hybrid packages.
+It can be installed from PyPI directly using the supplied binary Windows installer.</p>
+<ul class="simple">
+<li>Download and install the <a class="reference external" href="https://pypi.python.org/packages/2.7/p/pyOpenSSL/pyOpenSSL-0.13.winxp32-py2.7.msi">pyOpenSSL installer</a><ul>
+<li><strong>Select whether to install Python for all users of this computer</strong>: Select 'Install for all users'</li>
+<li><strong>Select Python Installations</strong>: The default Python installation should be the one installed above.  Use it.</li>
+</ul>
+</li>
+</ul>
+<p><strong>OpenStack Client Libraries</strong></p>
+<p>The OpenStack command line clients are included with the Python API libraries.
+They are released to PyPI independently of the periodic OpenStack releases
+and are backward compatible with older OpenStack releases so it should always
+be safe to upgrade the clients.  So even if you are using a Folsom-era
+OpenStack installation the current client libraries are going to work.</p>
+<ul>
+<li><p class="first">Install the client libraries from PyPI:</p>
+<pre class="literal-block">
+pip install python-keystoneclient python-novaclient python-cinderclient \
+  python-glanceclient python-swiftclient
+</pre>
+</li>
+</ul>
+<hr class="docutils" />
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Yeah, my Perl is showing...</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><tt class="docutils literal">python <span class="pre">-c</span> &quot;import this&quot;</tt></td></tr>
+</tbody>
+</table>
+</div>
+]]></content>
   </entry>
 </feed>

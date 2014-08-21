@@ -82,24 +82,37 @@
 <article>
   <div class="blog_post">
     <header>
-      <div id="windows-images-for-openstack-draft"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2014/07/07/windows-images-for-openstack-draft/" rel="bookmark" title="Permanent Link to Windows Images for OpenStack (draft)">Windows Images for OpenStack (draft)</a></h1>
-      <p><small><span class="blog_post_date">July 07, 2014 at 07:07 AM</span> | categories: 
-        <span class="blog_post_categories">windows, openstack</span>
+      <div id="more-notes-on-windows-images"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2014/07/13/more-notes-on-windows-images/" rel="bookmark" title="Permanent Link to More Notes on Windows Images">More Notes on Windows Images</a></h1>
+      <p><small><span class="blog_post_date">July 13, 2014 at 07:13 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a></span>
       </small></p>
     </header>
     <div class="post_prose">
       
 <div class="document">
-<p>This is a topic that has been done to death, so I'm going to pile on too.  Actually I am going to leverage <a class="reference external" href="http://www.florentflament.com/blog/windows-images-for-openstack.html">Florent Flament's post</a> and spice it up with some specifics for my particular situation.</p>
-<div class="section" id="requirements">
-<h1>Requirements</h1>
-<ul class="simple">
-<li>Use <tt class="docutils literal"><span class="pre">cloudbase-init</span></tt> for metadata handling</li>
-</ul>
+<p>This is a follow-up to <a class="reference external" href="/x/blog/2014/07/07/windows-images-for-openstack/">Windows Images for OpenStack</a> that includes some of the notes accumulated along the way.</p>
+<div class="section" id="other-docs">
+<h1>Other Docs</h1>
+<p>Building Windows VM images is a topic that has been done to death, but the working consensus of those I've talked to is that <a class="reference external" href="http://www.florentflament.com/blog/windows-images-for-openstack.html">Florent Flament's post</a> is one of the best guides through this minefield.</p>
 </div>
-<div class="section" id="preparing-the-build-environment">
-<h1>Preparing the Build Environment</h1>
+<div class="section" id="metadata-server-curl-commands">
+<h1>Metadata Server Curl Commands</h1>
+<p>Instance UUID:</p>
+<blockquote>
+curl <a class="reference external" href="http://169.254.169.254/openstack/latest/meta_data.json">http://169.254.169.254/openstack/latest/meta_data.json</a> | python -c 'import sys, json; print json.load(sys.stdin)[&quot;uuid&quot;]'</blockquote>
+<p>Instance Name:</p>
+<blockquote>
+curl <a class="reference external" href="http://169.254.169.254/openstack/latest/meta_data.json">http://169.254.169.254/openstack/latest/meta_data.json</a> | python -c 'import sys, json; print json.load(sys.stdin)[&quot;name&quot;]'</blockquote>
+<p>Fixed IP:</p>
+<blockquote>
+curl <a class="reference external" href="http://169.254.169.254/latest/meta-data/local-ipv4">http://169.254.169.254/latest/meta-data/local-ipv4</a></blockquote>
+<p>Floating IP:</p>
+<blockquote>
+curl <a class="reference external" href="http://169.254.169.254/latest/meta-data/public-ipv4">http://169.254.169.254/latest/meta-data/public-ipv4</a></blockquote>
+</div>
+<div class="section" id="building-on-an-openstack-cloud">
+<h1>Building on an OpenStack Cloud</h1>
 <p>One of the changes to the base instructions is to perform the build in an OpenStack cloud.  The compute node must have nested virtualization enabled so KVM will run, otherwise Qemu would be used and we just don't have time for that.</p>
 <p>I'm going to use <a class="reference external" href="https://github.com/cloudenvy/cloudenvy">Cloudenvy</a> to manage the build VM.  It is similar to Vagrant in automating the grunt work of provisioning the VM.  The VM needs to have at least 4Gb RAM and 40Gb disk available in order to boot the seed Windows image.  This is an <tt class="docutils literal">n1.medium</tt> flavor on the private cloud I am using.</p>
 <p>I am also using Ubuntu 14.04 because much of my tooling already assumes an Ubuntu build environment.  There is no technical reason that Fedora 20 could not be used, appropriate adjustments would need to be made, of course.</p>
@@ -207,22 +220,6 @@ kvm \
 </pre>
 <p>Connect via VNC to :9</p>
 </div>
-<hr class="docutils" />
-<div class="section" id="metadata-server">
-<h2>Metadata Server</h2>
-<p>Instance UUID:</p>
-<blockquote>
-curl <a class="reference external" href="http://169.254.169.254/openstack/latest/meta_data.json">http://169.254.169.254/openstack/latest/meta_data.json</a> | python -c 'import sys, json; print json.load(sys.stdin)[&quot;uuid&quot;]'</blockquote>
-<p>Instance Name:</p>
-<blockquote>
-curl <a class="reference external" href="http://169.254.169.254/openstack/latest/meta_data.json">http://169.254.169.254/openstack/latest/meta_data.json</a> | python -c 'import sys, json; print json.load(sys.stdin)[&quot;name&quot;]'</blockquote>
-<p>Fixed IP:</p>
-<blockquote>
-curl <a class="reference external" href="http://169.254.169.254/latest/meta-data/local-ipv4">http://169.254.169.254/latest/meta-data/local-ipv4</a></blockquote>
-<p>Floating IP:</p>
-<blockquote>
-curl <a class="reference external" href="http://169.254.169.254/latest/meta-data/public-ipv4">http://169.254.169.254/latest/meta-data/public-ipv4</a></blockquote>
-</div>
 </div>
 </div>
 
@@ -242,8 +239,8 @@ curl <a class="reference external" href="http://169.254.169.254/latest/meta-data
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
       <li><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/">OpenWRT Images for OpenStack</a></li>
+      <li><a href="/x/blog/2014/07/13/more-notes-on-windows-images/">More Notes on Windows Images</a></li>
       <li><a href="/x/blog/2014/07/07/windows-images-for-openstack/">Windows Images for OpenStack</a></li>
-      <li><a href="/x/blog/2014/03/15/beta/">Beta</a></li>
       <li><a href="/x/blog/2014/02/11/client-layers/">Client Layers</a></li>
       <li><a href="/x/blog/2014/01/14/openstackclient-plugins/">OpenStackClient Plugins</a></li>
     </ul>

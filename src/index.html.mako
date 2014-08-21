@@ -2,16 +2,9 @@
 <article class="page_box">
 <%self:filter chain="markdown">
 
-HackStack
-=========
-
-OpenStack hacking and more...
-
-<ul>
-  % for post in bf.config.blog.iter_posts_published(10):
-    <li><a href="${post.path}">${post.title}</a></li>
-  % endfor
-</ul>
+% for post in bf.config.blog.iter_posts_published(10):
+  <%include file="blog/post_excerpt.mako" args="post=post" />
+% endfor
 
 </%self:filter>
 </article>

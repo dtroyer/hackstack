@@ -82,15 +82,15 @@
 <article>
   <div class="blog_post">
     <header>
-      <div id="windows-images-for-openstack"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2014/07/07/windows-images-for-openstack/" rel="bookmark" title="Permanent Link to Windows Images for OpenStack">Windows Images for OpenStack</a></h1>
-      <p><small><span class="blog_post_date">July 07, 2014 at 07:07 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/virtualbox/'>virtualbox</a></span>
+      <div id="more-notes-on-windows-images"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2014/07/13/more-notes-on-windows-images/" rel="bookmark" title="Permanent Link to More Notes on Windows Images">More Notes on Windows Images</a></h1>
+      <p><small><span class="blog_post_date">July 13, 2014 at 07:13 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a></span>
       </small></p>
     </header>
     <div class="post_prose">
       
-  There is no shortage of articles online about building Windows images for use in various clouds. What there is a shortage of are working articles on building these images unattended. The Windows unattended install process has been basically solved, even if still a bit arcane. But finding more than a trivial example of doing it in a cloud is sparse. Cloudbase has shared the tooling they created for building their Windows images. That makes a good base for an automated build process that can be tailored to your particular needs. in addition to being the authors of cloudbase-init, their GitHub
+  This is a follow-up to Windows Images for OpenStack that includes some of the notes accumulated along the way. Other Docs Building Windows VM images is a topic that has been done to death, but the working consensus of those I've talked to is that Florent Flament's post is one of the best guides through this minefield. Metadata Server Curl Commands Instance UUID: curl http://169.254.169.254/openstack/latest/meta_data.json | python -c 'import sys, json; print json.load(sys.stdin)["uuid"]' Instance Name: curl http://169.254.169.254/openstack/latest/meta_data.json | python -c 'import sys, json; print json.load(sys.stdin)["name"]' Fixed IP: curl http://169.254.169.254/latest/meta-data/local-ipv4 Floating IP: curl http://169.254.169.254/latest/meta-data/public-ipv4 Building on an OpenStack Cloud One of
 
     </div>
   </div>
@@ -106,15 +106,15 @@
 <article>
   <div class="blog_post">
     <header>
-      <div id="openstack-clients-on-windows"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2013/06/20/openstack-clients-on-windows/" rel="bookmark" title="Permanent Link to OpenStack Clients on Windows">OpenStack Clients on Windows</a></h1>
-      <p><small><span class="blog_post_date">June 20, 2013 at 06:20 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a></span>
+      <div id="windows-images-for-openstack"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2014/07/07/windows-images-for-openstack/" rel="bookmark" title="Permanent Link to Windows Images for OpenStack">Windows Images for OpenStack</a></h1>
+      <p><small><span class="blog_post_date">July 07, 2014 at 07:07 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/virtualbox/'>virtualbox</a></span>
       </small></p>
     </header>
     <div class="post_prose">
       
-  OpenStack command line clients are a pile of Python modules and dependencies and can be a real joy to install. On Linux there are often vendor-maintained packages available to simplify the task and capture all of the dependencies, while on Windows it is a completely different story as no version of Windows includes any version of Python out of the box. There are three layers to the Python stack to get the OpenStack clients (or any Python app really) installed and working on Windows: a Python interpreter/runtime, the Python modules that provide an interface to PyPI, and the client libraries
+  There is no shortage of articles online about building Windows images for use in various clouds. What there is a shortage of are working articles on building these images unattended. The Windows unattended install process has been basically solved, even if still a bit arcane. But finding more than a trivial example of doing it in a cloud is sparse. Cloudbase has shared the tooling they created for building their Windows images. That makes a good base for an automated build process that can be tailored to your particular needs. in addition to being the authors of cloudbase-init, their GitHub
 
     </div>
   </div>
@@ -147,6 +147,30 @@
 
 
   <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
+      <div id="openstack-clients-on-windows"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2013/06/20/openstack-clients-on-windows/" rel="bookmark" title="Permanent Link to OpenStack Clients on Windows">OpenStack Clients on Windows</a></h1>
+      <p><small><span class="blog_post_date">June 20, 2013 at 06:20 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  OpenStack command line clients are a pile of Python modules and dependencies and can be a real joy to install. On Linux there are often vendor-maintained packages available to simplify the task and capture all of the dependencies, while on Windows it is a completely different story as no version of Windows includes any version of Python out of the box. There are three layers to the Python stack to get the OpenStack clients (or any Python app really) installed and working on Windows: a Python interpreter/runtime, the Python modules that provide an interface to PyPI, and the client libraries
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
 
           </div>
           <div id="sidebar" class="grid_1">
@@ -156,8 +180,8 @@
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
       <li><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/">OpenWRT Images for OpenStack</a></li>
+      <li><a href="/x/blog/2014/07/13/more-notes-on-windows-images/">More Notes on Windows Images</a></li>
       <li><a href="/x/blog/2014/07/07/windows-images-for-openstack/">Windows Images for OpenStack</a></li>
-      <li><a href="/x/blog/2014/03/15/beta/">Beta</a></li>
       <li><a href="/x/blog/2014/02/11/client-layers/">Client Layers</a></li>
       <li><a href="/x/blog/2014/01/14/openstackclient-plugins/">OpenStackClient Plugins</a></li>
     </ul>
