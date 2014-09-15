@@ -55,6 +55,26 @@ The naming of `identity_v2.APIv2`_ and `identity_v3.APIv3`_ is a bit repetitive 
 
 At this point, only ``project_list()`` is implemented in an effort to work out the mechanics of supporting multiple API versions.  In OSC, this is already handled in the ClientManager and individual client classes so there is not much to see here.  It may be different otherwise.
 
+OSC Usage
+---------
+
+To demonstrate how this API is used, I've added an `BaseAPI`_ instance to the existing client objects that get stored in the ``ClientManager``.  For example, the addition for `compute.client`_ is one object instantiation and an import.  Now in OSC, ``clientmanager.compute.api`` has all of the (implemented) ``Compute`` API methods.
+
+.. _`compute.client`: https://github.com/dtroyer/python-openstackclient/commit/2bfc9e1b722cb89670ba4878f10fb07d9c68519f#diff-9d500da5511aec08e46397bc7a4b25bdR75
+
+Using it in the flavor commands is a `simple change`_ to call ``compute.api`` methods rather than the ``compute.flavor.XXX`` methods.
+
+.. _`simple change`: https://github.com/dtroyer/python-openstackclient/commit/2bfc9e1b722cb89670ba4878f10fb07d9c68519f#diff-1be98e03ae4586b73d8ad5f62f0dc578L163
+
+Setting up for multiple API versions took a bit more work, as shown in `identity.client`_.  A parallel construction to the client class lookup is required, and would totally replace the existing version lookup once the old client is no longer required.
+
+.. _`identity.client`: https://github.com/dtroyer/python-openstackclient/commit/2bfc9e1b722cb89670ba4878f10fb07d9c68519f#diff-f7023c81f38d2c70e77da533164db4b6L31
+
+Fluff
+-----
+
+One other cool feature is utilizing ``requests_mock`` for testing from the start.  It works great and has not the problems that rode along with ``httpretty``.
+
 Now What?
 ---------
 

@@ -10,7 +10,7 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Mon, 15 Sep 2014 21:26:47 GMT</pubDate>
+    <pubDate>Mon, 15 Sep 2014 21:49:32 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -49,6 +49,16 @@
 <h1>api.identity_vX.APIvX</h1>
 <p>The naming of <a class="reference external" href="https://github.com/dtroyer/python-openstackclient/blob/low-level-api/openstackclient/api/identity_v2.py#L19">identity_v2.APIv2</a> and <a class="reference external" href="https://github.com/dtroyer/python-openstackclient/blob/low-level-api/openstackclient/api/identity_v3.py#L19">identity_v3.APIv3</a> is a bit repetitive but putting the version into the module name lets us break down the already-long files.</p>
 <p>At this point, only <tt class="docutils literal">project_list()</tt> is implemented in an effort to work out the mechanics of supporting multiple API versions.  In OSC, this is already handled in the ClientManager and individual client classes so there is not much to see here.  It may be different otherwise.</p>
+</div>
+<div class="section" id="osc-usage">
+<h1>OSC Usage</h1>
+<p>To demonstrate how this API is used, I've added an <a class="reference external" href="https://github.com/dtroyer/python-openstackclient/blob/low-level-api/openstackclient/api/api.py#L22">BaseAPI</a> instance to the existing client objects that get stored in the <tt class="docutils literal">ClientManager</tt>.  For example, the addition for <a class="reference external" href="https://github.com/dtroyer/python-openstackclient/commit/2bfc9e1b722cb89670ba4878f10fb07d9c68519f#diff-9d500da5511aec08e46397bc7a4b25bdR75">compute.client</a> is one object instantiation and an import.  Now in OSC, <tt class="docutils literal">clientmanager.compute.api</tt> has all of the (implemented) <tt class="docutils literal">Compute</tt> API methods.</p>
+<p>Using it in the flavor commands is a <a class="reference external" href="https://github.com/dtroyer/python-openstackclient/commit/2bfc9e1b722cb89670ba4878f10fb07d9c68519f#diff-1be98e03ae4586b73d8ad5f62f0dc578L163">simple change</a> to call <tt class="docutils literal">compute.api</tt> methods rather than the <tt class="docutils literal">compute.flavor.XXX</tt> methods.</p>
+<p>Setting up for multiple API versions took a bit more work, as shown in <a class="reference external" href="https://github.com/dtroyer/python-openstackclient/commit/2bfc9e1b722cb89670ba4878f10fb07d9c68519f#diff-f7023c81f38d2c70e77da533164db4b6L31">identity.client</a>.  A parallel construction to the client class lookup is required, and would totally replace the existing version lookup once the old client is no longer required.</p>
+</div>
+<div class="section" id="fluff">
+<h1>Fluff</h1>
+<p>One other cool feature is utilizing <tt class="docutils literal">requests_mock</tt> for testing from the start.  It works great and has not the problems that rode along with <tt class="docutils literal">httpretty</tt>.</p>
 </div>
 <div class="section" id="now-what">
 <h1>Now What?</h1>
