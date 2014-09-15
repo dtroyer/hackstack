@@ -82,6 +82,30 @@
 <article>
   <div class="blog_post">
     <header>
+      <div id="openstack-low-level-api"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2014/09/15/openstack-low-level-api/" rel="bookmark" title="Permanent Link to OpenStack Low Level API">OpenStack Low Level API</a></h1>
+      <p><small><span class="blog_post_date">September 15, 2014 at 09:15 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/api/'>api</a>, <a href='/x/blog/category/client/'>client</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  The current Python library situation for OpenStack is, sorry to say, a mess. Cleaning it up requires essentially starting over and abstracting the individual REST APIs to usable levels. With OpenStackClient I started from the top and worked down to make the CLI a better experience. I think we have proved that to be a worthwhile task. Now it is time to start from the bottom and work up. The existing libraries utilize a Manager/Resource model that may be suitable for application work, but every project's client repo was forked and changed so they are all similar but maddeningly different.
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
       <div id="openwrt-images-for-openstack"></div>
       <h1 class="blog_post_title"><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/" rel="bookmark" title="Permanent Link to OpenWRT Images for OpenStack">OpenWRT Images for OpenStack</a></h1>
       <p><small><span class="blog_post_date">August 17, 2014 at 08:17 AM</span> | categories: 
@@ -171,30 +195,6 @@
 
 
   <hr class="interblog" />
-  
-
-
-
-<article>
-  <div class="blog_post">
-    <header>
-      <div id="openstackclient-plugins"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2014/01/14/openstackclient-plugins/" rel="bookmark" title="Permanent Link to OpenStackClient Plugins">OpenStackClient Plugins</a></h1>
-      <p><small><span class="blog_post_date">January 14, 2014 at 01:14 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/openstackclient/'>openstackclient</a></span>
-      </small></p>
-    </header>
-    <div class="post_prose">
-      
-  OpenStackClient (OSC) has been in my project queue for almost two years now. It was Feb 2012 that I stayed up all night mucking about with something called DrStack with the goal of combining the then four OpenStack CLI binaries into a single command set. OSC is the second major realization of that goal having a greatly improved internal command architecture courtesy of dhellmann's Cliff framework. It also somehow got an informal blessing without becoming an official project, a status that it still carries. We have a roadmap of where to go with that but that is a topic for
-
-    </div>
-  </div>
-</article>
-
-
-
-  <hr class="interblog" />
  <a href="/x/blog/page/2">Next Page »</a>
 
           </div>
@@ -204,11 +204,11 @@
 <!--
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
+      <li><a href="/x/blog/2014/09/15/openstack-low-level-api/">OpenStack Low Level API</a></li>
       <li><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/">OpenWRT Images for OpenStack</a></li>
       <li><a href="/x/blog/2014/07/13/more-notes-on-windows-images/">More Notes on Windows Images</a></li>
       <li><a href="/x/blog/2014/07/07/windows-images-for-openstack/">Windows Images for OpenStack</a></li>
       <li><a href="/x/blog/2014/02/11/client-layers/">Client Layers</a></li>
-      <li><a href="/x/blog/2014/01/14/openstackclient-plugins/">OpenStackClient Plugins</a></li>
     </ul>
 -->
   </section>

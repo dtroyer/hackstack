@@ -82,6 +82,30 @@
 <article>
   <div class="blog_post">
     <header>
+      <div id="openstack-low-level-api"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2014/09/15/openstack-low-level-api/" rel="bookmark" title="Permanent Link to OpenStack Low Level API">OpenStack Low Level API</a></h1>
+      <p><small><span class="blog_post_date">September 15, 2014 at 09:15 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/api/'>api</a>, <a href='/x/blog/category/client/'>client</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  The current Python library situation for OpenStack is, sorry to say, a mess. Cleaning it up requires essentially starting over and abstracting the individual REST APIs to usable levels. With OpenStackClient I started from the top and worked down to make the CLI a better experience. I think we have proved that to be a worthwhile task. Now it is time to start from the bottom and work up. The existing libraries utilize a Manager/Resource model that may be suitable for application work, but every project's client repo was forked and changed so they are all similar but maddeningly different.
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
       <div id="openwrt-images-for-openstack"></div>
       <h1 class="blog_post_title"><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/" rel="bookmark" title="Permanent Link to OpenWRT Images for OpenStack">OpenWRT Images for OpenStack</a></h1>
       <p><small><span class="blog_post_date">August 17, 2014 at 08:17 AM</span> | categories: 
@@ -171,30 +195,6 @@
 
 
   <hr class="interblog" />
-  
-
-
-
-<article>
-  <div class="blog_post">
-    <header>
-      <div id="cloud-image-updates"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2013/10/21/cloud-image-updates/" rel="bookmark" title="Permanent Link to Cloud Image Updates">Cloud Image Updates</a></h1>
-      <p><small><span class="blog_post_date">October 21, 2013 at 10:21 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/fedora/'>fedora</a>, <a href='/x/blog/category/ubuntu/'>ubuntu</a></span>
-      </small></p>
-    </header>
-    <div class="post_prose">
-      
-  Update! Update! Update! A while back I started documenting the image build process I've been using for building OpenStack cloud images: A Fedora 18 Image for OpenStack A CentOS 6 Image for OpenStack Note that Ubuntu is missing from that list, due mostly to their published UEC images being generally good enough as a starting point. Fedora 19 finally has a similar image published, let's see how different it is and if it is useful for my purposed... Also, all of these images have rng-tools added as it is useful on clouds that provide a usable virtualized /dev/random in their
-
-    </div>
-  </div>
-</article>
-
-
-
-  <hr class="interblog" />
  <a href="/x/blog/category/openstack/2">Next Page »</a>
 
           </div>
@@ -204,11 +204,11 @@
 <!--
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
+      <li><a href="/x/blog/2014/09/15/openstack-low-level-api/">OpenStack Low Level API</a></li>
       <li><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/">OpenWRT Images for OpenStack</a></li>
       <li><a href="/x/blog/2014/07/13/more-notes-on-windows-images/">More Notes on Windows Images</a></li>
       <li><a href="/x/blog/2014/07/07/windows-images-for-openstack/">Windows Images for OpenStack</a></li>
       <li><a href="/x/blog/2014/02/11/client-layers/">Client Layers</a></li>
-      <li><a href="/x/blog/2014/01/14/openstackclient-plugins/">OpenStackClient Plugins</a></li>
     </ul>
 -->
   </section>
