@@ -1,0 +1,290 @@
+
+
+<!doctype html>
+<!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
+<!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en" class="no-js ie8"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en" class="no-js ie9"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html lang="en" class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HackStack Posts</title>
+  <meta name="description" content="OpenStack and other hackish things">
+  <meta name="author" content="dtroyer">
+
+  <link rel="alternate" type="application/rss+xml" title="RSS 2.0"
+        href="/x/blog/feed/">
+  <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+        href="/x/blog/feed/atom/">
+
+  <link rel="shortcut icon" href="/x/favicon.ico">
+  <link rel="apple-touch-icon"
+        href="/x/img/apple-touch-icon.png">
+
+  <link rel="stylesheet" href="/x/css/base.css?v=1">
+  <link rel="stylesheet" href="/x/css/grid.css?v=1">
+  <link rel="stylesheet" media="handheld"
+        href="/x/css/handheld.css?v=1">
+  <link rel="stylesheet"
+        href="/x/css/pygments_murphy.css">
+
+  <script
+    src="/x/js/libs/modernizr-1.7.min.js">
+  </script>
+
+  <link rel="stylesheet" href="/x/themes/theme1/style.css?v=1">
+<link href='http://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Quantico' rel='stylesheet' type='text/css'>
+
+
+</head>
+  <body>
+    <div id="container" class="container container_12">
+      <div id="main" role="main">
+        <div id="main_block">
+          <header>
+  <div id="header" class="header_gradient theme_font">
+    <h1>
+      <a href="/x/">
+        HackStack Posts
+      </a>
+    </h1>
+    <h2>OpenStack and other hackish things</h2>
+  </div>
+  <div id="navigation" class="grid_12">
+    
+    
+    <ul class="theme_font">
+      <li>
+        
+        <a href="/x/" class="">Home</a>
+      </li>
+      <li>
+        
+        <a href="/x/blog" class="selected">Blog</a>
+      </li>
+      <li>
+        
+        <a href="/x/blog/archive/" class="">Archives</a>
+      </li>
+    </ul>
+  </div>
+</header>
+
+          <div id="prose_block" class="grid_11">
+            
+
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
+      <div id="a-funny-thing-happened-on-the-way-to-the-summit"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/" rel="bookmark" title="Permanent Link to A Funny Thing Happened On The Way To The Summit">A Funny Thing Happened On The Way To The Summit</a></h1>
+      <p><small><span class="blog_post_date">October 03, 2014 at 10:03 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+<div class="document">
+<p>So back in <a class="reference external" href="/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service/">the old days</a> I started throwing around different terminology to describe some of the technical relationships between OpenStack projects because it was useful to sort out things like startup order requirements in DevStack and other semi-obvious stuff.</p>
+<p>And wow have things happened since then.  To recap, oh nevermind, I'm just going to take back the term <strong>layer</strong> for technical use and propose anything else other than <strong>layer 1</strong> (there is no other layer?) for the rest of the conversation. The various alternate approaches all boil down to a <strong>nucleus</strong> with a cloud (heh) of projects with probabilistic locations.  I wasn't a physics major but I do know that doesn't sound like that Q-word that shall not be spoken.</p>
+<p>I think it is important to remember that one of the primary purposes of OpenStack is to enable the creation of <strong>useful clouds</strong>.  In my dictionary what makes a useful cloud is described as &quot;the set of services that enable useful work to be done&quot;.  In a cloud.</p>
+<p>The original layers idea has been picked up, painted, folded, carved and whitewashed to a shadow of its original.  Even so, in the end all of the ideas still end up looking similar.  Now seems like a good time to see how the orignal layers have held up.</p>
+<div class="section" id="layer-1">
+<h1>Layer 1</h1>
+<p><em>We're still the one...</em></p>
+<p>We open with the addition of Neutron as a viable alternative to Nova Network, and the likelihood of it becoming the default configuration in DevStack early in the Juno cycle.</p>
+<blockquote>
+<ul class="simple">
+<li>Identity (Keystone)</li>
+<li>Image (Glance)</li>
+<li>Network (Neutron)</li>
+<li>Compute (Nova)</li>
+</ul>
+</blockquote>
+<p>What really stands out to me now is the realization that all of these were originally part of Nova itself (plus the cinder volume service, more on that later).  They were broken apart or re-implemented to scale the development as Nova kept growing.  In fact, there is talk again of need to break out more simply because Nova continues to expand.</p>
+<p>This is the smallest working set for a compute-enabled cloud.  Realistic useful clouds of course offer more than this, so we have...</p>
+</div>
+<div class="section" id="layer-2">
+<h1>Layer 2</h1>
+<p>Layer 2 services are optional in a useful compute cloud but some are also useful in their own right as non-compute cloud services.</p>
+<p>So the current Layer 2 still contains:</p>
+<blockquote>
+<ul class="simple">
+<li>Volume (Cinder)</li>
+<li>Object (Swift)</li>
+<li>Bare-metal (Ironic)</li>
+</ul>
+</blockquote>
+<p>These all build on the Layer 1 nucleus and get us a practical useful cloud.  They also all have the characteristic of having dependency arrows pointing <em>out</em> of Layer 1 when used with a compute cloud, such as Glance using Swift as its backend store.  This is a defining characteristic that brings a project in to Layer 2.</p>
+<p>Even though Cinder was literally carved out of the Nova code base it stays in Layer 2 because it is an optional service to a Layer 1 cloud.  Manila will also fit here for the same reasons.</p>
+<p>I neglected to mention last time the ability of Swift to stand alone as a useful cloud service as it has maintained its own authentication capability.  However, using it with any other OpenStack services requires Swift to use Keystone.</p>
+<p>I also think it is worth considering the direction of the trademark usage constraints the board is refining with the DefCore work.  The current DefCore capability proposal is satisfied using only Layer 1 and 2 projects.  Also, the stand-alone services currently would not be able to qualify for trademark usage when deployed alone.</p>
+</div>
+<div class="section" id="layer-3">
+<h1>Layer 3</h1>
+<p>Do something useful.  Host services for paying customers.  Provide Lego blocks for them to build awesome cloud apps.  Warn about runaway <tt class="docutils literal">while true; done</tt> loops.  Count cycles burned and bits sent so paying customers know what to pay.  Communicate with your useful cloud.</p>
+<p>The rest of the OpenStack-affiliated projects (for some value of <em>affiliated</em>) go in Layer 3 to populate the <strong>big tent</strong>.  If we've done our job right the majority of everything else should be able to be accomplished without special consideration from Layers 1 and 2.  Broad categories of Layer 3 projects include:</p>
+<blockquote>
+<ul class="simple">
+<li>User Interfaces - You need one but a feature of well documented REST APIs is allowing the client side to be easily replaceable.<ul>
+<li>Orchestration (Heat) (it is basically a smart automated cloud client, no?)</li>
+<li>Web UI (Horizon)</li>
+<li>&lt;insert-one-of-the-other-CLI-or-web-clients-here&gt;</li>
+</ul>
+</li>
+<li>Something-as-a-Service - These are all services a deployer may choose to offer.<ul>
+<li>Database (Trove)</li>
+<li>Message Passing (Zaqar)</li>
+</ul>
+</li>
+<li>Tracking Snooping and Counting - Keeping an eye on the useful cloud<ul>
+<li>Telemetry (Ceilometer)</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+<p>Why is Heat in Layer 3???  Heat is essentially a smart automated cloud client and should be treated as one.   It needs to meet the same requirements for API compatibility to be useful over time.</p>
+</div>
+<div class="section" id="layer-4">
+<h1>Layer 4</h1>
+<p>Layer 4 is everything else that is not OpenStack-affiliated but might be a part of an especially useful OpenStack cloud.  Things like Ceph or Apache jclouds are useful with and as part of OpenStack clouds, but they also have a life of their own and we should respect that and not call late at night.</p>
+</div>
+<div class="section" id="what-about-layer-0">
+<h1>What About Layer 0?</h1>
+<p>Ah, right, where the Libraries live.  The last year has seen significant changes to how OpenStack-related libraries are integrated with a number of Oslo libraries being released stand-alone.  In most cases these can and should be thought of as dependencies just as any non-OpenStack project dependency (like <tt class="docutils literal">SQLAlchemy</tt> or <tt class="docutils literal">requests</tt>) that happen to live in either the <tt class="docutils literal">openstack</tt> or <tt class="docutils literal">stackforge</tt> namespaces in our Git repositories.</p>
+<p>It also seems appropriate to add the client API libraries and SDKs to Layer 0 as the dependency model and release schedule is very similar to the other libraries.  I am specifically not including command-line interfaces here as I think those belong in Layer 3 but the project client libraries have an embedded CLI so the'll straddle the boundaries no matter what.</p>
+</div>
+<div class="section" id="so-how-do-we-govern-and-test-all-this">
+<h1>So How Do We Govern and Test All This?</h1>
+<p>OK, I lied.  I said I would skip this, but anyone still reading must think this is has a thread of merit, right?  I choose to make that assumption going forward, and those of you still reading for a laugh, here is your cue.</p>
+<p>I'll lay out an overview of a developers perspective because I am primarily an OpenStack developer and I need the world to know what I think.  However, I am also an application developer and cloud end-user so those perspectives are not lost.  I have not managed to add cloud deployer to my CV, yet.</p>
+<div class="section" id="releases">
+<h2>Releases</h2>
+<p>If you turn your head sideways and squint, the Layer picture can also be grouped according to release-able/deploy-able units with decently defined and documented interfaces between them.</p>
+<p>Maintaining the current notion of an Integrated Release the layers fall out like this:</p>
+<blockquote>
+<ul class="simple">
+<li>Layers 1 and 2 <em>are</em> the Integrated Release.  The services required to meet DefCore are currently a subset of these layers.</li>
+<li>Layer 3 projects treat the Integrated Release as a dependency like any other they may have so they can have the freedom to iterate at a pace that suits the service being provided.  Trove probably needs fewer releases in the next year than Zaqar.</li>
+</ul>
+</blockquote>
+<p>Switching to a more modularized set of released units the first 'natural' groupings are:</p>
+<blockquote>
+<ul class="simple">
+<li>Layer 1 plus the semi-tightly coupled Nova projects like Cinder (and Manila) comprise a Compute Release.</li>
+<li>Swift comprises an Object Store release</li>
+<li>Ironic comprises an (insert-catchy-name-here) release and not in the Compute Release as it can also stand alone (right?)</li>
+<li>Actually, everything else is on its own because Independence From Tyranny!  Things that need to talk to each other or to the Integrate projects need to correctly identify and handle the documented APIs available to them.</li>
+</ul>
+</blockquote>
+<p>Basically, this alternative splits the Integrated Release into a Compute Release and two stand-alone releases for Swift and Ironic.  The Release Management team may reconsider the criteria required for them to continue to handle other project releases or allow (force?) the projects to handle their own.</p>
+<p>Note how the difference in those two approaches to releases is exactly two things, pulling Swift and Ironic out of the Integrated Release bundle so they can stand alone.</p>
+</div>
+<div class="section" id="testing">
+<h2>Testing</h2>
+<p>As current work is showing, the actual detailed relationships between OpenStack services is very complex.  Describing it to a level of detail that can drive a test matrix is not simple.  We can, however, reduce the problem space by re-thinking at a higher level what needs to be tested together.</p>
+<p>Layers 1 and 2 are really where the work needs to be done. By changing the perspective of Layer 3 projects we can reduce the piling-on of additional projects that are currently in our Test All The Things check/gate jobs.  Individual project relationships across that boundary may be important enough to warrant specific test jobs but those are considered exceptions and not the rule.</p>
+<p>A significant amount of the gains to me made here are contingent on the projects developing comprehensive functional tests.</p>
+</div>
+</div>
+<div class="section" id="horizontal-projects">
+<h1>Horizontal Projects</h1>
+<p>While it feels like I'm saving the best for last, in reality much of the above has to have some structure to know the scope that Infrastructure, Docs and QA need to be able to support.  Focusing these on Layers 1 and 2 provides a clear limit to the scope required.  This is not to say that other projects are not going to be accommodated, particularly those already in the current release, but it does say that it is not assured.</p>
+</div>
+<div class="section" id="now-what-smart-guy">
+<h1>Now What Smart Guy?</h1>
+<p>With my thoughts on Layers updated to include the governance and testing considerations it is time to match up other perspectives, flesh out the above with the new information and catch up on the plethora of other posts on this topic.</p>
+<p>Film at eleven...</p>
+</div>
+</div>
+
+
+    </div>
+  </div>
+</article>
+
+
+
+
+          </div>
+          <div id="sidebar" class="grid_1">
+            <aside>
+  <section>
+<!--
+    <h1 class="post_header_gradient theme_font">Latest Posts</h1>
+    <ul>
+      <li><a href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/">A Funny Thing Happened On The Way To The Summit</a></li>
+      <li><a href="/x/blog/2014/09/15/openstack-low-level-api/">OpenStack Low Level API</a></li>
+      <li><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/">OpenWRT Images for OpenStack</a></li>
+      <li><a href="/x/blog/2014/07/13/more-notes-on-windows-images/">More Notes on Windows Images</a></li>
+      <li><a href="/x/blog/2014/07/07/windows-images-for-openstack/">Windows Images for OpenStack</a></li>
+    </ul>
+-->
+  </section>
+<!--
+  <section>
+    <h1 class="post_header_gradient theme_font">From Twitter "example"</h1>
+    <div id="on_twitter">
+      <div id="tweets"></div>
+      <a href="http://search.twitter.com/search?q=example" style="float: right">See more tweets</a>
+    </div>
+  </section>
+-->
+</aside>
+
+          </div>
+          <div class="clear"></div>
+        </div>
+      </div>
+      
+<footer>
+  <div id="footer" class="grid_12">
+    <div class="grid_8">
+      <p>
+        <a href="/x/blog/feed/index.xml">RSS</a>
+      </p>
+    </div>
+    <div class="grid_4" id="credits">
+      <p>
+        Copyright 2014
+        dtroyer
+      </p>
+      <p>
+        Powered by <a href="http://www.blogofile.com">Blogofile</a>
+      </p>
+    </div>
+  </div>
+</footer>
+
+    </div>
+      <script src="//ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/js/libs/jquery-1.5.1.min.js"%3E%3C/script%3E'))</script>
+  <script src="/x/js/plugins.js"></script>
+  <script src="/x/js/script.js"></script>
+  <script src="/x/js/jquery.tweet.js"></script>  
+  <script src="/x/js/site.js"></script>
+  <!--[if lt IE 7 ]>
+  <script src="js/libs/dd_belatedpng.js"></script>
+  <script> DD_belatedPNG.fix('img, .png_bg');</script>
+  <![endif]-->
+  <script>
+      var _gaq=[['_setAccount','UA-XXXXX-X'],['_trackPageview']];
+      (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];g.async=1;
+      g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+      s.parentNode.insertBefore(g,s)}(document,'script'));
+  </script>
+
+  </body>
+</html>
+
+
+
+
+
+

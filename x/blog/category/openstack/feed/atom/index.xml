@@ -7,12 +7,139 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2014-09-15T21:49:33Z</updated>
+  <updated>2014-10-03T22:01:45Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
   <id>http://hackstack.org/x/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[A Funny Thing Happened On The Way To The Summit]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit" />
+    <id>http://hackstack.org/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit</id>
+    <updated>2014-10-03T10:03:00Z</updated>
+    <published>2014-10-03T10:03:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <summary type="html"><![CDATA[A Funny Thing Happened On The Way To The Summit]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit"><![CDATA[<div class="document">
+<p>So back in <a class="reference external" href="/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service/">the old days</a> I started throwing around different terminology to describe some of the technical relationships between OpenStack projects because it was useful to sort out things like startup order requirements in DevStack and other semi-obvious stuff.</p>
+<p>And wow have things happened since then.  To recap, oh nevermind, I'm just going to take back the term <strong>layer</strong> for technical use and propose anything else other than <strong>layer 1</strong> (there is no other layer?) for the rest of the conversation. The various alternate approaches all boil down to a <strong>nucleus</strong> with a cloud (heh) of projects with probabilistic locations.  I wasn't a physics major but I do know that doesn't sound like that Q-word that shall not be spoken.</p>
+<p>I think it is important to remember that one of the primary purposes of OpenStack is to enable the creation of <strong>useful clouds</strong>.  In my dictionary what makes a useful cloud is described as &quot;the set of services that enable useful work to be done&quot;.  In a cloud.</p>
+<p>The original layers idea has been picked up, painted, folded, carved and whitewashed to a shadow of its original.  Even so, in the end all of the ideas still end up looking similar.  Now seems like a good time to see how the orignal layers have held up.</p>
+<div class="section" id="layer-1">
+<h1>Layer 1</h1>
+<p><em>We're still the one...</em></p>
+<p>We open with the addition of Neutron as a viable alternative to Nova Network, and the likelihood of it becoming the default configuration in DevStack early in the Juno cycle.</p>
+<blockquote>
+<ul class="simple">
+<li>Identity (Keystone)</li>
+<li>Image (Glance)</li>
+<li>Network (Neutron)</li>
+<li>Compute (Nova)</li>
+</ul>
+</blockquote>
+<p>What really stands out to me now is the realization that all of these were originally part of Nova itself (plus the cinder volume service, more on that later).  They were broken apart or re-implemented to scale the development as Nova kept growing.  In fact, there is talk again of need to break out more simply because Nova continues to expand.</p>
+<p>This is the smallest working set for a compute-enabled cloud.  Realistic useful clouds of course offer more than this, so we have...</p>
+</div>
+<div class="section" id="layer-2">
+<h1>Layer 2</h1>
+<p>Layer 2 services are optional in a useful compute cloud but some are also useful in their own right as non-compute cloud services.</p>
+<p>So the current Layer 2 still contains:</p>
+<blockquote>
+<ul class="simple">
+<li>Volume (Cinder)</li>
+<li>Object (Swift)</li>
+<li>Bare-metal (Ironic)</li>
+</ul>
+</blockquote>
+<p>These all build on the Layer 1 nucleus and get us a practical useful cloud.  They also all have the characteristic of having dependency arrows pointing <em>out</em> of Layer 1 when used with a compute cloud, such as Glance using Swift as its backend store.  This is a defining characteristic that brings a project in to Layer 2.</p>
+<p>Even though Cinder was literally carved out of the Nova code base it stays in Layer 2 because it is an optional service to a Layer 1 cloud.  Manila will also fit here for the same reasons.</p>
+<p>I neglected to mention last time the ability of Swift to stand alone as a useful cloud service as it has maintained its own authentication capability.  However, using it with any other OpenStack services requires Swift to use Keystone.</p>
+<p>I also think it is worth considering the direction of the trademark usage constraints the board is refining with the DefCore work.  The current DefCore capability proposal is satisfied using only Layer 1 and 2 projects.  Also, the stand-alone services currently would not be able to qualify for trademark usage when deployed alone.</p>
+</div>
+<div class="section" id="layer-3">
+<h1>Layer 3</h1>
+<p>Do something useful.  Host services for paying customers.  Provide Lego blocks for them to build awesome cloud apps.  Warn about runaway <tt class="docutils literal">while true; done</tt> loops.  Count cycles burned and bits sent so paying customers know what to pay.  Communicate with your useful cloud.</p>
+<p>The rest of the OpenStack-affiliated projects (for some value of <em>affiliated</em>) go in Layer 3 to populate the <strong>big tent</strong>.  If we've done our job right the majority of everything else should be able to be accomplished without special consideration from Layers 1 and 2.  Broad categories of Layer 3 projects include:</p>
+<blockquote>
+<ul class="simple">
+<li>User Interfaces - You need one but a feature of well documented REST APIs is allowing the client side to be easily replaceable.<ul>
+<li>Orchestration (Heat) (it is basically a smart automated cloud client, no?)</li>
+<li>Web UI (Horizon)</li>
+<li>&lt;insert-one-of-the-other-CLI-or-web-clients-here&gt;</li>
+</ul>
+</li>
+<li>Something-as-a-Service - These are all services a deployer may choose to offer.<ul>
+<li>Database (Trove)</li>
+<li>Message Passing (Zaqar)</li>
+</ul>
+</li>
+<li>Tracking Snooping and Counting - Keeping an eye on the useful cloud<ul>
+<li>Telemetry (Ceilometer)</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+<p>Why is Heat in Layer 3???  Heat is essentially a smart automated cloud client and should be treated as one.   It needs to meet the same requirements for API compatibility to be useful over time.</p>
+</div>
+<div class="section" id="layer-4">
+<h1>Layer 4</h1>
+<p>Layer 4 is everything else that is not OpenStack-affiliated but might be a part of an especially useful OpenStack cloud.  Things like Ceph or Apache jclouds are useful with and as part of OpenStack clouds, but they also have a life of their own and we should respect that and not call late at night.</p>
+</div>
+<div class="section" id="what-about-layer-0">
+<h1>What About Layer 0?</h1>
+<p>Ah, right, where the Libraries live.  The last year has seen significant changes to how OpenStack-related libraries are integrated with a number of Oslo libraries being released stand-alone.  In most cases these can and should be thought of as dependencies just as any non-OpenStack project dependency (like <tt class="docutils literal">SQLAlchemy</tt> or <tt class="docutils literal">requests</tt>) that happen to live in either the <tt class="docutils literal">openstack</tt> or <tt class="docutils literal">stackforge</tt> namespaces in our Git repositories.</p>
+<p>It also seems appropriate to add the client API libraries and SDKs to Layer 0 as the dependency model and release schedule is very similar to the other libraries.  I am specifically not including command-line interfaces here as I think those belong in Layer 3 but the project client libraries have an embedded CLI so the'll straddle the boundaries no matter what.</p>
+</div>
+<div class="section" id="so-how-do-we-govern-and-test-all-this">
+<h1>So How Do We Govern and Test All This?</h1>
+<p>OK, I lied.  I said I would skip this, but anyone still reading must think this is has a thread of merit, right?  I choose to make that assumption going forward, and those of you still reading for a laugh, here is your cue.</p>
+<p>I'll lay out an overview of a developers perspective because I am primarily an OpenStack developer and I need the world to know what I think.  However, I am also an application developer and cloud end-user so those perspectives are not lost.  I have not managed to add cloud deployer to my CV, yet.</p>
+<div class="section" id="releases">
+<h2>Releases</h2>
+<p>If you turn your head sideways and squint, the Layer picture can also be grouped according to release-able/deploy-able units with decently defined and documented interfaces between them.</p>
+<p>Maintaining the current notion of an Integrated Release the layers fall out like this:</p>
+<blockquote>
+<ul class="simple">
+<li>Layers 1 and 2 <em>are</em> the Integrated Release.  The services required to meet DefCore are currently a subset of these layers.</li>
+<li>Layer 3 projects treat the Integrated Release as a dependency like any other they may have so they can have the freedom to iterate at a pace that suits the service being provided.  Trove probably needs fewer releases in the next year than Zaqar.</li>
+</ul>
+</blockquote>
+<p>Switching to a more modularized set of released units the first 'natural' groupings are:</p>
+<blockquote>
+<ul class="simple">
+<li>Layer 1 plus the semi-tightly coupled Nova projects like Cinder (and Manila) comprise a Compute Release.</li>
+<li>Swift comprises an Object Store release</li>
+<li>Ironic comprises an (insert-catchy-name-here) release and not in the Compute Release as it can also stand alone (right?)</li>
+<li>Actually, everything else is on its own because Independence From Tyranny!  Things that need to talk to each other or to the Integrate projects need to correctly identify and handle the documented APIs available to them.</li>
+</ul>
+</blockquote>
+<p>Basically, this alternative splits the Integrated Release into a Compute Release and two stand-alone releases for Swift and Ironic.  The Release Management team may reconsider the criteria required for them to continue to handle other project releases or allow (force?) the projects to handle their own.</p>
+<p>Note how the difference in those two approaches to releases is exactly two things, pulling Swift and Ironic out of the Integrated Release bundle so they can stand alone.</p>
+</div>
+<div class="section" id="testing">
+<h2>Testing</h2>
+<p>As current work is showing, the actual detailed relationships between OpenStack services is very complex.  Describing it to a level of detail that can drive a test matrix is not simple.  We can, however, reduce the problem space by re-thinking at a higher level what needs to be tested together.</p>
+<p>Layers 1 and 2 are really where the work needs to be done. By changing the perspective of Layer 3 projects we can reduce the piling-on of additional projects that are currently in our Test All The Things check/gate jobs.  Individual project relationships across that boundary may be important enough to warrant specific test jobs but those are considered exceptions and not the rule.</p>
+<p>A significant amount of the gains to me made here are contingent on the projects developing comprehensive functional tests.</p>
+</div>
+</div>
+<div class="section" id="horizontal-projects">
+<h1>Horizontal Projects</h1>
+<p>While it feels like I'm saving the best for last, in reality much of the above has to have some structure to know the scope that Infrastructure, Docs and QA need to be able to support.  Focusing these on Layers 1 and 2 provides a clear limit to the scope required.  This is not to say that other projects are not going to be accommodated, particularly those already in the current release, but it does say that it is not assured.</p>
+</div>
+<div class="section" id="now-what-smart-guy">
+<h1>Now What Smart Guy?</h1>
+<p>With my thoughts on Layers updated to include the governance and testing considerations it is time to match up other perspectives, flesh out the above with the new information and catch up on the plethora of other posts on this topic.</p>
+<p>Film at eleven...</p>
+</div>
+</div>
+]]></content>
+  </entry>
   <entry>
     <author>
       <name>dtroyer</name>
@@ -1297,118 +1424,5 @@ Optional arguments:
 <h2 id="troubleshooting">Troubleshooting</h2>
 <p>If you installed the clients using <code>pip</code>, the best thing to do when you feel like your clients are 'broken' is to destroy your virtual environment and reinstall.</p>
 <p>If this doesn't solve your problem, you're unfortunately at the point that you need to use your search of engine of choice to find help, start debugging Python code or file a bug on Launchpad.</p>]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>dtroyer</name>
-      <uri>http://hackstack.org/x/blog</uri>
-    </author>
-    <title type="html"><![CDATA[OpenStack Clients on Windows]]></title>
-    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2013/06/20/openstack-clients-on-windows" />
-    <id>http://hackstack.org/x/blog/2013/06/20/openstack-clients-on-windows</id>
-    <updated>2013-06-20T06:20:00Z</updated>
-    <published>2013-06-20T06:20:00Z</published>
-    <category scheme="http://hackstack.org/x/blog" term="windows" />
-    <category scheme="http://hackstack.org/x/blog" term="openstack" />
-    <summary type="html"><![CDATA[OpenStack Clients on Windows]]></summary>
-    <content type="html" xml:base="http://hackstack.org/x/blog/2013/06/20/openstack-clients-on-windows"><![CDATA[<div class="document">
-<p>OpenStack command line clients are a pile of Python modules and dependencies and can be a real joy to install.  On Linux there are often vendor-maintained packages available to simplify the task and capture all of the dependencies, while on Windows it is a completely different story as no version of Windows includes any version of Python out of the box.</p>
-<p>There are three layers to the Python stack to get the OpenStack clients (or any Python app really) installed and working on Windows: a Python interpreter/runtime, the Python modules that provide an interface to PyPI, and the client libraries and their dependencies.  Actually, all platforms have all of these layers but only Windows doesn't include any of them in the default installation so everything from the ground up needs to be installed.  And there is more than one way to do it. <a class="footnote-reference" href="#id3" id="id1">[1]</a></p>
-<p>The OpenStack client libraries are officially supported on Python 2.6 and 2.7.  While not yet complete, work is underway to support Python 3, the installation of which is left as an exercise for the reader.  (Hint: It's not too different from the below.)</p>
-<p><strong>Python Runtime</strong></p>
-<p>Contrary to <a class="reference external" href="http://www.python.org/dev/peps/pep-0020/">PEP 20</a> (The Zen of Python) <a class="footnote-reference" href="#id4" id="id2">[2]</a> there is not one obvious way to install a Python interpreter on Windows.  Of course, each Python release includes official Python binaries for Windows at python.org, but the <a class="reference external" href="http://www.python.org/getit/windows/">Windows releases</a> page lists some of the other Python runtime packages that are available, each with their own particular set of advantages.  One additional that will be familiar to UNIX users is the <a class="reference external" href="http://www.cygwin.com/">Cygwin</a> Python port; once Cygwin's Python interpreter is installed the rest is very similar to the steps here.</p>
-<p>This guide installs the official 32 bit 2.7.5 runtime on Windows 7.  It also works on XP and presumably Vista although that remains untested for some reason.   The Python runtime can be installed anywhere, the default is <tt class="docutils literal"><span class="pre">C:\Python27</span></tt>.
-If you change it remember to make the corresponding change in the rest of this guide.  Also, be aware that putting it in certain places, such as <tt class="docutils literal">Program files</tt>, will cause Windows UAC (Vista and newer) to require an administrative token to perform module installs.  While not impossible to deal with, this is beyond the scope of this guide for now.</p>
-<ul class="simple">
-<li>Download and install the <a class="reference external" href="http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi">Windows runtime installer</a></li>
-</ul>
-<blockquote>
-<ul class="simple">
-<li><strong>Select whether to install Python for all users of this computer</strong>: Select 'Install for all users'</li>
-<li><strong>Select Destination Directory</strong>: Accept the default Destination Directory <tt class="docutils literal"><span class="pre">C:\Python27\</span></tt>.</li>
-<li><strong>Customize Python</strong>: The default selections are fine.  At a minimum the
-<strong>Register Extensions</strong> and <strong>Utility Scripts</strong> selections should be enabled.</li>
-</ul>
-</blockquote>
-<ul class="simple">
-<li>Add the destination directory to the System PATH via Control Panel<ul>
-<li>On Windows XP: <strong>Control Panel → System → Advanced → Environment Variables</strong></li>
-<li>On Windows 7: <strong>Control Panel → System and Security → System → Advanced system settings → Environment Variables</strong></li>
-<li>Edit the Path entry in the <strong>System variables</strong> list</li>
-<li>Add the Python installation path and the Python scripts directory to the beginning of the Path variable, being careful to not remove the existing value: <tt class="docutils literal"><span class="pre">C:\Python27;C:\Python27\Scripts;</span></tt></li>
-</ul>
-</li>
-</ul>
-<p>Open a command prompt window and test the Python installation:</p>
-<pre class="literal-block">
-Microsoft Windows [Version 6.1.7601]
-Copyright (c) 2009 Microsoft Corporation.  All rights reserved.
-
-C:\Users\dtroyer&gt;python
-Python 2.7.5 (default, May 15 2013, 22:43:36) [MSC v.1500 32 bit (Intel)] on win32
-Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
-&gt;&gt;&gt;
-</pre>
-<p><strong>Additional Python Modules</strong></p>
-<p>In addition to the base Python runtime some additional modules are required to
-bootstrap an environment for the OpenStack client install.  The <tt class="docutils literal">setuptools</tt>
-module contains the <tt class="docutils literal">easy_install</tt> command that we use to install <tt class="docutils literal">pip</tt> which
-is itself used to install additional modules and their dependencies from PyPI.</p>
-<ul>
-<li><p class="first">Install <a class="reference external" href="https://pypi.python.org/pypi/setuptools/0.7.4">setuptools</a> using the <a class="reference external" href="https://bitbucket.org/pypa/setuptools/raw/0.7.4/ez_setup.py">ez_setup.py</a> script:</p>
-<pre class="literal-block">
-python ez_setup.py
-</pre>
-</li>
-</ul>
-<ul>
-<li><p class="first">Install <tt class="docutils literal">pip</tt>:</p>
-<pre class="literal-block">
-easy_install pip
-</pre>
-</li>
-</ul>
-<p>Some common Python modules are not pure Python and require a C compiler to install
-from PyPI.  Fortunately
-many of these packages also have Windows binary installers that can be used with
-the official Python runtime.</p>
-<p>OpenStack's Glance client requires pyOpenSSL which is one of these hybrid packages.
-It can be installed from PyPI directly using the supplied binary Windows installer.</p>
-<ul class="simple">
-<li>Download and install the <a class="reference external" href="https://pypi.python.org/packages/2.7/p/pyOpenSSL/pyOpenSSL-0.13.winxp32-py2.7.msi">pyOpenSSL installer</a><ul>
-<li><strong>Select whether to install Python for all users of this computer</strong>: Select 'Install for all users'</li>
-<li><strong>Select Python Installations</strong>: The default Python installation should be the one installed above.  Use it.</li>
-</ul>
-</li>
-</ul>
-<p><strong>OpenStack Client Libraries</strong></p>
-<p>The OpenStack command line clients are included with the Python API libraries.
-They are released to PyPI independently of the periodic OpenStack releases
-and are backward compatible with older OpenStack releases so it should always
-be safe to upgrade the clients.  So even if you are using a Folsom-era
-OpenStack installation the current client libraries are going to work.</p>
-<ul>
-<li><p class="first">Install the client libraries from PyPI:</p>
-<pre class="literal-block">
-pip install python-keystoneclient python-novaclient python-cinderclient \
-  python-glanceclient python-swiftclient
-</pre>
-</li>
-</ul>
-<hr class="docutils" />
-<table class="docutils footnote" frame="void" id="id3" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Yeah, my Perl is showing...</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="id4" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><tt class="docutils literal">python <span class="pre">-c</span> &quot;import this&quot;</tt></td></tr>
-</tbody>
-</table>
-</div>
-]]></content>
   </entry>
 </feed>
