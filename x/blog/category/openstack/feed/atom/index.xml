@@ -7,7 +7,7 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2014-10-03T22:01:45Z</updated>
+  <updated>2014-10-06T21:55:34Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
@@ -1084,6 +1084,7 @@ RABBIT_PASSWORD=$ADMIN_PASSWORD
     <category scheme="http://hackstack.org/x/blog" term="rant" />
     <summary type="html"><![CDATA[OpenStack - Seven Layer Dip as a Service]]></summary>
     <content type="html" xml:base="http://hackstack.org/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service"><![CDATA[<div class="document">
+<p><em>Updated 06Nov2014</em>: I've updates my <a class="reference external" href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/">thoughts on the layers</a> to take into account both things I learned since this was originally written.</p>
 <p>OpenStack is, as it name implies, a stack of services to provide &quot;components for a cloud infrastructure solution&quot;. <a class="footnote-reference" href="#id2" id="id1">[1]</a>  There are layers of services, some interdependent on each other, some only dependent on the layers below it.</p>
 <p>For some time there has been a PC dance around 'labelling' projects that may or may not be at a layer that it wants to be in.  Back in the day, the term 'core' was thrown around to identify the services necessary to build an OpenStack deployment.  That term has been so misused and coopted and stomped on as to become unusable for technical discussions.  The OpenStack Foundation Board has an effort ongoing to define what 'core' means but they are focused on who and what is required in a deployment in order to use the trademarked OpenStack[tm] name and logo and not any determination as to layering of projects.  Go team, but that is not what we in the coding trenches need.</p>
 <p>'Integrated' has become the term-du-jour for the TC to identify those projects that are part of the announced OpenStack release a the end of the development cycle.  That clearly identifies those projects that are administratively included but has no meaning for technical relationship/interface considerations.</p>

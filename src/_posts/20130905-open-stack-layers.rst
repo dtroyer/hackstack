@@ -6,6 +6,8 @@ categories: OpenStack, Rant
 tags: devstack
 ---
 
+*Updated 06Nov2014*: I've updated my `thoughts on the layers </x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/>`_ to take into account both things I learned since this was originally written.
+
 OpenStack is, as it name implies, a stack of services to provide "components for a cloud infrastructure solution". [1]_  There are layers of services, some interdependent on each other, some only dependent on the layers below it.
 
 For some time there has been a PC dance around 'labelling' projects that may or may not be at a layer that it wants to be in.  Back in the day, the term 'core' was thrown around to identify the services necessary to build an OpenStack deployment.  That term has been so misused and coopted and stomped on as to become unusable for technical discussions.  The OpenStack Foundation Board has an effort ongoing to define what 'core' means but they are focused on who and what is required in a deployment in order to use the trademarked OpenStack[tm] name and logo and not any determination as to layering of projects.  Go team, but that is not what we in the coding trenches need.
