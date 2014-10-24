@@ -82,6 +82,54 @@
 <article>
   <div class="blog_post">
     <header>
+      <div id="a-centos-6-image-for-openstack"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2013/04/25/a-centos-6-image-for-openstack/" rel="bookmark" title="Permanent Link to A CentOS 6 Image for OpenStack">A CentOS 6 Image for OpenStack</a></h1>
+      <p><small><span class="blog_post_date">April 25, 2013 at 04:25 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/rhel/'>rhel</a>, <a href='/x/blog/category/centos/'>centos</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  [Updated 01Oct2013 to correct spelling and command formatting] This is the next installment in the never-ending series of OpenStack image builds. Today's target: CentOS Image Characteristics The usual suspects are present: minimal package install serial console support timezone is Etc/UTC hostname set to instance name a single partition with root filesystem, no swap grow root filesystem to device size enable EPEL (install epel-release) enable could-init repo to get 0.7.1 A few things are still lacking: selinux is in permissive mode, make enforcing strengthen default firewall Build Tools like Oz are a good idea in theory but in practice seem to
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
+      <div id="openstack-developer-summit"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2013/04/19/openstack-developer-summit/" rel="bookmark" title="Permanent Link to OpenStack Developer Summit">OpenStack Developer Summit</a></h1>
+      <p><small><span class="blog_post_date">April 19, 2013 at 07:04 PM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  The OpenStack Developer Summit has just concluded in Portland, OR, and by many measures was an enormous success. Enormous because there were a reported >2800 people in attendance. I never heard a breakdown of how many of those were developers but I'd guess that that number was up too. The rooms were generally full but usually only a handful of people actively participated in most sessions. And speaking of full rooms, most of the 'project-formerly-known-as-Quantum' sessions were SRO. I skipped those due to other interests but the word is none of the network vendors did. Most of my time was
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
       <div id="a-fedora-18-image-for-openstack"></div>
       <h1 class="blog_post_title"><a href="/x/blog/2013/01/25/a-fedora-18-image-for-openstack/" rel="bookmark" title="Permanent Link to A Fedora 18 Image for OpenStack">A Fedora 18 Image for OpenStack</a></h1>
       <p><small><span class="blog_post_date">January 25, 2013 at 01:25 AM</span> | categories: 
@@ -147,54 +195,6 @@
 
 
   <hr class="interblog" />
-  
-
-
-
-<article>
-  <div class="blog_post">
-    <header>
-      <div id="a-fedora-17-image-for-openstack"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2012/11/13/a-fedora-17-image-for-openstack/" rel="bookmark" title="Permanent Link to A Fedora 17 Image for OpenStack">A Fedora 17 Image for OpenStack</a></h1>
-      <p><small><span class="blog_post_date">November 13, 2012 at 11:13 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/fedora/'>fedora</a></span>
-      </small></p>
-    </header>
-    <div class="post_prose">
-      
-  This worked well enough but has been superceeded by ``appliance-creator`` Ubuntu has these nice UEC images that make a great base for cloud appliances. Fedora has nothing official although there are a couple of older images floating around (links please!). Nothing for Fedora 17 though. Let's build one! The most flexible image builder seems to be oz, as it runs the standard install process and can build nearly anything that boots in KVM. There are some specific requirements for libguestfs and that usually doesn't work properly in a VM. This all had to be done on bare metal. Even then,
-
-    </div>
-  </div>
-</article>
-
-
-
-  <hr class="interblog" />
-  
-
-
-
-<article>
-  <div class="blog_post">
-    <header>
-      <div id="devstack-at-one"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2012/10/20/devstack-at-one/" rel="bookmark" title="Permanent Link to Devstack At One">Devstack At One</a></h1>
-      <p><small><span class="blog_post_date">October 20, 2012 at 10:20 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/devstack/'>devstack</a></span>
-      </small></p>
-    </header>
-    <div class="post_prose">
-      
-  First birthdays are always fun...especially the bit where the birthday kidlet is encouraged to make a mess of the cake to the mild amusement of the adults present. At least that's how it worked in the little burg where I grew up. (Little burg? Isn't that redundant?) My parents have pictures of me doing that, I have pictures of my kids doing that, I anticipate the cycle will continue someday. Now that the OpenStack Grizzly Design Summit is over I realize that DevStack is just over a year old, having been shown off for the first time at the Essex
-
-    </div>
-  </div>
-</article>
-
-
-
-  <hr class="interblog" />
  <a href="../3">« Previous Page</a>
   --  
  <a href="../5">Next Page »</a>
@@ -206,11 +206,11 @@
 <!--
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
+      <li><a href="/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways/">How Dost Thy Cloud Know Me, Let Me Count The Ways</a></li>
+      <li><a href="/x/blog/2014/10/08/first-principles-glossary/">First Principles - Glossary</a></li>
       <li><a href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/">A Funny Thing Happened On The Way To The Summit</a></li>
       <li><a href="/x/blog/2014/09/15/openstack-low-level-api/">OpenStack Low Level API</a></li>
       <li><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/">OpenWRT Images for OpenStack</a></li>
-      <li><a href="/x/blog/2014/07/13/more-notes-on-windows-images/">More Notes on Windows Images</a></li>
-      <li><a href="/x/blog/2014/07/07/windows-images-for-openstack/">Windows Images for OpenStack</a></li>
     </ul>
 -->
   </section>

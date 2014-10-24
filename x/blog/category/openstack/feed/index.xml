@@ -10,10 +10,51 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Mon, 06 Oct 2014 21:55:34 GMT</pubDate>
+    <pubDate>Sat, 25 Oct 2014 01:45:41 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>First Principles - Glossary</title>
+      <link>http://hackstack.org/x/blog/2014/10/08/first-principles-glossary</link>
+      <pubDate>Wed, 08 Oct 2014 10:08:00 CDT</pubDate>
+      <category><![CDATA[openstack]]></category>
+      <guid isPermaLink="false">cqT5if_QX0ab2rvyvdQbI0yrot8=</guid>
+      <description>First Principles - Glossary</description>
+      <content:encoded><![CDATA[<div class="document" id="openstack-terms-and-you">
+<h1 class="title">OpenStack Terms and You</h1>
+<p>I think we need to start from the beginning to know a bit about where we really are...and to do that we need to speak the same language.  This doesn't mean we must agree on the actual terms used, but that their definition and evidence of need are spelled out and can inform the following steps and discussion.</p>
+<p>In some cases, the bikeshed will simply be in primer with placeholders until we converge an appropriate terms.</p>
+<p>The Technical Committee <a class="reference external" href="https://wiki.openstack.org/wiki/Governance/Foundation/TechnicalCommittee">Charter</a> refers to some terms that should be clarified early in this process.</p>
+<ul class="simple">
+<li><strong>Official Programs</strong> - The current unit of organization, called a <strong>program</strong>, logically groups people and code for purposes of achieving the OpenStack project mission.  The current programs are generally teams of people woring on a common project or set of related projects.  These teams elect a Program Team Lead (PTL) who has management responsibilities to the program.  <a class="reference external" href="https://review.openstack.org/#/c/125783/">A proposal</a> to change this terminology to <strong>project team</strong> is in part intended to reinforce the idea that these are groups of people first and code repositories second.  The proposal is part of a series to re-structure the organization of OpenStack projects and by itself is mostly for clarity.  It does not appear to be controversial based on the comments so far so I will adopt it here.</li>
+</ul>
+<ul class="simple">
+<li><strong>Program Leads</strong> - We've all grown to love the term <strong>PTL</strong> and the change from program to team can be used to re-redefine PTL as <strong>project team lead</strong> as it once was back in the day.</li>
+<li><strong>Oversight</strong> - The TC charter includes <em>&quot;[the TC] still has oversight over team decisions, especially when they affect other programs or go contrary to general OpenStack project goals&quot;</em>.  There is concern about the balance between project rights and responsibilities changing.  There may also be concerns over what that balance is today.</li>
+</ul>
+<p>I'm looking for the baked-in connection between governance organization and deliverables.  Today we have a 1:1 between official teams (programs) and their participation in the &quot;integrated release&quot;.  Many of the proposals floating about disconnect those.</p>
+<ul>
+<li><p class="first"><strong>Coordinated Release Cycle</strong> - The time period roughly starting at or just before the semi-annual Design Summit and ending approximately six months later, again just before the next Design Summit.</p>
+</li>
+<li><p class="first"><strong>Release Artifacts</strong> - The output of the process formerly known as <em>integrated release</em>.  These are the major output of the <em>coordinated release cycle</em> and typically what distributions would consume in building their periodic releases.</p>
+</li>
+<li><p class="first"><strong>Project Groups</strong> - Project groups are simply groups of related projects and/or project teams that are dependent on each other and it is often useful to consider the projects together for certain matters.  For example <strong>Group C</strong> includes Nova, Glance, Cinder and Neutron.  Other groups might include <strong>Group I</strong> (Keystone and plugins), <strong>Group O</strong> (Swift), <strong>Group W</strong> (<a class="reference external" href="http://en.wikipedia.org/wiki/Alice's_Restaurant">litterbugs</a>), <strong>Group H</strong> (Ironic and other hypervisor drivers), <strong>Group D</strong> (Trove), <strong>Group M</strong> (Zaqar), and so on.  Many groups may only have one member if there are not multiple projects with a strongly set of similar or mutual dependencies.</p>
+<p>One use of project groups is in simplifying the relationship diagram between projects; the diagram between projects within the group can focus on that subset and the diagram between groups can minimize the effect of the intra-group relationships.  These diagrams should be useful in informing testing policy and requirements.</p>
+<p>These groups map into my <a class="reference external" href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/">layers description</a> with layer one comprised of Groups I and most of C and layer 2 comprised of Groups O, H and the remainder of C (Cinder).  Remaining groups of official OpenStack projects make up layer 3.</p>
+</li>
+<li><p class="first"><strong>Integrated Release</strong> - The first step is to change the term <em>integrated release</em> to something better defined and less overloaded.  This is highly contentious as you might expect.  I had intended on using <strong>nucleus</strong> to describe this chewy middle of OpenStack because it has all sorts of metaphorical nooks and crannies to be mined, but then I saw <strong>nuclear release</strong> in writing and decided to just use the rather archaic term <strong>bindle</strong> here instead, as in &quot;the OpenStack Bindle contains the basic cloud necessities&quot;.</p>
+<p>The key part of the existing definition, <em>&quot;The OpenStack bindle is a subset of the official OpenStack projects whose member teams submit to stricter policies and oversight&quot;</em>, divides the official OpenStack projects into at least two tiers.  dhellmann describes it like this:</p>
+<pre class="literal-block">
+size(ecosystem) &gt; size(official-projects) &gt; size(bindle)
+</pre>
+<p>Inclusion in the integrated release has become the high-value attribute for many corporations judging project worthiness for contribution and/or use.  Removing this attribute is one of the major driving forces for re-considering the organizational structure in general and in renaming and clearly defining the <em>bindle</em>.</p>
+<p>The makeup of the bindle defines what release artifacts are published as a result of the release process.  These projects are held to a higher bar in regards to testing, documentation in involvement of team members in horizontal OpenStack activities.</p>
+</li>
+</ul>
+</div>
+]]></content:encoded>
+    </item>
     <item>
       <title>A Funny Thing Happened On The Way To The Summit</title>
       <link>http://hackstack.org/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit</link>
@@ -1040,7 +1081,7 @@ RABBIT_PASSWORD=$ADMIN_PASSWORD
       <guid isPermaLink="false">n_L3VOh8Wa6r8DsnH3_0f0RV7GE=</guid>
       <description>OpenStack - Seven Layer Dip as a Service</description>
       <content:encoded><![CDATA[<div class="document">
-<p><em>Updated 06Nov2014</em>: I've updates my <a class="reference external" href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/">thoughts on the layers</a> to take into account both things I learned since this was originally written.</p>
+<p><em>Updated 06Nov2014</em>: I've updated my <a class="reference external" href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/">thoughts on the layers</a> to take into account both things I learned since this was originally written.</p>
 <p>OpenStack is, as it name implies, a stack of services to provide &quot;components for a cloud infrastructure solution&quot;. <a class="footnote-reference" href="#id2" id="id1">[1]</a>  There are layers of services, some interdependent on each other, some only dependent on the layers below it.</p>
 <p>For some time there has been a PC dance around 'labelling' projects that may or may not be at a layer that it wants to be in.  Back in the day, the term 'core' was thrown around to identify the services necessary to build an OpenStack deployment.  That term has been so misused and coopted and stomped on as to become unusable for technical discussions.  The OpenStack Foundation Board has an effort ongoing to define what 'core' means but they are focused on who and what is required in a deployment in order to use the trademarked OpenStack[tm] name and logo and not any determination as to layering of projects.  Go team, but that is not what we in the coding trenches need.</p>
 <p>'Integrated' has become the term-du-jour for the TC to identify those projects that are part of the announced OpenStack release a the end of the development cycle.  That clearly identifies those projects that are administratively included but has no meaning for technical relationship/interface considerations.</p>
@@ -1137,245 +1178,6 @@ RABBIT_PASSWORD=$ADMIN_PASSWORD
 </div>
 </div>
 ]]></content:encoded>
-    </item>
-    <item>
-      <title>OpenStack Clients</title>
-      <link>http://hackstack.org/x/blog/2013/06/20/openstack-clients</link>
-      <pubDate>Thu, 20 Jun 2013 06:20:00 CDT</pubDate>
-      <category><![CDATA[windows]]></category>
-      <category><![CDATA[openstack]]></category>
-      <guid isPermaLink="false">ORQg9UezE3vW3Fmm8VvDLdWq53E=</guid>
-      <description>OpenStack Clients</description>
-      <content:encoded><![CDATA[<h2 id="openstack-client-projects">OpenStack Client Projects</h2>
-<p>The developers of OpenStack maintain a series of <a href="https://wiki.openstack.org/wiki/ProjectTypes">library projects</a> which are the Python interfaces to the OpenStack REST APIs and also include command-line clients:</p>
-<ul>
-<li><a href="http://launchpad.net/python-ceilometerclient">python-ceilometerclient</a></li>
-<li><a href="http://launchpad.net/python-cinderclient">python-cinderclient</a></li>
-<li><a href="http://launchpad.net/python-glanceclient">python-glanceclient</a></li>
-<li><a href="http://launchpad.net/python-heatclient">python-heatclient</a></li>
-<li><a href="http://launchpad.net/python-keystoneclient">python-keystoneclient</a></li>
-<li><a href="http://launchpad.net/python-novaclient">python-novaclient</a></li>
-<li><a href="http://launchpad.net/python-quantumclient">python-quantumclient</a></li>
-<li><a href="http://launchpad.net/python-swiftclient">python-swiftclient</a></li>
-</ul>
-<p>Each project is managed through the same development process as the integrated OpenStack projects so you can expect to find the latest source on <a href="http://github.com/openstack">GitHub</a>. The master branch in the project repositories should theoretically never be 'broken,' but realistically they are not tested between releases with the same vigor as the core projects. The bug and feature tracking happens on Launchpad; each of the projects above are linked to their respective Launchpad projects.</p>
-<p>The client libraries are simply REST (HTTP) API clients and are backward compatible with the core supported API versions. For example, <code>python-novaclient</code> works with any version of Nova that supports matching API versions.  The client projects are versioned and released to PyPI independently of the integrated OpenStack releases.  There is no 'Grizzly' version of <code>python-novaclient</code>, for example, but any <code>python-novaclient</code> released after Grizzly's release will be compatible as long as the same API versions are enabled.</p>
-<h2 id="installing-the-clients">Installing the Clients</h2>
-<p>Official releases of the clients are distributed by developers through <a href="http://pypi.python.org">PyPi</a>.  Some Linux distributions also package the clients in their native format (RPM, APT, etc).  As the client projects are still evolving quite rapidly, the packages distributed by the distributions can fall out of date.  However, the client packages distributed with Grizzly server packages will be known to be compatible with Grizzly.</p>
-<p>Users who want to be curent or are working with OpenStack development releases will want to install the clients from PyPi. As there are drawbacks to using PyPi both methods will be covered here.</p>
-<p>Most of the installation steps here require administrative privileges.  Python virtual environments (virtualenvs) can be used to work around this if necessary, in addition to their other benefits (see below).</p>
-<h3 id="python-runtime">Python Runtime</h3>
-<p>OpenStack command line clients consist of a set of Python modules and their dependencies. There are three layers to the Python stack: a Python runtime, the Python modules that provide an interface to PyPI and the client library modules and their dependencies.  All supported platforms (Linux, OS X and Windows) have all of these layers but only Windows doesn't include any of them in the box so everything from the ground up needs to be installed.  And there is more than one way to do it.</p>
-<p>The OpenStack client libraries are officially supported on Python 2.6 and 2.7.  While Python 3 is also available for all of these platforms, the work to support it in the clients is underway but not yet complete.</p>
-<h4 id="linux-installation">Linux Installation</h4>
-<p>Linux distributions usually include Python installed by default.  While all recent releases are Python 2.6 or 2.7, some long-term-support distributions may still contain Python 2.5 or older and require a newer Python runtime.  For example, <a href="https://wiki.openstack.org/wiki/NovaInstall/CentOSNotes#CentOS_5.2F_RHEL_5_.2F_Oracle_Enterprise_Linux_5">the OpenStack wiki</a> documents installing Nova on RHEL 5 and friends.  From that document the steps to enable the EPEL repo and install Python 2.6 are sufficient to support installing the client libraries.</p>
-<h4 id="os-x-installation">OS X Installation</h4>
-<p>All OS X releases since 10.6 (Snow Leopard) include a supported Python runtime although it is usually a few minor versions behind the current release.  Alternatives are available to install current versions of Python but are out of scope here.</p>
-<p>OS X 10.5 (Leopard) includes Python 2.5.1 and needs to have particular considerations addressed in order to update it.  See the <a href="http://wiki.python.org/moin/MacPython/Leopard">Leopard wiki page</a> for more information.  </p>
-<h4 id="windows-installation">Windows Installation</h4>
-<p>Windows has a couple of options for Python installations.  Each Python release includes official Python binaries for both 32-bit and 64-bit Windows. The python.org <a href="http://www.python.org/getit/windows/">Windows releases</a> page lists some of the other Python runtime packages that are available.  One additional that will be familiar to UNIX users living in a Windows world is the <a href="http://www.cygwin.com/">Cygwin</a> Python port. Once Cygwin's Python interpreter is installed the rest is very similar to the steps here.</p>
-<p>This guide will use the official 32 bit 2.7.5 runtime on Windows 7 as the example installation but it also works on XP and Vista.  The Python interpreter can be installed anywhere, the default folder is <code>C:\Python27</code>.  If you change it remember to make the corresponding change in the rest of this guide.  Also, be aware that putting it in certain places, such as <code>Program files</code>, will cause Windows UAC in Vista and newer to require an administrative token to perform module installs.  While not impossible to deal with, this is currently beyond the scope of this guide.</p>
-<ul>
-<li>
-<p>Download and install the <a href="http://www.python.org/ftp/python/2.7.5/python-2.7.5.msi">Windows runtime installer</a>:</p>
-<ul>
-<li><strong>Select whether to install Python for all users of this computer</strong>: Select 'Install for all users'</li>
-<li><strong>Select Destination Directory</strong>: The default Destination Directory is <code>C:\Python27\</code>.</li>
-<li><strong>Customize Python</strong>: The default selections are fine.  At a minimum the
-  <strong>Register Extensions</strong> and <strong>Utility Scripts</strong> selections should be enabled.</li>
-</ul>
-</li>
-<li>
-<p>Add the destination directory to the System PATH via Control Panel:</p>
-<ul>
-<li>On Windows XP: <strong>Control Panel → System → Advanced → Environment Variables</strong></li>
-<li>On Windows 7: <strong>Control Panel → System and Security → System → Advanced system settings → Environment Variables</strong></li>
-<li>Edit the Path entry in the <strong>System variables</strong> list</li>
-<li>Add the Python installation path and the Python scripts directory to the beginning
-  of the Path variable: <code>C:\Python27;C:\Python27\Scripts;</code></li>
-</ul>
-</li>
-</ul>
-<p>Open a command prompt window and test the Python installation:</p>
-<pre><code>Microsoft Windows [Version 6.1.7601]
-Copyright (c) 2009 Microsoft Corporation.  All rights reserved.
-
-C:\Users\fozzier&gt;python
-Python 2.7.5 (default, May 15 2013, 22:43:36) [MSC v.1500 32 bit (Intel)] on win32
-Type "help", "copyright", "credits" or "license" for more information.
-&gt;&gt;&gt;
-</code></pre>
-<h3 id="python-module-distribution">Python Module Distribution</h3>
-<p>In addition to the base Python runtime some additional modules are required to bootstrap an environment for the OpenStack client install.  The state of packaging in the Python world can be describes as 'in flux' at best.  That said, OpenStack uses the Python Package Index (PyPI) as its source of released packaged modules.</p>
-<p>PyPI provides a mechanism to install released versions of Python libraries and tools directly.  The <code>pip</code> command is the interface to PyPI and performs the download and install functions as well as dependency resolution (albiet occasionally poorly).  It does not play well with packages installed by the native package managers on some systems (<em>cough</em> Red Hat <em>cough</em>). The former is a shortcoming that continues to be slowly addressed by the Python community but the latter can be treated with a tool called <code>virtualenv</code> (see below).</p>
-<p>Many Python modules have also been packaged by Linux distributions and can be installed using the native package manager.  Often it is beneficial to install the vendor packages for hybrid modules especially if a C compiler is not present, or not desired, on the system.  The consensus in the OpenStack community is not to mix the two methods any more than necessary.</p>
-<h4 id="pypi-and-pip">PyPI and pip</h4>
-<p>The <a href="http://www.pip-installer.org/">pip</a> command must be installed to use PyPI and for non-native package installations that is best done using <code>easy_install</code> which itself needs to be installed as part of the <code>setuptools</code> module.  Check to see if <code>setuptools</code> is installed:</p>
-<pre><code>python -c "import setuptools"
-</code></pre>
-<p>If <code>setuptools</code> is not installed an error similar to this will be displayed:</p>
-<pre><code>Traceback (most recent call last):
-  File "&lt;string&gt;", line 1, in &lt;module&gt;
-ImportError: No module named setuptools
-</code></pre>
-<ul>
-<li>
-<p>If necessary, install <a href="https://pypi.python.org/pypi/setuptools/0.7.4">setuptools</a> using the <a href="https://bitbucket.org/pypa/setuptools/raw/0.7.4/ez_setup.py">ez_setup.py</a> script:</p>
-<pre><code>python ez_setup.py
-</code></pre>
-</li>
-<li>
-<p>Install <code>pip</code> using <code>easy_install</code>:</p>
-<pre><code>easy_install pip
-</code></pre>
-</li>
-</ul>
-<h4 id="hybrid-python-modules">Hybrid Python Modules</h4>
-<p>Some common Python modules are not pure Python and require a C compiler to install from PyPI.  On Linux these are generally installed via native system packages.  On Windows many of these packages also have Windows binary installers that can be used with the official Python runtime. </p>
-<p>OpenStack's Glance client requires <code>pyOpenSSL</code> which is one of these hybrid packages.  On Linux install the vendor-supplied package. OS X 10.7 and newer include an acceptable version.  On Windows it can be installed from PyPI directly using the supplied binary Windows install package:</p>
-<ul>
-<li>
-<p>Download and install the <a href="https://pypi.python.org/packages/2.7/p/pyOpenSSL/pyOpenSSL-0.13.winxp32-py2.7.msi">pyOpenSSL installer</a>:</p>
-<ul>
-<li><strong>Select whether to install Python for all users of this computer</strong>: Select 'Install for all users'</li>
-<li><strong>Select Python Installations</strong>: The default Python installation should be the one installed above.  Use it.</li>
-</ul>
-</li>
-</ul>
-<h4 id="openstack-client-libraries">OpenStack Client Libraries</h4>
-<p>Installing the client libraries from PyPI will also bring in the required dependencies.  This step is the same for all platforms.</p>
-<ul>
-<li>
-<p>Install the client libraries from PyPI:</p>
-<pre><code>pip install python-keystoneclient python-novaclient python-cinderclient \
-  python-glanceclient python-swiftclient
-</code></pre>
-</li>
-</ul>
-<h4 id="virtualenv">virtualenv</h4>
-<p>Using <code>pip</code> in conjunction with a tool called <code>virtualenv</code> can be used to isolate the PyPi packages you install from your system packages. Install <code>virtualenv</code> using <code>pip</code>:</p>
-<pre><code>pip install virtualenv
-</code></pre>
-<p>A new virtual environment is created and activated with the following commands:</p>
-<pre><code>virtualenv ~/openstack-venv
-source ~/openstack-venv/bin/activate
-</code></pre>
-<p>Once activated all packages installed with <code>pip</code> will be placed into the virtual environment without affecting or conflicting with the root system:</p>
-<pre><code>pip install python-novaclient
-</code></pre>
-<p>Deactivating your virtual evironment is as simple as this:</p>
-<pre><code>deactivate
-</code></pre>
-<p>For those of you that want to level-up your <code>virtualenv</code> experience, use a tool called <code>virtualenvwrapper</code>. It abstracts away the management of the virtual environment directories on your local system:</p>
-<pre><code>mkvirtualenv openstack-venv
-workon openstack-venv
-
-pip install python-novaclient
-
-deactivate
-rmvirtualenv openstack-venv
-</code></pre>
-<h3 id="distro-specific-package-managers">Distro-specific Package Managers</h3>
-<p>There are a couple of tradeoffs when consuming packages from distro-managed repositories. In the case of the OpenStack clients, development happens so rapidly that these repositories can grow stale very quickly. In the case that you still want to use a distro-specific package manager, it should be as simple as installing the python-*client packages. For example, here's how you can install python-novaclient on Ubuntu:</p>
-<pre><code>apt-get install python-novaclient
-</code></pre>
-<h2 id="using-the-clients">Using the Clients</h2>
-<h3 id="authentication">Authentication</h3>
-<p>The first thing to tackle is authentication. Each of the OpenStack clients supports a set of common command-line arguments for this:</p>
-<pre><code>--os-username
---os-password
---os-tenant-name
---os-auth-url
-</code></pre>
-<p>For example, the following is how you would list Nova instances while authenticating as the user <code>bcwaldon</code> on the tenant <code>devs</code> with the password <code>snarf</code> against the authentication endpoint <code>http://auth.example.com:5000/v2.0</code>:</p>
-<pre><code>nova --os-username bcwaldon --os-password snarf --os-tenant-name devs \ 
-     --os-auth-url http://auth.example.com:5000/v2.0 list
-</code></pre>
-<p>Alternatively, the OpenStack clients offer the same configuration through environment variables:</p>
-<pre><code>export OS_USERNAME=bcwaldon
-export OS_PASSWORD=snarf
-export OS_TENANT_NAME=devs
-expot OS_AUTH_URL=http://auth.example.com:5000/v2.0
-nova list
-</code></pre>
-<h3 id="discovering-commands">Discovering Commands</h3>
-<p>New features and commands are added to the client projects just about as quickly as the upstream core project development happens, so it is suggested that you </p>
-<p>Each of the openstack client projects have a <code>help</code> command that will print a list of available commands:</p>
-<pre><code>% cinder help
-usage: cinder [--version] [--debug] [--os-username &lt;auth-user-name&gt;]
-              [--os-password &lt;auth-password&gt;]
-              [--os-tenant-name &lt;auth-tenant-name&gt;]
-              [--os-tenant-id &lt;auth-tenant-id&gt;] [--os-auth-url &lt;auth-url&gt;]
-              [--os-region-name &lt;region-name&gt;] [--service-type &lt;service-type&gt;]
-              [--service-name &lt;service-name&gt;]
-              [--volume-service-name &lt;volume-service-name&gt;]
-              [--endpoint-type &lt;endpoint-type&gt;]
-              [--os-volume-api-version &lt;compute-api-ver&gt;]
-              [--os-cacert &lt;ca-certificate&gt;] [--retries &lt;retries&gt;]
-              &lt;subcommand&gt; ...
-
-Command-line interface to the OpenStack Cinder API.
-
-Positional arguments:
-  &lt;subcommand&gt;
-    absolute-limits     Print a list of absolute limits for a user
-    backup-create       Creates a backup.
-    backup-delete       Remove a backup.
-    backup-list         List all the backups.
-    backup-restore      Restore a backup.
-    backup-show         Show details about a backup.
-    create              Add a new volume.
-    credentials         Show user credentials returned from auth
-    delete              Remove a volume.
-    ...
-
-Optional arguments:
-  --version             show program's version number and exit
-  --debug               Print debugging output
-  --os-username &lt;auth-user-name&gt;
-                        Defaults to env[OS_USERNAME].
-  ...
-</code></pre>
-
-<p>Each <code>help</code> command optionally takes an argument:</p>
-<pre><code>% cinder help create
-usage: cinder create [--snapshot-id &lt;snapshot-id&gt;]
-                     [--source-volid &lt;source-volid&gt;] [--image-id &lt;image-id&gt;]
-                     [--display-name &lt;display-name&gt;]
-                     [--display-description &lt;display-description&gt;]
-                     [--volume-type &lt;volume-type&gt;]
-                     [--availability-zone &lt;availability-zone&gt;]
-                     [--metadata [&lt;key=value&gt; [&lt;key=value&gt; ...]]]
-                     &lt;size&gt;
-
-Add a new volume.
-
-Positional arguments:
-  &lt;size&gt;                Size of volume in GB
-
-Optional arguments:
-  --snapshot-id &lt;snapshot-id&gt;
-                        Create volume from snapshot id (Optional,
-                        Default=None)
-  --source-volid &lt;source-volid&gt;
-                        Create volume from volume id (Optional, Default=None)
-  --image-id &lt;image-id&gt;
-                        Create volume from image id (Optional, Default=None)
-  --display-name &lt;display-name&gt;
-                        Volume name (Optional, Default=None)
-  --display-description &lt;display-description&gt;
-                        Volume description (Optional, Default=None)
-  --volume-type &lt;volume-type&gt;
-                        Volume type (Optional, Default=None)
-  --availability-zone &lt;availability-zone&gt;
-                        Availability zone for volume (Optional, Default=None)
-  --metadata [&lt;key=value&gt; [&lt;key=value&gt; ...]]
-                        Metadata key=value pairs (Optional, Default=None)
-</code></pre>
-
-<h2 id="troubleshooting">Troubleshooting</h2>
-<p>If you installed the clients using <code>pip</code>, the best thing to do when you feel like your clients are 'broken' is to destroy your virtual environment and reinstall.</p>
-<p>If this doesn't solve your problem, you're unfortunately at the point that you need to use your search of engine of choice to find help, start debugging Python code or file a bug on Launchpad.</p>]]></content:encoded>
     </item>
   </channel>
 </rss>

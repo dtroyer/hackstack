@@ -7,12 +7,141 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2014-10-06T21:55:34Z</updated>
+  <updated>2014-10-25T01:45:41Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
   <id>http://hackstack.org/x/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[How Dost Thy Cloud Know Me, Let Me Count The Ways]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways" />
+    <id>http://hackstack.org/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways</id>
+    <updated>2014-10-24T10:24:00Z</updated>
+    <published>2014-10-24T10:24:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstackclient" />
+    <summary type="html"><![CDATA[How Dost Thy Cloud Know Me, Let Me Count The Ways]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways"><![CDATA[<div class="document">
+<p>One of the coolest (IMHO) new features <a class="footnote-reference" href="#id2" id="id1">[1]</a> recently added to OpenStackClient is its leveraging of a new-ish feature of Keystone's client library, authentication plugins.  As that name implies, this allows for Keystone client to be able to use an extendable set of authentication backends for validating users.  At press time (keypress time for the pedantic) the freshly released <a class="reference external" href="https://pypi.python.org/pypi/python-keystoneclient">python-keystoneclient</a> 0.11.2 includes the traditional password method, a new variant on the token method and a recent addition supporting SAML2.</p>
+<p>Happily, the <a class="reference external" href="http://git.openstack.org/cgit/openstack/python-openstackclient">master branch</a> of OpenStackClient has learned how to take advantage of these plugins, plus any additional ones written for Keystone client.  This creates a new problem because the authentication type can not always be inferred and needs to be supplied by the user.  And thus we arrive at the <em>Topic of the Day</em>.</p>
+<div class="section" id="but-first-preview-time">
+<h1>But First, Preview Time</h1>
+<p>There is one additional yet-to-come feature that I can't resist mentioning now that it has been <a class="reference external" href="https://review.openstack.org/129795">proposed for review</a>. It leverages mordred's <a class="reference external" href="http://git.openstack.org/cgit/stackforge/os-client-config">os-client-config</a> module to read configuration information from a file by name.  In plain language, rather than set up a handful of environment variables or command-line options, all of the authentication and other configuration for OSC can be stashed in a YAML file and called by name:</p>
+<pre class="literal-block">
+openstack --os-cloud devstack-1 image list --long
+</pre>
+<p>This is also step one in simplifying dealing with multiple clouds:</p>
+<pre class="literal-block">
+for cloud in devstack-1 hpcloud-az2 rax-ord; do
+    openstack --os-cloud image list --long
+</pre>
+<p>It is a small thing, but small things often make us happy.  It figures in to the following authentication discussion that I don't want to update again in a month.  So until <tt class="docutils literal"><span class="pre">os-cloud</span></tt> support merges, ignore references to YAML, <tt class="docutils literal">CloudConfig</tt>, etc. below.</p>
+<!-- mordred -->
+<!-- os-cloud https://review.openstack.org/129795 -->
+</div>
+<div class="section" id="sources-of-truth">
+<h1>Sources of Truth</h1>
+<p>OpenStackClient has three sources of configuration information (in decreasing priority order):</p>
+<ul class="simple">
+<li>command line options</li>
+<li>environment</li>
+<li><tt class="docutils literal">CloudConfig</tt> (<tt class="docutils literal"><span class="pre">~/.config/openstack/clouds.yaml</span></tt> file)</li>
+</ul>
+<p>Once all of the sources have been processed and a single configuration object assembled, the fun can begin.  If an authentication type is not provided, the authentication options are examined to determine if one of the default types can be used. If no match is found an error is reported and a period of stillness is declared.  Rather, the program exits.</p>
+<p>Note that the authentication call to the Identity service has not yet
+occurred.  It is deferred until the last possible moment in order to
+reduce the number of unnecessary queries to the server, such as when further
+processing detects an invalid command.</p>
+</div>
+<div class="section" id="keystone-authentication-plugins">
+<h1>Keystone Authentication Plugins</h1>
+<p>The Keystone client library implements the base set of plugins.  Additional
+plugins may be available from the Keystone project or other sources.
+See the <a class="reference external" href="http://docs.openstack.org/developer/python-keystoneclient/authentication-plugins.html">Keystone client documentation</a> for more information.</p>
+<p>There are at least three authentication types that are always available:</p>
+<ul>
+<li><p class="first"><strong>Password</strong>: A username and password, plus optional project and/or domain,
+are used to identify the user.  This is the most common type and the
+default any time a username is supplied.  An authentication URL for the
+Identity service is also required.  [Required: <tt class="docutils literal"><span class="pre">--os-auth-url</span></tt>, <tt class="docutils literal"><span class="pre">--os-project-name</span></tt>, <tt class="docutils literal"><span class="pre">--os-username</span></tt>; Optional: <tt class="docutils literal"><span class="pre">--os-password</span></tt>]</p>
+</li>
+<li><p class="first"><strong>Token</strong>: This is slightly different from the usual token authentication
+(described below as token/endpoint) in that a token and an authentication
+URL are supplied and the plugin retrieves a new (scoped?) token.
+[Required: <tt class="docutils literal"><span class="pre">--os-auth-url</span></tt>, <tt class="docutils literal"><span class="pre">--os-token</span></tt>]</p>
+</li>
+<li><p class="first"><strong>Token/Endpoint</strong>: This is the original token authentication (known as 'token
+flow' in the early CLI documentation in the OpenStack wiki).  It requires
+a token and a direct endpoint that is used in the API call.  The difference
+from the new Token type is this token is used as-is, no call is made
+to the Identity service from the client.  This type is most often used to
+bootstrap a Keystone server where the token is the <tt class="docutils literal">admin_token</tt> configured
+in <tt class="docutils literal">keystone.conf</tt>.  It will also work with other services and a regular
+scoped token such as one obtained from a <tt class="docutils literal">token issue</tt> command.  [Required: <tt class="docutils literal"><span class="pre">--os-url</span></tt>, <tt class="docutils literal"><span class="pre">--os-token</span></tt>]</p>
+<p><em>[Note that the Token/Endpoint plugin is currently supplied by OSC itself and is not available for other clients using the Keystone client lib.  It shall move to its Proper Home in Good Time.]</em></p>
+</li>
+<li><p class="first"><strong>Others</strong>: There are SAML and other (Kerberos?) plugins under development
+that are also supported.  To use them they must be selected by supplying
+the <tt class="docutils literal"><span class="pre">--os-auth-type</span></tt> options.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="how-it-s-made">
+<h1>How It's Made</h1>
+<p><em>[Who doesn't love</em> <a class="reference external" href="http://www.sciencechannel.com/tv-shows/how-its-made">that show</a>? <em>]</em></p>
+<p>The authentication process flows from OSC's <tt class="docutils literal">OpenStackShell</tt> to the New-and-Improved <tt class="docutils literal">ClientManager</tt>.</p>
+<ul class="simple">
+<li>But first, on import <tt class="docutils literal">api.auth</tt>:<ul>
+<li>obtains the list of installed Keystone authentication
+plugins from the <tt class="docutils literal">keystoneclient.auth.plugin</tt> entry point.</li>
+<li>builds a list of authentication options from the plugins.</li>
+</ul>
+</li>
+<li><tt class="docutils literal">OpenStackShell</tt> parses the command line:<ul>
+<li>If <tt class="docutils literal"><span class="pre">--os-cloud</span></tt> is present read the named configuration from <tt class="docutils literal"><span class="pre">~/.config/openstack/clouds.yaml</span></tt> and create a <tt class="docutils literal">CloudConfig</tt> object<ul>
+<li><tt class="docutils literal">CloudConfig</tt> also handles picking up the matching environment variables for the options</li>
+</ul>
+</li>
+<li>The remaining global command line options are merged into the new <tt class="docutils literal">CloudConfig</tt></li>
+</ul>
+</li>
+<li>A new <tt class="docutils literal">ClientManager</tt> is created and provided with the <tt class="docutils literal">CloudConfig</tt>:<ul>
+<li>If <tt class="docutils literal"><span class="pre">--os-auth-type</span></tt> is provided and is a valid and available plugin it is used.</li>
+<li>If <tt class="docutils literal"><span class="pre">--os-auth-type</span></tt> is not provided select an authentication plugin based on the existing options.  This is a short-circuit evaluation, first match wins.<ul>
+<li>If <tt class="docutils literal"><span class="pre">--os-endpoint</span></tt> and <tt class="docutils literal"><span class="pre">--os-token</span></tt> are both present <tt class="docutils literal">token_endpoint</tt> is selected</li>
+<li>If <tt class="docutils literal"><span class="pre">--os-username</span></tt> is present <tt class="docutils literal">password</tt> is selected</li>
+<li>If <tt class="docutils literal"><span class="pre">--os-token</span></tt> is present <tt class="docutils literal">token</tt> is selected</li>
+<li>If no selection has been made by now exit with error</li>
+</ul>
+</li>
+<li>Load the selected plugin class.</li>
+</ul>
+</li>
+<li><tt class="docutils literal">ClientManager</tt> waits until an operation that requires authentication is attempted to make the initial request to the Identity service.<ul>
+<li>if <tt class="docutils literal"><span class="pre">--os-auth-url</span></tt> is not present for any of the types except
+Token/Endpoint, exit with an error.</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="destinations-of-consequences">
+<h1>Destinations of Consequences</h1>
+<p>The changes that began with utilizing Keystone client's <tt class="docutils literal">Session</tt> are nearly complete and have added the <tt class="docutils literal">openstackclient.api.auth</tt> module and drastically restructured the <tt class="docutils literal">openstackclient.shell</tt> and <tt class="docutils literal">openstackclient.clientmanger</tt> modules.  One result is that the <tt class="docutils literal">ClientManager</tt> is now nearly self-contained with regard to its usability apart from the OSC shell.  At this time I can neither confirm nor deny that <tt class="docutils literal">ClientManager</tt> could be used as a single-point client API.  While it works (<a class="reference external" href="https://review.openstack.org/127873">one example</a>) it is not yet a stable API because it only unifies the session and auth components, passing the real work down to either the project libraries or OSC's internal API objects.  So don't go and do that.  Yet...</p>
+<hr class="docutils" />
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Currently only in master branch, to be included in the next release.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+]]></content>
+  </entry>
   <entry>
     <author>
       <name>dtroyer</name>

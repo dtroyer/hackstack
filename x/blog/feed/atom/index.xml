@@ -7,12 +7,187 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2014-10-06T21:55:34Z</updated>
+  <updated>2014-10-25T01:45:41Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
   <id>http://hackstack.org/x/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[How Dost Thy Cloud Know Me, Let Me Count The Ways]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways" />
+    <id>http://hackstack.org/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways</id>
+    <updated>2014-10-24T10:24:00Z</updated>
+    <published>2014-10-24T10:24:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstackclient" />
+    <summary type="html"><![CDATA[How Dost Thy Cloud Know Me, Let Me Count The Ways]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways"><![CDATA[<div class="document">
+<p>One of the coolest (IMHO) new features <a class="footnote-reference" href="#id2" id="id1">[1]</a> recently added to OpenStackClient is its leveraging of a new-ish feature of Keystone's client library, authentication plugins.  As that name implies, this allows for Keystone client to be able to use an extendable set of authentication backends for validating users.  At press time (keypress time for the pedantic) the freshly released <a class="reference external" href="https://pypi.python.org/pypi/python-keystoneclient">python-keystoneclient</a> 0.11.2 includes the traditional password method, a new variant on the token method and a recent addition supporting SAML2.</p>
+<p>Happily, the <a class="reference external" href="http://git.openstack.org/cgit/openstack/python-openstackclient">master branch</a> of OpenStackClient has learned how to take advantage of these plugins, plus any additional ones written for Keystone client.  This creates a new problem because the authentication type can not always be inferred and needs to be supplied by the user.  And thus we arrive at the <em>Topic of the Day</em>.</p>
+<div class="section" id="but-first-preview-time">
+<h1>But First, Preview Time</h1>
+<p>There is one additional yet-to-come feature that I can't resist mentioning now that it has been <a class="reference external" href="https://review.openstack.org/129795">proposed for review</a>. It leverages mordred's <a class="reference external" href="http://git.openstack.org/cgit/stackforge/os-client-config">os-client-config</a> module to read configuration information from a file by name.  In plain language, rather than set up a handful of environment variables or command-line options, all of the authentication and other configuration for OSC can be stashed in a YAML file and called by name:</p>
+<pre class="literal-block">
+openstack --os-cloud devstack-1 image list --long
+</pre>
+<p>This is also step one in simplifying dealing with multiple clouds:</p>
+<pre class="literal-block">
+for cloud in devstack-1 hpcloud-az2 rax-ord; do
+    openstack --os-cloud image list --long
+</pre>
+<p>It is a small thing, but small things often make us happy.  It figures in to the following authentication discussion that I don't want to update again in a month.  So until <tt class="docutils literal"><span class="pre">os-cloud</span></tt> support merges, ignore references to YAML, <tt class="docutils literal">CloudConfig</tt>, etc. below.</p>
+<!-- mordred -->
+<!-- os-cloud https://review.openstack.org/129795 -->
+</div>
+<div class="section" id="sources-of-truth">
+<h1>Sources of Truth</h1>
+<p>OpenStackClient has three sources of configuration information (in decreasing priority order):</p>
+<ul class="simple">
+<li>command line options</li>
+<li>environment</li>
+<li><tt class="docutils literal">CloudConfig</tt> (<tt class="docutils literal"><span class="pre">~/.config/openstack/clouds.yaml</span></tt> file)</li>
+</ul>
+<p>Once all of the sources have been processed and a single configuration object assembled, the fun can begin.  If an authentication type is not provided, the authentication options are examined to determine if one of the default types can be used. If no match is found an error is reported and a period of stillness is declared.  Rather, the program exits.</p>
+<p>Note that the authentication call to the Identity service has not yet
+occurred.  It is deferred until the last possible moment in order to
+reduce the number of unnecessary queries to the server, such as when further
+processing detects an invalid command.</p>
+</div>
+<div class="section" id="keystone-authentication-plugins">
+<h1>Keystone Authentication Plugins</h1>
+<p>The Keystone client library implements the base set of plugins.  Additional
+plugins may be available from the Keystone project or other sources.
+See the <a class="reference external" href="http://docs.openstack.org/developer/python-keystoneclient/authentication-plugins.html">Keystone client documentation</a> for more information.</p>
+<p>There are at least three authentication types that are always available:</p>
+<ul>
+<li><p class="first"><strong>Password</strong>: A username and password, plus optional project and/or domain,
+are used to identify the user.  This is the most common type and the
+default any time a username is supplied.  An authentication URL for the
+Identity service is also required.  [Required: <tt class="docutils literal"><span class="pre">--os-auth-url</span></tt>, <tt class="docutils literal"><span class="pre">--os-project-name</span></tt>, <tt class="docutils literal"><span class="pre">--os-username</span></tt>; Optional: <tt class="docutils literal"><span class="pre">--os-password</span></tt>]</p>
+</li>
+<li><p class="first"><strong>Token</strong>: This is slightly different from the usual token authentication
+(described below as token/endpoint) in that a token and an authentication
+URL are supplied and the plugin retrieves a new (scoped?) token.
+[Required: <tt class="docutils literal"><span class="pre">--os-auth-url</span></tt>, <tt class="docutils literal"><span class="pre">--os-token</span></tt>]</p>
+</li>
+<li><p class="first"><strong>Token/Endpoint</strong>: This is the original token authentication (known as 'token
+flow' in the early CLI documentation in the OpenStack wiki).  It requires
+a token and a direct endpoint that is used in the API call.  The difference
+from the new Token type is this token is used as-is, no call is made
+to the Identity service from the client.  This type is most often used to
+bootstrap a Keystone server where the token is the <tt class="docutils literal">admin_token</tt> configured
+in <tt class="docutils literal">keystone.conf</tt>.  It will also work with other services and a regular
+scoped token such as one obtained from a <tt class="docutils literal">token issue</tt> command.  [Required: <tt class="docutils literal"><span class="pre">--os-url</span></tt>, <tt class="docutils literal"><span class="pre">--os-token</span></tt>]</p>
+<p><em>[Note that the Token/Endpoint plugin is currently supplied by OSC itself and is not available for other clients using the Keystone client lib.  It shall move to its Proper Home in Good Time.]</em></p>
+</li>
+<li><p class="first"><strong>Others</strong>: There are SAML and other (Kerberos?) plugins under development
+that are also supported.  To use them they must be selected by supplying
+the <tt class="docutils literal"><span class="pre">--os-auth-type</span></tt> options.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="how-it-s-made">
+<h1>How It's Made</h1>
+<p><em>[Who doesn't love</em> <a class="reference external" href="http://www.sciencechannel.com/tv-shows/how-its-made">that show</a>? <em>]</em></p>
+<p>The authentication process flows from OSC's <tt class="docutils literal">OpenStackShell</tt> to the New-and-Improved <tt class="docutils literal">ClientManager</tt>.</p>
+<ul class="simple">
+<li>But first, on import <tt class="docutils literal">api.auth</tt>:<ul>
+<li>obtains the list of installed Keystone authentication
+plugins from the <tt class="docutils literal">keystoneclient.auth.plugin</tt> entry point.</li>
+<li>builds a list of authentication options from the plugins.</li>
+</ul>
+</li>
+<li><tt class="docutils literal">OpenStackShell</tt> parses the command line:<ul>
+<li>If <tt class="docutils literal"><span class="pre">--os-cloud</span></tt> is present read the named configuration from <tt class="docutils literal"><span class="pre">~/.config/openstack/clouds.yaml</span></tt> and create a <tt class="docutils literal">CloudConfig</tt> object<ul>
+<li><tt class="docutils literal">CloudConfig</tt> also handles picking up the matching environment variables for the options</li>
+</ul>
+</li>
+<li>The remaining global command line options are merged into the new <tt class="docutils literal">CloudConfig</tt></li>
+</ul>
+</li>
+<li>A new <tt class="docutils literal">ClientManager</tt> is created and provided with the <tt class="docutils literal">CloudConfig</tt>:<ul>
+<li>If <tt class="docutils literal"><span class="pre">--os-auth-type</span></tt> is provided and is a valid and available plugin it is used.</li>
+<li>If <tt class="docutils literal"><span class="pre">--os-auth-type</span></tt> is not provided select an authentication plugin based on the existing options.  This is a short-circuit evaluation, first match wins.<ul>
+<li>If <tt class="docutils literal"><span class="pre">--os-endpoint</span></tt> and <tt class="docutils literal"><span class="pre">--os-token</span></tt> are both present <tt class="docutils literal">token_endpoint</tt> is selected</li>
+<li>If <tt class="docutils literal"><span class="pre">--os-username</span></tt> is present <tt class="docutils literal">password</tt> is selected</li>
+<li>If <tt class="docutils literal"><span class="pre">--os-token</span></tt> is present <tt class="docutils literal">token</tt> is selected</li>
+<li>If no selection has been made by now exit with error</li>
+</ul>
+</li>
+<li>Load the selected plugin class.</li>
+</ul>
+</li>
+<li><tt class="docutils literal">ClientManager</tt> waits until an operation that requires authentication is attempted to make the initial request to the Identity service.<ul>
+<li>if <tt class="docutils literal"><span class="pre">--os-auth-url</span></tt> is not present for any of the types except
+Token/Endpoint, exit with an error.</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="destinations-of-consequences">
+<h1>Destinations of Consequences</h1>
+<p>The changes that began with utilizing Keystone client's <tt class="docutils literal">Session</tt> are nearly complete and have added the <tt class="docutils literal">openstackclient.api.auth</tt> module and drastically restructured the <tt class="docutils literal">openstackclient.shell</tt> and <tt class="docutils literal">openstackclient.clientmanger</tt> modules.  One result is that the <tt class="docutils literal">ClientManager</tt> is now nearly self-contained with regard to its usability apart from the OSC shell.  At this time I can neither confirm nor deny that <tt class="docutils literal">ClientManager</tt> could be used as a single-point client API.  While it works (<a class="reference external" href="https://review.openstack.org/127873">one example</a>) it is not yet a stable API because it only unifies the session and auth components, passing the real work down to either the project libraries or OSC's internal API objects.  So don't go and do that.  Yet...</p>
+<hr class="docutils" />
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Currently only in master branch, to be included in the next release.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+]]></content>
+  </entry>
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[First Principles - Glossary]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2014/10/08/first-principles-glossary" />
+    <id>http://hackstack.org/x/blog/2014/10/08/first-principles-glossary</id>
+    <updated>2014-10-08T10:08:00Z</updated>
+    <published>2014-10-08T10:08:00Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstack" />
+    <summary type="html"><![CDATA[First Principles - Glossary]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2014/10/08/first-principles-glossary"><![CDATA[<div class="document" id="openstack-terms-and-you">
+<h1 class="title">OpenStack Terms and You</h1>
+<p>I think we need to start from the beginning to know a bit about where we really are...and to do that we need to speak the same language.  This doesn't mean we must agree on the actual terms used, but that their definition and evidence of need are spelled out and can inform the following steps and discussion.</p>
+<p>In some cases, the bikeshed will simply be in primer with placeholders until we converge an appropriate terms.</p>
+<p>The Technical Committee <a class="reference external" href="https://wiki.openstack.org/wiki/Governance/Foundation/TechnicalCommittee">Charter</a> refers to some terms that should be clarified early in this process.</p>
+<ul class="simple">
+<li><strong>Official Programs</strong> - The current unit of organization, called a <strong>program</strong>, logically groups people and code for purposes of achieving the OpenStack project mission.  The current programs are generally teams of people woring on a common project or set of related projects.  These teams elect a Program Team Lead (PTL) who has management responsibilities to the program.  <a class="reference external" href="https://review.openstack.org/#/c/125783/">A proposal</a> to change this terminology to <strong>project team</strong> is in part intended to reinforce the idea that these are groups of people first and code repositories second.  The proposal is part of a series to re-structure the organization of OpenStack projects and by itself is mostly for clarity.  It does not appear to be controversial based on the comments so far so I will adopt it here.</li>
+</ul>
+<ul class="simple">
+<li><strong>Program Leads</strong> - We've all grown to love the term <strong>PTL</strong> and the change from program to team can be used to re-redefine PTL as <strong>project team lead</strong> as it once was back in the day.</li>
+<li><strong>Oversight</strong> - The TC charter includes <em>&quot;[the TC] still has oversight over team decisions, especially when they affect other programs or go contrary to general OpenStack project goals&quot;</em>.  There is concern about the balance between project rights and responsibilities changing.  There may also be concerns over what that balance is today.</li>
+</ul>
+<p>I'm looking for the baked-in connection between governance organization and deliverables.  Today we have a 1:1 between official teams (programs) and their participation in the &quot;integrated release&quot;.  Many of the proposals floating about disconnect those.</p>
+<ul>
+<li><p class="first"><strong>Coordinated Release Cycle</strong> - The time period roughly starting at or just before the semi-annual Design Summit and ending approximately six months later, again just before the next Design Summit.</p>
+</li>
+<li><p class="first"><strong>Release Artifacts</strong> - The output of the process formerly known as <em>integrated release</em>.  These are the major output of the <em>coordinated release cycle</em> and typically what distributions would consume in building their periodic releases.</p>
+</li>
+<li><p class="first"><strong>Project Groups</strong> - Project groups are simply groups of related projects and/or project teams that are dependent on each other and it is often useful to consider the projects together for certain matters.  For example <strong>Group C</strong> includes Nova, Glance, Cinder and Neutron.  Other groups might include <strong>Group I</strong> (Keystone and plugins), <strong>Group O</strong> (Swift), <strong>Group W</strong> (<a class="reference external" href="http://en.wikipedia.org/wiki/Alice's_Restaurant">litterbugs</a>), <strong>Group H</strong> (Ironic and other hypervisor drivers), <strong>Group D</strong> (Trove), <strong>Group M</strong> (Zaqar), and so on.  Many groups may only have one member if there are not multiple projects with a strongly set of similar or mutual dependencies.</p>
+<p>One use of project groups is in simplifying the relationship diagram between projects; the diagram between projects within the group can focus on that subset and the diagram between groups can minimize the effect of the intra-group relationships.  These diagrams should be useful in informing testing policy and requirements.</p>
+<p>These groups map into my <a class="reference external" href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/">layers description</a> with layer one comprised of Groups I and most of C and layer 2 comprised of Groups O, H and the remainder of C (Cinder).  Remaining groups of official OpenStack projects make up layer 3.</p>
+</li>
+<li><p class="first"><strong>Integrated Release</strong> - The first step is to change the term <em>integrated release</em> to something better defined and less overloaded.  This is highly contentious as you might expect.  I had intended on using <strong>nucleus</strong> to describe this chewy middle of OpenStack because it has all sorts of metaphorical nooks and crannies to be mined, but then I saw <strong>nuclear release</strong> in writing and decided to just use the rather archaic term <strong>bindle</strong> here instead, as in &quot;the OpenStack Bindle contains the basic cloud necessities&quot;.</p>
+<p>The key part of the existing definition, <em>&quot;The OpenStack bindle is a subset of the official OpenStack projects whose member teams submit to stricter policies and oversight&quot;</em>, divides the official OpenStack projects into at least two tiers.  dhellmann describes it like this:</p>
+<pre class="literal-block">
+size(ecosystem) &gt; size(official-projects) &gt; size(bindle)
+</pre>
+<p>Inclusion in the integrated release has become the high-value attribute for many corporations judging project worthiness for contribution and/or use.  Removing this attribute is one of the major driving forces for re-considering the organizational structure in general and in renaming and clearly defining the <em>bindle</em>.</p>
+<p>The makeup of the bindle defines what release artifacts are published as a result of the release process.  These projects are held to a higher bar in regards to testing, documentation in involvement of team members in horizontal OpenStack activities.</p>
+</li>
+</ul>
+</div>
+]]></content>
+  </entry>
   <entry>
     <author>
       <name>dtroyer</name>
@@ -1130,214 +1305,6 @@ watching people trying to keep track of the Savanna Savannah release.  Or
 would that be the Savannah Savanna release?  See, the fun we could have!</p>
 <p>'J': Not Jacksonville, they are both in the wrong state and I don't want to
 type that many letters.  Let's start a campaign for 'Joyland'!</p>
-</div>
-</div>
-]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>dtroyer</name>
-      <uri>http://hackstack.org/x/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Cloud Image Updates]]></title>
-    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2013/10/21/cloud-image-updates" />
-    <id>http://hackstack.org/x/blog/2013/10/21/cloud-image-updates</id>
-    <updated>2013-10-21T10:21:00Z</updated>
-    <published>2013-10-21T10:21:00Z</published>
-    <category scheme="http://hackstack.org/x/blog" term="openstack" />
-    <category scheme="http://hackstack.org/x/blog" term="fedora" />
-    <category scheme="http://hackstack.org/x/blog" term="ubuntu" />
-    <summary type="html"><![CDATA[Cloud Image Updates]]></summary>
-    <content type="html" xml:base="http://hackstack.org/x/blog/2013/10/21/cloud-image-updates"><![CDATA[<div class="document">
-<p>Update!  Update!  Update!</p>
-<p>A while back I started documenting the image build process I've been using for building OpenStack cloud images:</p>
-<ul class="simple">
-<li><a class="reference external" href="/x/blog/2013/01/25/a-fedora-18-image-for-openstack/">A Fedora 18 Image for OpenStack</a></li>
-<li><a class="reference external" href="/x/blog/2013/04/25/a-centos-6-image-for-openstack/">A CentOS 6 Image for OpenStack</a></li>
-</ul>
-<p>Note that Ubuntu is missing from that list, due mostly to their published UEC images being generally good enough as a starting point.  Fedora 19 finally has a similar image published, let's see how different it is and if it is useful for my purposed...</p>
-<p>Also, all of these images have rng-tools added as it is useful on clouds that provide a usable virtualized /dev/random in their hypervisor.</p>
-<div class="section" id="fedora-19">
-<h1>Fedora 19</h1>
-<p>Grab the new F19 cloud image; the QCOW2 version is ready to go!  <a class="reference external" href="http://download.fedoraproject.org/pub/fedora/linux/releases/19/Images/x86_64/Fedora-x86_64-19-20130627-sda.qcow2">http://download.fedoraproject.org/pub/fedora/linux/releases/19/Images/x86_64/Fedora-x86_64-19-20130627-sda.qcow2</a>.</p>
-<p>It's surprisingly close!  There aren't any standout differences save for the inclusion of sendmail and procmail, which I've specifically removed in my kickstart.</p>
-<ul class="simple">
-<li>install rng-tools</li>
-<li>remove sendmail and/or procmail if present</li>
-<li>clean up OpenSSH host keys</li>
-</ul>
-</div>
-<div class="section" id="centos-6">
-<h1>CentOS 6</h1>
-<p>This is still a basic installation with a bunch of cruft removes such as all of the firmware packages that are useless in a virtual environment.</p>
-<ul class="simple">
-<li>stop getty on all vconsoles except /dev/tty1</li>
-<li>install rng-tools</li>
-<li>install cloud-init</li>
-<li>teach device mapper to not auto-generate virtual network devices</li>
-<li>add support for growing the root filesystem at first boot</li>
-</ul>
-</div>
-<div class="section" id="ubuntu-12-04">
-<h1>Ubuntu 12.04</h1>
-<p>Just for completeness I'll list what I do:</p>
-<ul class="simple">
-<li>install rng-tools</li>
-<li>clean up Device Mapper and OpenSSH host keys</li>
-</ul>
-</div>
-</div>
-]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>dtroyer</name>
-      <uri>http://hackstack.org/x/blog</uri>
-    </author>
-    <title type="html"><![CDATA[DevStack Local Config]]></title>
-    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2013/09/07/devstack-local-config" />
-    <id>http://hackstack.org/x/blog/2013/09/07/devstack-local-config</id>
-    <updated>2013-09-07T09:17:00Z</updated>
-    <published>2013-09-07T09:17:00Z</published>
-    <category scheme="http://hackstack.org/x/blog" term="openstack" />
-    <category scheme="http://hackstack.org/x/blog" term="devstack" />
-    <summary type="html"><![CDATA[DevStack Local Config]]></summary>
-    <content type="html" xml:base="http://hackstack.org/x/blog/2013/09/07/devstack-local-config"><![CDATA[<div class="document">
-<p><em>[Updated 10 Oct 2013 to reflect the released state of ``local.conf``]</em></p>
-<p>DevStack has long had an extremely simple mechanism to add arbitrary configuration entries to <tt class="docutils literal">nova.conf</tt>, <tt class="docutils literal">EXTRA_OPTS</tt>.  It was handy and even duplicated in the Neutron configuration in a number of places.  However, it did not scale well: a new variable and expansion loop is required for each file/section combination.  And now the time has come for a replacement...</p>
-<div class="section" id="requirements">
-<h1>Requirements</h1>
-<blockquote>
-<ul class="simple">
-<li><tt class="docutils literal">localrc</tt> has served well in its capacity of the sole container of local configuration.  Being a single file makes it easy to track and share known working DevStack configurations.  Any new configuration scheme must preserve this property.</li>
-<li>In order to be able to set attributes in arbitrary configuration files and sections, those bits of information must be encoded in the new format.</li>
-<li>There must be a mechanism to selectively merge the configuration values into their destination files rather than do them all at once.</li>
-<li>Reduce the number of configuration variables in general that are simply passed-through to project config files.  They are being set in localrc anyway, moving that to another section of local.conf is not a difficult transition.</li>
-<li>Backward-compatibility is a must; existing <tt class="docutils literal">localrc</tt> files must continue to work as expected.  In order to utilize any of the new capability, <tt class="docutils literal">localrc</tt> must be converted to the <tt class="docutils literal">local.conf</tt> <tt class="docutils literal">local</tt> section.</li>
-</ul>
-</blockquote>
-</div>
-<div class="section" id="solution">
-<h1>Solution</h1>
-<p>Support has been added for a new master local configuration file <tt class="docutils literal">local.conf</tt> that, like <tt class="docutils literal">localrc</tt>, resides in the root DevStack directory and is not included in the DevStack repo. <tt class="docutils literal">local.conf</tt> contains all local configuration for DevStack, including a direct replacement for <tt class="docutils literal">localrc</tt>.  It is an extended-INI format that introduces a new meta-section header containing the additional information required: a phase name and destination configuration filename.  It has the form:</p>
-<pre class="literal-block">
-[[ &lt;phase&gt; | &lt;filename&gt; ]]
-</pre>
-<p>where &lt;phase&gt; is one of a set of phase names defined below by <tt class="docutils literal">stack.sh</tt> and &lt;filename&gt; is the configuration filename.  The filename is eval'ed in the <tt class="docutils literal">stack.sh</tt> context so all environment variables are available and may be used (see example below).  Using the configuration variables from the project library scripts (e.g. <tt class="docutils literal">lib/nova</tt>) in the header is strongly suggested (see example of <tt class="docutils literal">NOVA_CONF</tt> below).</p>
-<p>Configuration files specifying a path that does not exist are skipped.  This allows services to be disabled and still have configuration files present in <tt class="docutils literal">local.conf</tt>.  For example, if Nova is not enabled and <tt class="docutils literal">/etc/nova</tt> does not exist, attempts to set a value in <tt class="docutils literal">/etc/nova/nova.conf</tt> will be skipped.  If <tt class="docutils literal">/etc/nova</tt> does exist, <tt class="docutils literal">nova.conf</tt> will be created if it does not exist.  This should be mostly harmless.</p>
-<p>The defined phases are:</p>
-<ul class="simple">
-<li><strong>local</strong> - extracts the <tt class="docutils literal">localrc</tt> section from <tt class="docutils literal">local.conf</tt> before <tt class="docutils literal">stackrc</tt> is sourced</li>
-<li><strong>post-config</strong> - runs after the <a class="reference external" href="/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service/">layer 2 services</a> are configured and before they are started</li>
-<li><strong>extra</strong> - runs after services are started and before any files in <tt class="docutils literal">extra.d</tt> are executed</li>
-</ul>
-<p><tt class="docutils literal">local.conf</tt> is processed strictly in sequence; meta-sections may be specified more than once but if any settings are duplicated the last to appear in the file will survive.</p>
-<p>The <tt class="docutils literal"><span class="pre">post-config</span></tt> phase is where most of the configuration-setting activity takes place.  In the following example, syslog and the Compute v3 API are enabled.  Note the use of <tt class="docutils literal">$NOVA_CONF</tt> to properly locate <tt class="docutils literal">nova.conf</tt>.</p>
-<blockquote>
-<p>[[post-config|$NOVA_CONF]]
-[DEFAULT]
-use_syslog = True</p>
-<p>[osapi_v3]
-enabled = False</p>
-</blockquote>
-<p>A special meta-section <tt class="docutils literal">[[local|localrc]]</tt> is used to replace the function of the old <tt class="docutils literal">localrc</tt> file.  This section is written to <tt class="docutils literal">.localrc.auto</tt> if <tt class="docutils literal">locarc</tt> does not exist; if it does exist <tt class="docutils literal">localrc</tt> is not overwritten to preserve compatability:</p>
-<pre class="literal-block">
-[[local|localrc]]
-FIXED_RANGE=10.254.1.0/24
-ADMIN_PASSWORD=speciale
-LOGFILE=$DEST/logs/stack.sh.log
-</pre>
-</div>
-<div class="section" id="implementation">
-<h1>Implementation</h1>
-<p>Four new functions were added to parse and merge <tt class="docutils literal">local.conf</tt> into existing INI-style config files.  The base <tt class="docutils literal">functions</tt> file is getting way too large so these functions are in <tt class="docutils literal">lib/config</tt> which will contain functions related to config file manipulation.  The existing <tt class="docutils literal">iniXXX()</tt> functions may also eventually move here.  There shall be no side-effects or global dependencies from any of the functions in <tt class="docutils literal">lib/config</tt>.</p>
-<blockquote>
-<ul class="simple">
-<li><tt class="docutils literal">get_meta_section()</tt> - Returns an INI fragment for a specific group/filename combination</li>
-<li><tt class="docutils literal">get_meta_section_files()</tt> - Returns a list of the config filenames present in <tt class="docutils literal">local.conf</tt> for a specific group</li>
-<li><tt class="docutils literal">merge_config_file()</tt> - Performs the actual merge of the INI fragment from <tt class="docutils literal">local.conf</tt></li>
-<li><tt class="docutils literal">merge_config_group()</tt> - Loops over the INI fragments present for the specified group and merges them</li>
-</ul>
-</blockquote>
-<p>The merge is performed after the <tt class="docutils literal">install_XXX()</tt> and <tt class="docutils literal">configure_XXX()</tt> functions for all layer 1 and 2 projects are complete and before any services are started.</p>
-</div>
-<div class="section" id="the-deprecated-variables">
-<h1>The Deprecated Variables</h1>
-<p>The list of existing variables that will be deprecated in favor of using <tt class="docutils literal">local.conf</tt> currently includes <tt class="docutils literal">EXTRA_OPTS</tt> and a handful of <tt class="docutils literal">Q_XXX_XXX_OPTS</tt> variables in Neutron.  These are listed at the end of <tt class="docutils literal">stack.sh</tt> runs as deprecated and will be removed sometime in the Icehouse development cycle after DevStack's stable/havana branch is in place and Grenade's Grizzly-&gt;Havana upgrade is operational.</p>
-</div>
-<div class="section" id="examples">
-<h1>Examples</h1>
-<ul>
-<li><p class="first">Convert EXTRA_OPTS from:</p>
-<pre class="literal-block">
-EXTRA_OPTS=api_rate_limit=False
-
-to
-
-[[post-config|$NOVA_CONF]]
-[DEFAULT]
-api_rate_limit = False
-</pre>
-</li>
-<li><p class="first">Convert multiple EXTRA_OPTS values from:</p>
-<pre class="literal-block">
-EXTRA_OPTS=(api_rate_limit=False default_log_levels=sqlalchemy=WARN)
-
-to
-
-[[post-config|$NOVA_CONF]]
-[DEFAULT]
-api_rate_limit = False
-default_log_levels = sqlalchemy=WARN
-</pre>
-</li>
-<li><p class="first">Eliminate a Cinder pass-through (<tt class="docutils literal">CINDER_PERIODIC_INTERVAL</tt>):</p>
-<pre class="literal-block">
-[[post-config|$CINDER_CONF]]
-[DEFAULT]
-periodic_interval = 60
-</pre>
-</li>
-<li><p class="first">Change a setting that has no variable:</p>
-<pre class="literal-block">
-[[post-config|$CINDER_CONF]]
-[DEFAULT]
-iscsi_helper = new-tgtadm
-</pre>
-</li>
-<li><p class="first">Basic complete config:</p>
-<pre class="literal-block">
-[[post-config|$NOVA_CONF]]
-[DEFAULT]
-api_rate_limit = False
-
-[vmware]
-host_ip = $HOST_IP
-host_username = root
-host_password = deepdarkunknownsecret
-
-
-[[post-config|$CINDER_CONF]]
-[DEFAULT]
-periodic_interval = 60
-
-vmware_host_ip = $HOST_IP
-vmware_host_username = root
-vmware_host_password = deepdarkunknownsecret
-
-
-[[local|localrc]]
-FIXED_RANGE=10.254.1.0/24
-NETWORK_GATEWAY=10.254.1.1
-LOGDAYS=1
-LOGFILE=$DEST/logs/stack.sh.log
-SCREEN_LOGDIR=$DEST/logs/screen
-ADMIN_PASSWORD=quiet
-DATABASE_PASSWORD=$ADMIN_PASSWORD
-RABBIT_PASSWORD=$ADMIN_PASSWORD
-</pre>
-</li>
-</ul>
 </div>
 </div>
 ]]></content>
