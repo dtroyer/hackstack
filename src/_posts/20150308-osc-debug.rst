@@ -1,0 +1,131 @@
+---
+title: Plug In To OpenStackClient
+author: dtroyer
+date: 2015-03-08 03:08:00
+categories: OpenStackClient
+tags: projects openstackclient
+---
+
+`OpenStackClient`_ has had plugin support for a while now and it is being used by real-world OpenStack project clients such as `Congress`_.  I've also been using it as an entry point (ha!) for some of my experimental command setups, and so can you.
+
+.. _`OpenStackClient`: http://docs.openstack.org/developer/python-openstackclient/
+.. _`Congress`: https://wiki.openstack.org/wiki/Congress
+
+osc-debug
+=========
+
+I've spent a lot of time debugging OSC lately in preparation for my favorite new feature yet-to-come, support for the new ``--os-cloud`` option that takes advantage of ``os-client-config``'s cloud configuration file abilities.  Much of this debugging is necessarily around authentication and it became obvious to me that a built-in way to see what OSC was using for authentication might be handy and ``osc-debug`` was born.
+
+As far as plugins go, `osc-debug`_ is pretty ordinary.  It just adds three new commands (so far) that dump internal OSC state information.
+
+.. _`osc-debug`: https://github.com/dtroyer/osc-debug
+
+api list
+--------
+
+A mash-up of service, region and endpoint listings.  ``api list`` coughs up the basic information in the service catalog returned by the Identity authentication request.  It shows the available services by type, name and region.  With a little help from the ``--long`` option it adds the actual endpoint URL and a list of the supported versions at that endpoint.
+
+The version support output needs a bit of explaining.  Nearly every OpenStack service catalog is configured to include a service API version in the URL.  This means that to use a different version requires 'knowledge'.  But here we know that these versions are nearly always in the form of ``vNNN`` in the URI path.
+
+``api list`` starts at the base URI and looks for returned version information in a couple of the usual JSON formats.  If not found it loops adding the URI path components one at a time, stopping when it finds a recognized version response.
+
+The returned service catalog entries can be filtered by service type ``--type`` or service name ``--name``.
+
+::
+
+    osc api list
+        [--type <service-type>]
+        [--name <service-name>]
+        [--long]
+
+auth show
+---------
+
+``auth show`` displays the authentication information that OSC will use to perform authentication.  This command stops just before authentication would otherwise occur so you can see exactly what has been collected from the command line options, environment variables and ``os-client-config`` file.
+
+Note that this is one of the rare 'show' commands that does not take a positional argument to determine what to show.  This is due to there being ony one thing (authentication options) to choose from, but wanting to present the output in the traditional show command format.  This makes grabbing any of these values in a shell script trivial using the ``--format shell`` option.
+
+Also, ``os_password`` is not displayed, because, duh.
+
+::
+
+    osc auth show
+
+auth type list
+--------------
+
+``auth type list`` simply lists the authentication plugin types installed and their entry point targets.  Handy to see why things are not working as expected.
+
+::
+
+    osc auth type list
+
+auth type show
+--------------
+
+``auth type show`` shows details of the specified auth plugin type.  This includes the options that the plugin type defines.  Note that the option names are the internal names, OSC will add ``--os-`` prefix to command lise options and ``OS_`` prefix, plus forcing uppercase and replacing ``-`` with ``_`` for environment variables.
+
+::
+
+    osc auth type show
+        <auth-type>
+
+osc-quintette
+=============
+
+`osc-quintette`_ is where the experimentation really gets going.  This oddly-named [#]_ plugin has a couple of things, the most interesting one is how the server create command has been extended to accept --ram, --disk and --vcpu arguments to auto-select a matching flavor for the new server.
+
+While the functionality is nice, the interesting bit is how the stock commands are extended.
+
+.. _`osc-quintette`: https://github.com/dtroyer/osc-quintette
+
+flavor find
+-----------
+
+This is the functional basis for the enhanced ``server create`` command, directly searching for matching flavors that meet or exceed the specified values for RAM, disk and virtual CPUs.
+
+What is the difference between a ``find`` and ``list`` command?  I don't know yet.  ``List`` + filtering == ``find`` maybe, but remember, this is experimental for a reason.
+
+::
+
+    osc flavor find
+        [--ram <size-mb>]
+        [--disk <size-gb>]
+        [--vcpus <vcpus>]
+
+server create
+-------------
+
+Extends the stock ``server create`` by adding the options to select a flavor directly based on RAM, disk and/or virtual CPUs.
+
+::
+
+    osc server create
+        [--ram <size-mb>]
+        [--disk <size-gb>]
+        [--vcpus <vcpus>]
+        ...
+        <server-name>
+
+server show
+-----------
+
+Another command that extends the stock version by changing the output displayed, in this case swapping ``project_id`` for ``tenant_id``.  This is something that needs to be done in OSC itself as part of our "never show the user a 'tenant'" campaign.
+
+show flavor
+-----------
+
+Yes!  I can restore my long-lost ``<action> <object>`` command format just by putting the right things into ``setup.cfg``.  Unfortunately, the command class does not know (yet) which command form was given to call it so changing behaviour is not yet possible.  This requires a patch to ``cliff`` that is in progress and should be released soon.
+
+What Else?
+==========
+
+Imagination is all that is required to go from here.  Go forth and plugin.
+
+----
+
+.. [#] The word `quintette` comes directly from the name of `Raymond Scott's`_ small band in the 1930's, it is what I was listening to when I neede a name.  Much of his work from this era will sem eerily familiar to those who have seen Warner Brothers shorts scored by `Carl Stalling`_ in the 1940's and 1950's. I'm planning to propose `Powerhouse`_ as the Official OpenStack Theme. Look it up...
+
+.. _`Raymond Scott's`: http://raymondscott.com/
+.. _`Powerhouse`: https://archive.org/details/Powerhouse_657
+.. _`Carl Stalling`: http://www.imdb.com/name/nm0006298/
