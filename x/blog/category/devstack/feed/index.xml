@@ -10,10 +10,117 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Sun, 08 Mar 2015 18:36:07 GMT</pubDate>
+    <pubDate>Sun, 08 Mar 2015 18:41:29 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Real World DevStack Configuration</title>
+      <link>http://hackstack.org/x/blog/2015/02/11/real-world-devstack-configuration</link>
+      <pubDate>Wed, 11 Feb 2015 15:02:11 CST</pubDate>
+      <category><![CDATA[devstack]]></category>
+      <guid isPermaLink="false">Axz6zrHjweiMkqPu6Fy3pk47fBY=</guid>
+      <description>Real World DevStack Configuration</description>
+      <content:encoded><![CDATA[<div class="document">
+<p>Configuring DevStack for development use is a trail of Google searches and
+devstack.org reading and all sorts of things.  In my experience, the best and hardest
+source of what to do is experience.  And we all know how experience is the bridge
+between Bad Judgement and Good Judgement.[]</p>
+<div class="section" id="local-conf">
+<h1>local.conf</h1>
+<p>This is DevStack's configuration file.  It will never be modified by DevStack.</p>
+<div class="section" id="localrc">
+<h2>localrc</h2>
+<p>Now just a section in local.conf, <tt class="docutils literal">localrc</tt> used to be the main config file.
+References to it should be mentally translated to <tt class="docutils literal">local.conf [[local|localrc]]</tt>
+section.</p>
+<p>I also tend to carry a number of config bits commented out to make changing quick.
+I'll leave those in to illustrate alternatives to my defaults.</p>
+<div class="section" id="logging">
+<h3>Logging</h3>
+<pre class="literal-block">
+LOGDIR=$DEST/logs
+LOGFILE=$LOGDIR/stack.sh.log  # why didn't bare name work???
+</pre>
+<p>The logging support has been recently revamped to use a more conventional
+configuration.  <tt class="docutils literal">LOGDIR</tt> will default to <tt class="docutils literal">$DEST/logs</tt> and all log
+files will be found here.  <tt class="docutils literal">LOGFILE</tt> will be honored as always, putting
+the stack.sh trace log in that location; if <tt class="docutils literal">LOGFILE</tt> does not include
+a path, it becomes <tt class="docutils literal"><span class="pre">$LOGDIR/$LOGFILE</span></tt>.</p>
+<p>The services logs (aka screen logs) no longer default to a screen-specific
+subdirectory, unless <tt class="docutils literal">SCREEN_LOGDIR</tt> is set.  It is deprecated and will be
+removed in the future.</p>
+</div>
+<div class="section" id="network-addressing">
+<h3>Network Addressing</h3>
+<pre class="literal-block">
+FIXED_RANGE=10.254.1.0/24
+</pre>
+<p>Set <tt class="docutils literal">FIXED_RANGE</tt> away from the default <tt class="docutils literal">10.0.0.0/24</tt> because, well, many
+clouds use 10/8 for various things and some of them start at the beginning.
+Running DevStack in a cloud VM requires that the DevStack network addresses do
+not overlap with the host cloud networks.  Pick a range that isn't at the top
+or the bottom to (slightly) reduce the chances of collision.  This is safe for
+the neighborhoods I cloud in.</p>
+</div>
+<div class="section" id="services">
+<h3>Services</h3>
+<p>For my normal workflow, I want debugging bits enabled and services I am not using disabled.</p>
+<pre class="literal-block">
+enable_service dstat
+disable_service h-eng h-api h-api-cfn h-api-cw
+disable_service horizon
+#enable_service s-proxy s-object s-container s-account
+</pre>
+<p>I typically don't use Heat or Horizon, you know, being the CLI guy and all.
+Swift is not added by default because it takes a toll on memory use, my laptop
+is not well-endowed in that area so 2G VMs are necessary whenever possible.  In
+the cloud VMs this is not an issue.</p>
+</div>
+<div class="section" id="neutron">
+<h3>Neutron</h3>
+<pre class="literal-block">
+# Nova Net
+enable_service n-net
+disable_Service q-svc q-agt q-dhcp q-l3 q-meta
+
+# Neutron
+# NETWORK_GATEWAY must be in the FIXED_RANGE network
+#NETWORK_GATEWAY=10.254.1.1
+#disable_service n-net
+#enable_service q-svc q-agt q-dhcp q-l3 q-meta
+</pre>
+<p>Neutron may or may not be the default in DevStack by the time you read this,
+I've stopped taking chances, I want to know what I get, which by default is
+Nova Net for as long as possible, again mostly for memory and complexity reasons.</p>
+<p>Note that Neutron in the default config requires <tt class="docutils literal">NETWORK_GATEWAY</tt> to be set
+inside the network defined by <tt class="docutils literal">FIXED_RANGE</tt>.  Nova Net does not require this,
+although it is mostly harmless to define anyway.</p>
+</div>
+<div class="section" id="legacy-nova-bits">
+<h3>Legacy Nova Bits</h3>
+<pre class="literal-block">
+disable_service n-obj n-crt
+</pre>
+<p><tt class="docutils literal"><span class="pre">n-obj</span></tt> is the Nova Object Service, left over from the euca2ools bundle command's
+need of an S3 service.  That's it.  Same with <tt class="docutils literal"><span class="pre">n-crt</span></tt>.  They should be removed
+as defaults soon if not already.</p>
+</div>
+</div>
+<div class="section" id="nova-conf">
+<h2>nova.conf</h2>
+<p>Set values here via <tt class="docutils literal">local.conf</tt>:</p>
+<pre class="literal-block">
+[[post-config|$NOVA_CONF]]
+[DEFAULT]
+api_rate_limit = False
+</pre>
+<p>Rate limiting can be a problem during testing, nuke it.</p>
+</div>
+</div>
+</div>
+]]></content:encoded>
+    </item>
     <item>
       <title>OpenStack Icehouse Developer Summit</title>
       <link>http://hackstack.org/x/blog/2013/11/10/openstack-icehouse-developer-summit</link>

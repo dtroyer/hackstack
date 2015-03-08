@@ -63,7 +63,7 @@
       </li>
       <li>
         
-        <a href="/x/blog" class="selected">Blog</a>
+        <a href="/x/blog" class="">Blog</a>
       </li>
       <li>
         
@@ -82,15 +82,15 @@
 <article>
   <div class="blog_post">
     <header>
-      <div id="cloud-image-updates"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2013/10/21/cloud-image-updates/" rel="bookmark" title="Permanent Link to Cloud Image Updates">Cloud Image Updates</a></h1>
-      <p><small><span class="blog_post_date">October 21, 2013 at 10:21 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/fedora/'>fedora</a>, <a href='/x/blog/category/ubuntu/'>ubuntu</a></span>
+      <div id="real-world-devstack-configuration"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2015/02/11/real-world-devstack-configuration/" rel="bookmark" title="Permanent Link to Real World DevStack Configuration">Real World DevStack Configuration</a></h1>
+      <p><small><span class="blog_post_date">February 11, 2015 at 03:02 PM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/devstack/'>devstack</a></span>
       </small></p>
     </header>
     <div class="post_prose">
       
-  Update! Update! Update! A while back I started documenting the image build process I've been using for building OpenStack cloud images: A Fedora 18 Image for OpenStack A CentOS 6 Image for OpenStack Note that Ubuntu is missing from that list, due mostly to their published UEC images being generally good enough as a starting point. Fedora 19 finally has a similar image published, let's see how different it is and if it is useful for my purposed... Also, all of these images have rng-tools added as it is useful on clouds that provide a usable virtualized /dev/random in their
+  Configuring DevStack for development use is a trail of Google searches and devstack.org reading and all sorts of things. In my experience, the best and hardest source of what to do is experience. And we all know how experience is the bridge between Bad Judgement and Good Judgement.[] local.conf This is DevStack's configuration file. It will never be modified by DevStack. localrc Now just a section in local.conf, localrc used to be the main config file. References to it should be mentally translated to local.conf [[local|localrc]] section. I also tend to carry a number of config bits commented out to
 
     </div>
   </div>

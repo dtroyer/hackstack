@@ -4,7 +4,6 @@ author: dtroyer
 date: 2015-02-11 15:02:11
 categories: DevStack
 tags: openstack devstack
-draft: true
 ---
 
 Configuring DevStack for development use is a trail of Google searches and

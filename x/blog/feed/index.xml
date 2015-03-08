@@ -10,7 +10,7 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Sun, 08 Mar 2015 18:36:07 GMT</pubDate>
+    <pubDate>Sun, 08 Mar 2015 18:41:29 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
@@ -111,6 +111,113 @@ osc server create
 <tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>The word <cite>quintette</cite> comes directly from the name of <a class="reference external" href="http://raymondscott.com/">Raymond Scott's</a> small band in the 1930's, it is what I was listening to when I neede a name.  Much of his work from this era will sem eerily familiar to those who have seen Warner Brothers shorts scored by <a class="reference external" href="http://www.imdb.com/name/nm0006298/">Carl Stalling</a> in the 1940's and 1950's. I'm planning to propose <a class="reference external" href="https://archive.org/details/Powerhouse_657">Powerhouse</a> as the Official OpenStack Theme. Look it up...</td></tr>
 </tbody>
 </table>
+</div>
+</div>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>Real World DevStack Configuration</title>
+      <link>http://hackstack.org/x/blog/2015/02/11/real-world-devstack-configuration</link>
+      <pubDate>Wed, 11 Feb 2015 15:02:11 CST</pubDate>
+      <category><![CDATA[devstack]]></category>
+      <guid isPermaLink="false">Axz6zrHjweiMkqPu6Fy3pk47fBY=</guid>
+      <description>Real World DevStack Configuration</description>
+      <content:encoded><![CDATA[<div class="document">
+<p>Configuring DevStack for development use is a trail of Google searches and
+devstack.org reading and all sorts of things.  In my experience, the best and hardest
+source of what to do is experience.  And we all know how experience is the bridge
+between Bad Judgement and Good Judgement.[]</p>
+<div class="section" id="local-conf">
+<h1>local.conf</h1>
+<p>This is DevStack's configuration file.  It will never be modified by DevStack.</p>
+<div class="section" id="localrc">
+<h2>localrc</h2>
+<p>Now just a section in local.conf, <tt class="docutils literal">localrc</tt> used to be the main config file.
+References to it should be mentally translated to <tt class="docutils literal">local.conf [[local|localrc]]</tt>
+section.</p>
+<p>I also tend to carry a number of config bits commented out to make changing quick.
+I'll leave those in to illustrate alternatives to my defaults.</p>
+<div class="section" id="logging">
+<h3>Logging</h3>
+<pre class="literal-block">
+LOGDIR=$DEST/logs
+LOGFILE=$LOGDIR/stack.sh.log  # why didn't bare name work???
+</pre>
+<p>The logging support has been recently revamped to use a more conventional
+configuration.  <tt class="docutils literal">LOGDIR</tt> will default to <tt class="docutils literal">$DEST/logs</tt> and all log
+files will be found here.  <tt class="docutils literal">LOGFILE</tt> will be honored as always, putting
+the stack.sh trace log in that location; if <tt class="docutils literal">LOGFILE</tt> does not include
+a path, it becomes <tt class="docutils literal"><span class="pre">$LOGDIR/$LOGFILE</span></tt>.</p>
+<p>The services logs (aka screen logs) no longer default to a screen-specific
+subdirectory, unless <tt class="docutils literal">SCREEN_LOGDIR</tt> is set.  It is deprecated and will be
+removed in the future.</p>
+</div>
+<div class="section" id="network-addressing">
+<h3>Network Addressing</h3>
+<pre class="literal-block">
+FIXED_RANGE=10.254.1.0/24
+</pre>
+<p>Set <tt class="docutils literal">FIXED_RANGE</tt> away from the default <tt class="docutils literal">10.0.0.0/24</tt> because, well, many
+clouds use 10/8 for various things and some of them start at the beginning.
+Running DevStack in a cloud VM requires that the DevStack network addresses do
+not overlap with the host cloud networks.  Pick a range that isn't at the top
+or the bottom to (slightly) reduce the chances of collision.  This is safe for
+the neighborhoods I cloud in.</p>
+</div>
+<div class="section" id="services">
+<h3>Services</h3>
+<p>For my normal workflow, I want debugging bits enabled and services I am not using disabled.</p>
+<pre class="literal-block">
+enable_service dstat
+disable_service h-eng h-api h-api-cfn h-api-cw
+disable_service horizon
+#enable_service s-proxy s-object s-container s-account
+</pre>
+<p>I typically don't use Heat or Horizon, you know, being the CLI guy and all.
+Swift is not added by default because it takes a toll on memory use, my laptop
+is not well-endowed in that area so 2G VMs are necessary whenever possible.  In
+the cloud VMs this is not an issue.</p>
+</div>
+<div class="section" id="neutron">
+<h3>Neutron</h3>
+<pre class="literal-block">
+# Nova Net
+enable_service n-net
+disable_Service q-svc q-agt q-dhcp q-l3 q-meta
+
+# Neutron
+# NETWORK_GATEWAY must be in the FIXED_RANGE network
+#NETWORK_GATEWAY=10.254.1.1
+#disable_service n-net
+#enable_service q-svc q-agt q-dhcp q-l3 q-meta
+</pre>
+<p>Neutron may or may not be the default in DevStack by the time you read this,
+I've stopped taking chances, I want to know what I get, which by default is
+Nova Net for as long as possible, again mostly for memory and complexity reasons.</p>
+<p>Note that Neutron in the default config requires <tt class="docutils literal">NETWORK_GATEWAY</tt> to be set
+inside the network defined by <tt class="docutils literal">FIXED_RANGE</tt>.  Nova Net does not require this,
+although it is mostly harmless to define anyway.</p>
+</div>
+<div class="section" id="legacy-nova-bits">
+<h3>Legacy Nova Bits</h3>
+<pre class="literal-block">
+disable_service n-obj n-crt
+</pre>
+<p><tt class="docutils literal"><span class="pre">n-obj</span></tt> is the Nova Object Service, left over from the euca2ools bundle command's
+need of an S3 service.  That's it.  Same with <tt class="docutils literal"><span class="pre">n-crt</span></tt>.  They should be removed
+as defaults soon if not already.</p>
+</div>
+</div>
+<div class="section" id="nova-conf">
+<h2>nova.conf</h2>
+<p>Set values here via <tt class="docutils literal">local.conf</tt>:</p>
+<pre class="literal-block">
+[[post-config|$NOVA_CONF]]
+[DEFAULT]
+api_rate_limit = False
+</pre>
+<p>Rate limiting can be a problem during testing, nuke it.</p>
+</div>
 </div>
 </div>
 ]]></content:encoded>
@@ -1066,104 +1173,6 @@ ver = identity.client.IdentityVersion(
 print &quot;client class: %s=%s&quot; % (ver.client_version.id, API_VERSIONS[ver.server_version.id])
 </pre>
 </div>
-</div>
-</div>
-]]></content:encoded>
-    </item>
-    <item>
-      <title>OpenStackClient Plugins</title>
-      <link>http://hackstack.org/x/blog/2014/01/14/openstackclient-plugins</link>
-      <pubDate>Tue, 14 Jan 2014 01:14:00 CST</pubDate>
-      <category><![CDATA[openstackclient]]></category>
-      <guid isPermaLink="false">w5QmePmIOSDsbwWXApSH5dR1Eu0=</guid>
-      <description>OpenStackClient Plugins</description>
-      <content:encoded><![CDATA[<div class="document">
-<p>OpenStackClient (OSC) has been in my project queue for almost two years now.  It was Feb 2012 that I stayed up all night mucking about with something called DrStack with the goal of combining the then four OpenStack CLI binaries into a single command set.</p>
-<p>OSC is the second major realization of that goal having a greatly improved internal command architecture courtesy of dhellmann's Cliff framework.  It also somehow got an informal blessing without becoming an official project, a status that it still carries.  We have a roadmap of where to go with that but that is a topic for another day.</p>
-<p>Today we talk plugins!</p>
-<p>Yes, I know, that is an overused term in OpenStack, where everything seems to be a plugin or an extension or optional in some way.  But I don't have anything better at the moment so plugin it is.</p>
-<div class="section" id="openstackclient-plugins">
-<h1>OpenStackClient Plugins</h1>
-<p>OSC development has been a series of quiet periods interspersed with bouts of furious activity.  Fast-forward to last month (Dec 2013) and the introduction of a viable command plugin system for OSC first released in version 0.3.0.  The OSC side is documented in the <a class="reference external" href="http://docs.openstack.org/developer/python-openstackclient/plugins.html">OpenStackClient Developer Documentation</a>.</p>
-<div class="section" id="goals">
-<h2>Goals</h2>
-<p>The previous OSC plugin mechanism was too naive and did not allow for adding client objects to the ClientManager. We needed to:</p>
-<ul class="simple">
-<li>define an initialization to add global options for API versions and whatnot (parser phase)</li>
-<li>define an initialization function(s) to select an API version add an appropriate client to the ClientManager (client phase)</li>
-</ul>
-</div>
-<div class="section" id="implementation">
-<h2>Implementation</h2>
-<p>As an exercise to validate the completeness of the plugin mechanism, the Compute, Image and Volume API commands were converted to initialize via the plugin mechanism.  The only difference from an external plugin is that they are included in the OSC repo.</p>
-<p>The new plugin mechanism builds on the use of <a class="reference external" href="https://pypi.python.org/pypi/cliff‎">Cliff</a> to dynamically load the command classes and modifies the existing OSC <tt class="docutils literal">ClientManager</tt> to define the client objects to be instantiated at run-time.  This allows additional clients to insert themselves into the <tt class="docutils literal">ClientManager</tt>.</p>
-<p>OSC looks for plugins that register their client class under <tt class="docutils literal">openstack.cli.extension</tt>.  The key is the API name and must be unique for all plugins, the value is the module name that contains the public initialization functions.</p>
-<p>The initialization module is typically names <tt class="docutils literal"><span class="pre">&lt;project-name&gt;.client</span></tt>, although there is no technical requirement to follow this convention.  It was adopted as that was already the name of the modules used by the built-in API classes.</p>
-<p>The initialization module must implement a set of constants that are used to identify the plugin and two functions that instantiate the actual API client class and define any global options required.</p>
-</div>
-</div>
-<div class="section" id="python-oscplugin">
-<h1>python-oscplugin</h1>
-<p>Since most actual OSC plugins are not going to be part of the repo, we created a sample plugin in a stand-alone project to demonstrate the bits required.  <a class="reference external" href="https://github.com/dtroyer/python-oscplugin">python-oscplugin</a> began life as a <a class="reference external" href="https://github.com/openstack-dev/cookiecutter">cookiecutter</a> project (worth using to bootstrap a project in the OpenStack-way) and expanded to become a simple demonstration of an OSC command plugin.</p>
-<p>So let's walk through the sample plugin to see how this works...</p>
-<div class="section" id="plugin-initialization">
-<h2>Plugin Initialization</h2>
-<p>It all starts with the initialization module, here named <tt class="docutils literal">oscplugin.plugin</tt>, defining the rest of the identifiers used to locate plugin bits.  Naming this module is flexible, it just needs to be specified in the <tt class="docutils literal">openstack.cli.extension</tt> entry point group.</p>
-<ul class="simple">
-<li><tt class="docutils literal">API_NAME</tt> - A short string describing the API or command set name.  It is used in the entry point group name and is the key name in the <tt class="docutils literal">openstack.cli.extension</tt> group to identify the plugin.  Must be a valid Python identifier string.</li>
-<li><tt class="docutils literal">API_VERSION_OPTION</tt> - An optional name of the API version attribute used in the global command-line options to specify an API version.  It will be used in <tt class="docutils literal">build_option_parser()</tt> if setting an API version is required.  Must be a valid Python identifier string.</li>
-<li><tt class="docutils literal">API_VERSIONS</tt> - A dict mapping version strings to client class names.</li>
-</ul>
-<p>Two functions are required that perform the initialization work for the plugin.</p>
-<ul class="simple">
-<li><tt class="docutils literal">build_option_parser()</tt> - The top-level parser object is passed in and available to add plugin-specific options, usually an API version selector.</li>
-<li><tt class="docutils literal">make_client()</tt> - Instantiate the actual client object taking in to consideration any version that may be specified.  The mapping of version to client class is handled here.  Also, any authentication or service selection the specific client requires is passed in here.</li>
-</ul>
-</div>
-<div class="section" id="client-api">
-<h2>Client API</h2>
-<p><tt class="docutils literal"><span class="pre">python-oscplugin</span></tt> contains its own equivalent to a client API object.  In this case it is just a placeholder as the <tt class="docutils literal">plugin</tt> commands do not have an external client library.  For most API clients this is the actual client class, such as <tt class="docutils literal">glanceclient.v2.client.Client</tt> for the Image v2 API.</p>
-<p>There are cases where the API client class is insufficient for some reason and adaptations are required.  The Image v1 client is a good example.  The ImageManager class in <tt class="docutils literal">glanceclient</tt> does not have a <tt class="docutils literal">find()</tt> method so we implemented one in <tt class="docutils literal">openstackclient.image.client.Client_v1</tt> that uses <tt class="docutils literal">openstackclient.image.client.ImageManager_v1</tt> with added <tt class="docutils literal">find()</tt> and <tt class="docutils literal">findall()</tt> methods.</p>
-</div>
-<div class="section" id="commands">
-<h2>Commands</h2>
-<p>The commands implemented in <tt class="docutils literal"><span class="pre">python-oscplugin</span></tt> are in <tt class="docutils literal">oscplugin.v1.plugin</tt> and follow the basic pattern used by the other OSC command classes.  Again they are mostly placeholders here.</p>
-</div>
-<div class="section" id="tests">
-<h2>Tests</h2>
-<p>The structure of the tests also follows that of the existing OSC API commands.  They use <tt class="docutils literal">mock</tt> and fakes to perform unit tests on the command classes.</p>
-</div>
-<div class="section" id="project-stuff">
-<h2>Project Stuff</h2>
-<p>Ad <tt class="docutils literal"><span class="pre">python-oscplugin</span></tt> was created using <a class="reference external" href="https://github.com/openstack-dev/cookiecutter">cookiecutter</a> it includes the usual OpenStack features such as <tt class="docutils literal">pbr</tt> and friends.  The specific bits pertaining to an OSC plugin:</p>
-<ul>
-<li><p class="first"><tt class="docutils literal">setup.cfg</tt> - All of the plugin-specific content is in the <tt class="docutils literal">[entry_points]</tt> section:</p>
-<pre class="literal-block">
-[entry_points]
-openstack.cli.extension =
-    oscplugin = oscplugin.plugin
-
-openstack.oscplugin.v1 =
-    plugin_list = oscplugin.v1.plugin:ListPlugin
-    plugin_show = oscplugin.v1.plugin:ShowPlugin
-</pre>
-</li>
-</ul>
-<p>Note that OSC defines the group name as <tt class="docutils literal"><span class="pre">openstack.&lt;api-name&gt;.v&lt;version&gt;</span></tt>
-so the version should not contain the leading 'v' character.</p>
-<ul class="simple">
-<li><tt class="docutils literal">requirements.txt</tt> - We've added  <tt class="docutils literal">openstackclient</tt> as <tt class="docutils literal"><span class="pre">python-oscplugin</span></tt> is useless without it.  <tt class="docutils literal">keystoneclient</tt> is here too, while <tt class="docutils literal"><span class="pre">python-oscplugin</span></tt> does not require it, most OpenStack API clients will.  <tt class="docutils literal">cliff</tt> is also needed here.</li>
-<li><tt class="docutils literal"><span class="pre">test-requirements.txt</span></tt> - <tt class="docutils literal">mock</tt> is required for testing.</li>
-</ul>
-</div>
-<div class="section" id="a-note-about-versions">
-<h2>A Note About Versions</h2>
-<p>Internally OSC uses the convention <tt class="docutils literal">vXXX</tt> for version identifiers, where <tt class="docutils literal">XXX</tt> is a valid Python identifier in its own right (i.e., uses '_' rather than '.' internally).  OSC adds the leading 'v' so versions expressed in constant declarations should not include it.</p>
-</div>
-</div>
-<div class="section" id="eot">
-<h1>EOT</h1>
-<p>The plugin structure should allow any base install of OSC to be extended simply by installing the desired client package.  Af of right now there are no other clients that implement the plugin, but that will be changing soon.  Film at eleven...</p>
 </div>
 </div>
 ]]></content:encoded>
