@@ -10,10 +10,111 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Sat, 25 Oct 2014 01:45:41 GMT</pubDate>
+    <pubDate>Sun, 08 Mar 2015 18:36:07 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Plug In To OpenStackClient</title>
+      <link>http://hackstack.org/x/blog/2015/03/08/plug-in-to-openstackclient</link>
+      <pubDate>Sun, 08 Mar 2015 03:08:00 CDT</pubDate>
+      <category><![CDATA[openstackclient]]></category>
+      <guid isPermaLink="false">4rzr9Siky6QjdRP6hLDYAA_XQ8E=</guid>
+      <description>Plug In To OpenStackClient</description>
+      <content:encoded><![CDATA[<div class="document">
+<p><a class="reference external" href="http://docs.openstack.org/developer/python-openstackclient/">OpenStackClient</a> has had plugin support for a while now and it is being used by real-world OpenStack project clients such as <a class="reference external" href="https://wiki.openstack.org/wiki/Congress">Congress</a>.  I've also been using it as an entry point (ha!) for some of my experimental command setups, and so can you.</p>
+<div class="section" id="osc-debug">
+<h1>osc-debug</h1>
+<p>I've spent a lot of time debugging OSC lately in preparation for my favorite new feature yet-to-come, support for the new <tt class="docutils literal"><span class="pre">--os-cloud</span></tt> option that takes advantage of <tt class="docutils literal"><span class="pre">os-client-config</span></tt>'s cloud configuration file abilities.  Much of this debugging is necessarily around authentication and it became obvious to me that a built-in way to see what OSC was using for authentication might be handy and <tt class="docutils literal"><span class="pre">osc-debug</span></tt> was born.</p>
+<p>As far as plugins go, <a class="reference external" href="https://github.com/dtroyer/osc-debug">osc-debug</a> is pretty ordinary.  It just adds three new commands (so far) that dump internal OSC state information.</p>
+<div class="section" id="api-list">
+<h2>api list</h2>
+<p>A mash-up of service, region and endpoint listings.  <tt class="docutils literal">api list</tt> coughs up the basic information in the service catalog returned by the Identity authentication request.  It shows the available services by type, name and region.  With a little help from the <tt class="docutils literal"><span class="pre">--long</span></tt> option it adds the actual endpoint URL and a list of the supported versions at that endpoint.</p>
+<p>The version support output needs a bit of explaining.  Nearly every OpenStack service catalog is configured to include a service API version in the URL.  This means that to use a different version requires 'knowledge'.  But here we know that these versions are nearly always in the form of <tt class="docutils literal">vNNN</tt> in the URI path.</p>
+<p><tt class="docutils literal">api list</tt> starts at the base URI and looks for returned version information in a couple of the usual JSON formats.  If not found it loops adding the URI path components one at a time, stopping when it finds a recognized version response.</p>
+<p>The returned service catalog entries can be filtered by service type <tt class="docutils literal"><span class="pre">--type</span></tt> or service name <tt class="docutils literal"><span class="pre">--name</span></tt>.</p>
+<pre class="literal-block">
+osc api list
+    [--type &lt;service-type&gt;]
+    [--name &lt;service-name&gt;]
+    [--long]
+</pre>
+</div>
+<div class="section" id="auth-show">
+<h2>auth show</h2>
+<p><tt class="docutils literal">auth show</tt> displays the authentication information that OSC will use to perform authentication.  This command stops just before authentication would otherwise occur so you can see exactly what has been collected from the command line options, environment variables and <tt class="docutils literal"><span class="pre">os-client-config</span></tt> file.</p>
+<p>Note that this is one of the rare 'show' commands that does not take a positional argument to determine what to show.  This is due to there being ony one thing (authentication options) to choose from, but wanting to present the output in the traditional show command format.  This makes grabbing any of these values in a shell script trivial using the <tt class="docutils literal"><span class="pre">--format</span> shell</tt> option.</p>
+<p>Also, <tt class="docutils literal">os_password</tt> is not displayed, because, duh.</p>
+<pre class="literal-block">
+osc auth show
+</pre>
+</div>
+<div class="section" id="auth-type-list">
+<h2>auth type list</h2>
+<p><tt class="docutils literal">auth type list</tt> simply lists the authentication plugin types installed and their entry point targets.  Handy to see why things are not working as expected.</p>
+<pre class="literal-block">
+osc auth type list
+</pre>
+</div>
+<div class="section" id="auth-type-show">
+<h2>auth type show</h2>
+<p><tt class="docutils literal">auth type show</tt> shows details of the specified auth plugin type.  This includes the options that the plugin type defines.  Note that the option names are the internal names, OSC will add <tt class="docutils literal"><span class="pre">--os-</span></tt> prefix to command lise options and <tt class="docutils literal">OS_</tt> prefix, plus forcing uppercase and replacing <tt class="docutils literal">-</tt> with <tt class="docutils literal">_</tt> for environment variables.</p>
+<pre class="literal-block">
+osc auth type show
+    &lt;auth-type&gt;
+</pre>
+</div>
+</div>
+<div class="section" id="osc-quintette">
+<h1>osc-quintette</h1>
+<p><a class="reference external" href="https://github.com/dtroyer/osc-quintette">osc-quintette</a> is where the experimentation really gets going.  This oddly-named <a class="footnote-reference" href="#id4" id="id2">[1]</a> plugin has a couple of things, the most interesting one is how the server create command has been extended to accept --ram, --disk and --vcpu arguments to auto-select a matching flavor for the new server.</p>
+<p>While the functionality is nice, the interesting bit is how the stock commands are extended.</p>
+<div class="section" id="flavor-find">
+<h2>flavor find</h2>
+<p>This is the functional basis for the enhanced <tt class="docutils literal">server create</tt> command, directly searching for matching flavors that meet or exceed the specified values for RAM, disk and virtual CPUs.</p>
+<p>What is the difference between a <tt class="docutils literal">find</tt> and <tt class="docutils literal">list</tt> command?  I don't know yet.  <tt class="docutils literal">List</tt> + filtering == <tt class="docutils literal">find</tt> maybe, but remember, this is experimental for a reason.</p>
+<pre class="literal-block">
+osc flavor find
+    [--ram &lt;size-mb&gt;]
+    [--disk &lt;size-gb&gt;]
+    [--vcpus &lt;vcpus&gt;]
+</pre>
+</div>
+<div class="section" id="server-create">
+<h2>server create</h2>
+<p>Extends the stock <tt class="docutils literal">server create</tt> by adding the options to select a flavor directly based on RAM, disk and/or virtual CPUs.</p>
+<pre class="literal-block">
+osc server create
+    [--ram &lt;size-mb&gt;]
+    [--disk &lt;size-gb&gt;]
+    [--vcpus &lt;vcpus&gt;]
+    ...
+    &lt;server-name&gt;
+</pre>
+</div>
+<div class="section" id="server-show">
+<h2>server show</h2>
+<p>Another command that extends the stock version by changing the output displayed, in this case swapping <tt class="docutils literal">project_id</tt> for <tt class="docutils literal">tenant_id</tt>.  This is something that needs to be done in OSC itself as part of our &quot;never show the user a 'tenant'&quot; campaign.</p>
+</div>
+<div class="section" id="show-flavor">
+<h2>show flavor</h2>
+<p>Yes!  I can restore my long-lost <tt class="docutils literal">&lt;action&gt; &lt;object&gt;</tt> command format just by putting the right things into <tt class="docutils literal">setup.cfg</tt>.  Unfortunately, the command class does not know (yet) which command form was given to call it so changing behaviour is not yet possible.  This requires a patch to <tt class="docutils literal">cliff</tt> that is in progress and should be released soon.</p>
+</div>
+</div>
+<div class="section" id="what-else">
+<h1>What Else?</h1>
+<p>Imagination is all that is required to go from here.  Go forth and plugin.</p>
+<hr class="docutils" />
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>The word <cite>quintette</cite> comes directly from the name of <a class="reference external" href="http://raymondscott.com/">Raymond Scott's</a> small band in the 1930's, it is what I was listening to when I neede a name.  Much of his work from this era will sem eerily familiar to those who have seen Warner Brothers shorts scored by <a class="reference external" href="http://www.imdb.com/name/nm0006298/">Carl Stalling</a> in the 1940's and 1950's. I'm planning to propose <a class="reference external" href="https://archive.org/details/Powerhouse_657">Powerhouse</a> as the Official OpenStack Theme. Look it up...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+]]></content:encoded>
+    </item>
     <item>
       <title>How Dost Thy Cloud Know Me, Let Me Count The Ways</title>
       <link>http://hackstack.org/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways</link>
@@ -1063,199 +1164,6 @@ so the version should not contain the leading 'v' character.</p>
 <div class="section" id="eot">
 <h1>EOT</h1>
 <p>The plugin structure should allow any base install of OSC to be extended simply by installing the desired client package.  Af of right now there are no other clients that implement the plugin, but that will be changing soon.  Film at eleven...</p>
-</div>
-</div>
-]]></content:encoded>
-    </item>
-    <item>
-      <title>OpenStack Icehouse Developer Summit</title>
-      <link>http://hackstack.org/x/blog/2013/11/10/openstack-icehouse-developer-summit</link>
-      <pubDate>Sun, 10 Nov 2013 11:10:00 CST</pubDate>
-      <category><![CDATA[openstack]]></category>
-      <category><![CDATA[devstack]]></category>
-      <guid isPermaLink="false">3SuDmuCE-gxe1BOWhZ-SaroxFcc=</guid>
-      <description>OpenStack Icehouse Developer Summit</description>
-      <content:encoded><![CDATA[<div class="document">
-<p>OpenStack has had a global reach since the early days but the Design Summits
-have always been a US-based affair.  Last week we finally took the every-six-month
-roadshow off-continent and ventured out to Hong Kong.
-Of course the Conference is co-located and concurrent but I didn't make it to
-any of those sessions this time and only knew it was there by going to lunch in
-the expo hall and seeing some familiar vendor faces.</p>
-<p>We begin with the projects most subject to my attention, DevStack, Grenade and
-OpenStackClient.</p>
-<div class="section" id="devstack">
-<h1>DevStack</h1>
-<p>This is the first summit where DevStack has program status and thus its own
-track of two back-to-back sessions.  I hear russellb is jealous...</p>
-<div class="section" id="new-bits">
-<h2>New Bits</h2>
-<p>The DevStack 'New Bits' session (<a class="reference external" href="https://etherpad.openstack.org/p/icehouse-summit-devstacks-new-bits">EtherPad</a>)
-was spent talking about a couple of the significant additions
-to DevStack late in the Havana cycle.  I wrote about the
-<a class="reference external" href="/x/blog/2013/09/07/devstack-local-config">local config</a>
-work as it was being developed, the discussion in the session was primarily a Q&amp;A.
-One bit that was covered was converting devstack-gate to use this form rather
-than <tt class="docutils literal">localrc</tt>.</p>
-<p>The other major DevStack addition is a plugin mechanism
-to configure and start additional services without requiring changes to DevStack.
-This is partially intended for new projects to be able to use DevStack for their
-Jenkins testing without requiring them to be added to the DevStack repo.</p>
-<p>This is an expansion of the existing hook into <tt class="docutils literal">extras.d</tt> that automagically
-ran scripts at the end of <tt class="docutils literal">stack.sh</tt>.  These scripts are essentially
-dispatchers as they are called multiple times from <tt class="docutils literal">stack.sh</tt>, <tt class="docutils literal">unstack.sh</tt> and
-<tt class="docutils literal">clean.sh</tt>.  <a class="reference external" href="http://devstack.org/plugins.html">devstack.org</a> has an example of an
-<tt class="docutils literal">extras.d</tt> dispatch script.</p>
-<p>Savanna and Tempest have been converted to the plugin format with Marconi in progress.
-Most of the remaining <a class="reference external" href="/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service/">layer 4</a>
-projects should also be able to be converted to the plugin format.</p>
-<p>Other highlights, some of which I intend to cover here in the future:</p>
-<ul class="simple">
-<li>bash8 - style testing for Bash scripts similar to hacking/pep8/flake8;
-there is interest in this becoming a stand-alone project if it proves to be useful</li>
-<li>DevStack tests - the addition of <tt class="docutils literal">run_tests.sh</tt> provides a familiar, if
-deprecated, interface to running <tt class="docutils literal">bash8</tt> and other tests</li>
-<li>exercises - the DevStack exercises are now unused in all gate testing except
-Grenade's <em>base</em> phase.  As they are still generally useful outside the
-gate test environment a new Jenkins job needs to be added to check them for bit rot.</li>
-</ul>
-</div>
-<div class="section" id="distro-support">
-<h2>Distro Support</h2>
-<p>sdague led the DevStack 'Distro Support' session (<a class="reference external" href="https://etherpad.openstack.org/p/icehouse-summit-devstack-support">EtherPad</a>)
-discussing distro supported status and what we need to do to bring the current
-ones up to snuff and what might be required of new additions.</p>
-<p>The primary requirement to adding the support tag is the ability to have it tested
-in the DevStack gate.  Unfortunately, neither of the clouds that provide
-test resources to our CI infrastructure
-(HP Cloud and Rackspace Cloud Servers)
-allow arbitrary images to be uploaded so only distros that have supported images
-are able to be tested.  The third-party testing hooks might be able to be used
-to mitigate some of this but the resources for that testing will need to be supplied.</p>
-<p>There was also some discussion around projects getting supported status from DevStack.
-A lot of this is a timing and process issue for incubation/integration process wanting
-to see testing before graduation from those steps but not wanting to add projects
-to DevStack that are not on that track.  The addition of the extras.d capability
-for projects to be easily added to DevStack without modifying it goes a long way
-toward setting up the needed testing to demonstrate the capability of the project and
-team before actually adding it to the repo.</p>
-<p>The flow will look like:</p>
-<ul class="simple">
-<li>third-party testing in StackForge will utilize the extras.d plugins to do the
-required pre-incubation testing</li>
-<li>after incubation, the project gets added to the DevStack repo (still utilizing the
-plugin mech) and added to the gate as a requirement for graduation to integrated status.</li>
-</ul>
-</div>
-</div>
-<div class="section" id="grenade">
-<h1>Grenade</h1>
-<p>The Grenade session (<a class="reference external" href="https://etherpad.openstack.org/p/icehouse-summit-qa-grenade">EtherPad</a>) focused mostly on expanding the test matrix
-of <tt class="docutils literal">base</tt> and <tt class="docutils literal">target</tt> releases that need testing.  This includes tests from
-stable releases to trunk and stable release updates as well as from
-stable release updates to next stable or trunk.</p>
-<p>A couple of new control variables need to be added:</p>
-<ul class="simple">
-<li>Need to be able to turn off the <tt class="docutils literal">db_sync</tt> operation for rolling upgrade
-testing that is not able to do the long-running sync operation.</li>
-<li>Need to designate services to not be upgraded, i.e. test everything new with the
-old nova-compute (<tt class="docutils literal"><span class="pre">n-cpu</span></tt>).</li>
-</ul>
-<p>Adding more projects to Grenade is desirable, the conclusion on the initial set:</p>
-<ul class="simple">
-<li>Neutron is not ready; will not be considered for Grenade at least until it
-is voting in the gate.</li>
-<li>Ceilometer has no Tempest tests; in order to be added to Grenade it will also
-need tests backported to Tempest <tt class="docutils literal">stable/havana</tt>.</li>
-<li>Heat has few Tempest tests; is considered out of scope at this time.</li>
-<li>Trove needs to have Tempest tests and a Grenade plan by graduation from incubation.</li>
-</ul>
-<p>There has also been some desire expressed to be able to use the upgrade scripts
-outside of Grenade itself.  Right now they rely heavily on DevStack components,
-the work to separate that is low priority, but contributions welcome as always.</p>
-</div>
-<div class="section" id="openstackclient">
-<h1>OpenStackClient</h1>
-<p>My favorite project returned to the regular session schedule in Hong Kong.  I
-conducted our talk in Portland as an Unconference session partly because I really
-just wanted to talk to the group of regular comitters to sort out a plan.  That
-may have been short-sighted as the level of interest and contribution dropped off
-sharply.  Oops.</p>
-<p>This time around dhellmann offered an Oslo slot for OSC and I snapped it up as
-that is probably the least ill-fitting track for it.  That had the side
-effect of prompting the question of putting OSC under Oslo organizationally.
-I am OK with that even though Oslo has traditionally been focused on
-libraries and reusable code.  Another that has come up before would be to
-treat it as a distinct project like Horizon.  We passed on that initially
-in San Francisco as the consensus was that it was not large enough to warrant
-that status, and that is still the case in my view.</p>
-<p>In the session (<a class="reference external" href="https://etherpad.openstack.org/p/icehouse-oslo-openstack-client-update">EtherPad</a>) I reviewed the recent activities including the
-0.2 release last July and the addition of unit test templates.</p>
-<p>Implementation of the Objet API has begun, utilizing a new <tt class="docutils literal">restapi.py</tt> module
-to perform the low-level <tt class="docutils literal">requests</tt> interface.  Why not just use swiftclient?
-Good question, and at the time I was looking for an excuse to try out a
-thinner approach to implementing the REST APIs.</p>
-<p>I also have started work on API version detection, in parallel with a couple other
-projects.  I see this as mostly a platform for testing approaches and to
-free the client from requiring versions in the service catalog.</p>
-<p>Future work will look into Jamie's Keystone auth refactor and leverage that
-as the common REST library.  Segue...</p>
-</div>
-<div class="section" id="keystone-client">
-<h1>Keystone Client</h1>
-<p>The Keystone core devs were in the OSC session and strongly suggested I come to
-their Keystone client sessions on Wednsday afternoon, which I was planning to do
-anyway so my arm remained undamanged.  I finally met Jamie Lennox, who has been
-doing a lot of work refactoring the auth bits of the client lib and absorbing
-much of the bits Alessio started a whil eback and proposed to Oslo last May.</p>
-<p>I liked most of what I heard and liked it even better after Jamie straightened out
-some of my confusion-because-of-lack-of-source-code-reading at dinner Friday night.
-I think we are on the same page to create the one client to rule them all and just
-need to tune some details that are likely to appear after the post-summit haze clears.
-And while this space doesn't officially speak for the projects I am core on, because
-this is essentially my brain-dump space you, dear reader, get an advance look at
-what is likely to be proposed sooner than later.</p>
-<p>One CLI, one core^H^H^H^Hintegrated^H^H^H^H^H^H^Hbasic API lib, user-pluggable additional
-API libs.  I see it like this:</p>
-<ul class="simple">
-<li>python-openstackclient - continues to be a single project focused on an ultra-consistent
-command line interface; directly consumes:</li>
-<li>python-os-identityclient - a new Identity API library born out of Jamie's refactoring
-auth/session work with a new library API that doesn't even try to be compatible with
-the old stuff.  No cli, speaks Identity v2 and v3, directly usable by all other libraries and
-projects to handle authenticated communication to openStack APIs.</li>
-<li>python-XXXclient - TBD how the division of the other API libraries fall out.  I want
-to minimize the number of moving parts for most users and not have the higher-level
-optional projects impose an undue burden on dependencies.</li>
-</ul>
-</div>
-<div class="section" id="other-bits">
-<h1>Other Bits</h1>
-<p>All-in-all it was a good week, including multiple trips into the city for
-sight-seeing, street-level eating, parties, 102nd story eating, death-marches down
-Nathan Road in search of (open) Starbucks,
-you know, all the usual stuff.  Breakfast in the airport every morning (Maxim's Deluxe
-sticky-top cheese buns rule).  Catching up with team-mates over non-IRC channels.
-Wondering WTF happened to jeblair's hat (my bet is HK customs impounded it,
-even though afazekas managed to smuggle in his red fedora).  Wondering if Vishy and Termie
-survived Macau without going broke the first night.</p>
-<p>The OSF board finalized the intent to agree on an agreement on the definition
-of <tt class="docutils literal">core</tt> and how it is a totally overloaded word in the OpenStack world.
-Wait, I may have dreamed part of that...or all of it.  Anyway, the usage of
-<a class="reference external" href="20130905-open-stack-layers.rst">layers</a> when describing
-the technical relationships of the projects seems to be catching on, I heard
-it at least once outside the sessions where I used it.</p>
-<p>And so the OpenStack March on Atlanta begins.  I have a hunch the city will
-fare better next May than it did when General Sherman came for a visit back
-in the day.  And I will forever hope that there will be more carbonated
-caffiene.  I think Pepsi would be a fine choice given the locale, Mountain Dew
-even.  In Coke's back yard, yeah, right.</p>
-<p>It is too bad we're not
-coming up to the 'S' release, I'd lobby for calling it Savannah just to enjoy
-watching people trying to keep track of the Savanna Savannah release.  Or
-would that be the Savannah Savanna release?  See, the fun we could have!</p>
-<p>'J': Not Jacksonville, they are both in the wrong state and I don't want to
-type that many letters.  Let's start a campaign for 'Joyland'!</p>
 </div>
 </div>
 ]]></content:encoded>
