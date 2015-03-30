@@ -1,0 +1,277 @@
+
+
+<!doctype html>
+<!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]-->
+<!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]-->
+<!--[if IE 8 ]>    <html lang="en" class="no-js ie8"> <![endif]-->
+<!--[if IE 9 ]>    <html lang="en" class="no-js ie9"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html lang="en" class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HackStack Posts</title>
+  <meta name="description" content="OpenStack and other hackish things">
+  <meta name="author" content="dtroyer">
+
+  <link rel="alternate" type="application/rss+xml" title="RSS 2.0"
+        href="/x/blog/feed/">
+  <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+        href="/x/blog/feed/atom/">
+
+  <link rel="shortcut icon" href="/x/favicon.ico">
+  <link rel="apple-touch-icon"
+        href="/x/img/apple-touch-icon.png">
+
+  <link rel="stylesheet" href="/x/css/base.css?v=1">
+  <link rel="stylesheet" href="/x/css/grid.css?v=1">
+  <link rel="stylesheet" media="handheld"
+        href="/x/css/handheld.css?v=1">
+  <link rel="stylesheet"
+        href="/x/css/pygments_murphy.css">
+
+  <script
+    src="/x/js/libs/modernizr-1.7.min.js">
+  </script>
+
+  <link rel="stylesheet" href="/x/themes/theme1/style.css?v=1">
+<link href='http://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Quantico' rel='stylesheet' type='text/css'>
+
+
+</head>
+  <body>
+    <div id="container" class="container container_12">
+      <div id="main" role="main">
+        <div id="main_block">
+          <header>
+  <div id="header" class="header_gradient theme_font">
+    <h1>
+      <a href="/x/">
+        HackStack Posts
+      </a>
+    </h1>
+    <h2>OpenStack and other hackish things</h2>
+  </div>
+  <div id="navigation" class="grid_12">
+    
+    
+    <ul class="theme_font">
+      <li>
+        
+        <a href="/x/" class="">Home</a>
+      </li>
+      <li>
+        
+        <a href="/x/blog" class="selected">Blog</a>
+      </li>
+      <li>
+        
+        <a href="/x/blog/archive/" class="">Archives</a>
+      </li>
+    </ul>
+  </div>
+</header>
+
+          <div id="prose_block" class="grid_11">
+            
+
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
+      <div id="qa-code-sprint"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2015/03/30/qa-code-sprint/" rel="bookmark" title="Permanent Link to QA Code Sprint">QA Code Sprint</a></h1>
+      <p><small><span class="blog_post_date">March 30, 2015 at 03:03 PM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/devstack/'>devstack</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+<div class="document">
+<p>Last week (Mar 25-27) a handful of OpenStack QA Team members gathered at
+HP's Chelsea office to Get Some Code Written and Merged.  We had a small list
+of priorities and some amazement at the amount of stuff the morning caterer
+could fit into a single box. [Note to self: get a magic catering box to store
+oversized project todo list]</p>
+<p>I was focused primarily on DevStack although some discussion took place around
+some future direction on Grenade plugins (see below).  Much actual work was
+accomplished by others present in spite of Matt's attempts to feed us into
+submission.  Dang, those short ribs were good...</p>
+<div class="section" id="devstack">
+<h1>DevStack</h1>
+<p>There are two major priorities for DevStack: run services in virtual
+environments and use Neutron as the default network stack.</p>
+<div class="section" id="neutron">
+<h2>Neutron</h2>
+<p>Sean Collins (sc68cal) was present <a class="footnote-reference" href="#id4" id="id1">[1]</a> and is taking on most of the work to get
+Neutron supported as the default.  We had given him some constraints to be the
+default, being use of a single interface and using <tt class="docutils literal">linuxbridge</tt> rather than
+Open vSwitch.  Other Sean had the <a class="reference external" href="https://review.openstack.org/168001">single interface work</a> mostly complete and
+after one false start it was merged.</p>
+<p>The selection of <tt class="docutils literal">linuxbridge</tt> seems to be a bit controversial but the thinking
+goes like this: DevStack's default should be simple and not require a huge learning
+curve.  The <tt class="docutils literal">linuxbridge</tt> configuration is an intermediate step between
+<tt class="docutils literal"><span class="pre">nova-network</span></tt> and full-blown Neutron-with-OVS and is totally adequate for a
+large number of use cases.  If it is not a valid use case, then we feel it should
+be totally removed from Neutron.</p>
+<p>Other Sean sent a <a class="reference external" href="https://review.openstack.org/168423">WIP review</a> into the gate to see just how badly <tt class="docutils literal">linuxbridge</tt>
+is as it is not currently tested in the gate AT ALL! Unsurprisingly it has a
+number of failures, but is not a total washout.</p>
+<p>DevStack's Neutron code is in bad shape.  It has been continually updated by
+many people who do not understand the Big Picture.  I blame myself for not
+staying on top of this code and allowing it to diverge from the rest of DevStack's
+style and implementation.  Other Sean found a number of inconsistencies in
+variable names and uses as he tried to get the single interface work done and
+we came to the inevitable conclusion that it was time to start over.</p>
+<p><tt class="docutils literal">lib/neutron</tt> was renamed to <tt class="docutils literal"><span class="pre">lib/neutron-legacy</span></tt> in review <a class="reference external" href="https://review.openstack.org/#/c/167684">167684</a> and
+I put together the first cut as a new <tt class="docutils literal">lib/neutron</tt> that takes a similar
+form to the rest of DevStack in <a class="reference external" href="https://review.openstack.org/168438">168438</a>.  This is a stripped-down subset
+that has a number of changes:</p>
+<ul class="simple">
+<li>Service names are renamed to <tt class="docutils literal"><span class="pre">neutron-api</span></tt>, <tt class="docutils literal"><span class="pre">neutron-agent</span></tt>, etc.</li>
+<li>At this point, only the API service and basic agents are intended to be started.</li>
+</ul>
+<p>But what about the plugins?  What about the advanced services?  What about the vendors?
+I can't do it all at once.  The first priority is to get a 'minimum viable
+Neutron' configuration to use as the default.  The old code was renamed not
+removed, and exactly zero of the configuration variables and service names have
+changed.  Nothing should be directly importing <tt class="docutils literal">lib/neutron*</tt> so that change
+is handled in DevStack and Grenade already.  After we have working <tt class="docutils literal">linuxbridge</tt>
+and <tt class="docutils literal">ovs</tt> configurations we can look at what else needs to be included.</p>
+<p>The advanced services should be implemented as plugins in the same manner that
+we are doing with other layer 3 and higher services.  Vendor plugins will be
+removed from the tree when the legacy code is removed and should also be moved
+to out-of-tree plugins.</p>
+</div>
+<div class="section" id="virtual-environments">
+<h2>Virtual Environments</h2>
+<p>The first set of virtual environment (venv) support was finally merged.  This
+work has exposed a number of assumptions on both DevStack and the projects themselves
+that have needed to be handled.  The most recent is that <tt class="docutils literal">rootwrap</tt> is called
+from the services without a fully-qualified path, relying on a <tt class="docutils literal">PATH</tt> search.
+Normally this is a Bad Thing(TM) in conjunction with <tt class="docutils literal">sudo</tt> use, and I think
+that applies to this situation too.  When venvs are active, the <tt class="docutils literal"><span class="pre">{project}-rootwrap</span></tt>
+binary is not in the system <tt class="docutils literal">PATH</tt>, nor the one configured in <tt class="docutils literal">sudo's secure_path</tt>.
+We need to now add each venv <tt class="docutils literal">/bin</tt> directory to the <tt class="docutils literal">secure_path</tt> so the
+<tt class="docutils literal"><span class="pre">{project}-rootwrap</span></tt> binary can be found.</p>
+<p><a class="reference external" href="https://review.openstack.org/168773">Review 168773</a> extracts the basic <tt class="docutils literal">rootwrap</tt> configuration for Cinder and Nova
+into <tt class="docutils literal">lib/rootwrap</tt> and adds a function to maintain a useful <tt class="docutils literal">secure_path</tt>
+setting for <tt class="docutils literal">sudo</tt>.</p>
+</div>
+<div class="section" id="other-devstack-bits">
+<h2>Other DevStack Bits</h2>
+<p>Sean Dague (sdague) nuked the <tt class="docutils literal">INSTALL_TESTONLY_PACKAGES</tt> setting and set the
+code to always install those packages, ie as if <tt class="docutils literal">INSTALL_TESTONLY_PACKAGES=True</tt>.
+We felt that the evolution of DevStack no longer made sense to maintain this
+distinction, some may argue it never was needed in the first place.  They can now
+say 'I told you so' and buy us a <tt class="docutils literal">$COLD_BEVERAGE</tt> in Vancouver.</p>
+<p>Some travel delays and spotty on-board wifi on the trip home led to a semi-irregular
+<a class="reference external" href="https://review.openstack.org/168616">cleanup review</a> that fixed a bunch of Shocco docs build errors and spellings
+and comment spacings and most importantly, the capitalization of 'DevStack'.</p>
+</div>
+</div>
+<div class="section" id="grenade">
+<h1>Grenade</h1>
+<p>The Grenade plugin story has not been completed, it is in the first set of draft
+rewrites to remove the zombies and vampires and make it just a 'plugin exiled
+to project repo' kind of story.</p>
+<p>There were a pair of minor reviews landed to support the DevStack/Neutron rework
+but they demanded more lines and were relegated to the 'C' story that parallels
+Rosencrantz and Guildenstern, who of course <a class="reference external" href="http://en.wikipedia.org/wiki/Rosencrantz_and_Guildenstern_Are_Dead">are now dead</a>.</p>
+<hr class="docutils" />
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>great, another Sean, spelled the same way even.  Let's call him 'Other Sean'</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+    </div>
+  </div>
+</article>
+
+
+
+
+          </div>
+          <div id="sidebar" class="grid_1">
+            <aside>
+  <section>
+<!--
+    <h1 class="post_header_gradient theme_font">Latest Posts</h1>
+    <ul>
+      <li><a href="/x/blog/2015/03/30/qa-code-sprint/">QA Code Sprint</a></li>
+      <li><a href="/x/blog/2015/03/08/plug-in-to-openstackclient/">Plug In To OpenStackClient</a></li>
+      <li><a href="/x/blog/2015/02/11/real-world-devstack-configuration/">Real World DevStack Configuration</a></li>
+      <li><a href="/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways/">How Dost Thy Cloud Know Me, Let Me Count The Ways</a></li>
+      <li><a href="/x/blog/2014/10/08/first-principles-glossary/">First Principles - Glossary</a></li>
+    </ul>
+-->
+  </section>
+<!--
+  <section>
+    <h1 class="post_header_gradient theme_font">From Twitter "example"</h1>
+    <div id="on_twitter">
+      <div id="tweets"></div>
+      <a href="http://search.twitter.com/search?q=example" style="float: right">See more tweets</a>
+    </div>
+  </section>
+-->
+</aside>
+
+          </div>
+          <div class="clear"></div>
+        </div>
+      </div>
+      
+<footer>
+  <div id="footer" class="grid_12">
+    <div class="grid_8">
+      <p>
+        <a href="/x/blog/feed/index.xml">RSS</a>
+      </p>
+    </div>
+    <div class="grid_4" id="credits">
+      <p>
+        Copyright 2015
+        dtroyer
+      </p>
+      <p>
+        Powered by <a href="http://www.blogofile.com">Blogofile</a>
+      </p>
+    </div>
+  </div>
+</footer>
+
+    </div>
+      <script src="//ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/js/libs/jquery-1.5.1.min.js"%3E%3C/script%3E'))</script>
+  <script src="/x/js/plugins.js"></script>
+  <script src="/x/js/script.js"></script>
+  <script src="/x/js/jquery.tweet.js"></script>  
+  <script src="/x/js/site.js"></script>
+  <!--[if lt IE 7 ]>
+  <script src="js/libs/dd_belatedpng.js"></script>
+  <script> DD_belatedPNG.fix('img, .png_bg');</script>
+  <![endif]-->
+  <script>
+      var _gaq=[['_setAccount','UA-XXXXX-X'],['_trackPageview']];
+      (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];g.async=1;
+      g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+      s.parentNode.insertBefore(g,s)}(document,'script'));
+  </script>
+
+  </body>
+</html>
+
+
+
+
+
+

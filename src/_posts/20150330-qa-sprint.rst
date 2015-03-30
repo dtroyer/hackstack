@@ -1,0 +1,129 @@
+---
+title: QA Code Sprint
+author: dtroyer
+date: 2015-03-30 15:03:30
+categories: DevStack
+tags: openstack devstack
+---
+
+Last week (Mar 25-27) a handful of OpenStack QA Team members gathered at
+HP's Chelsea office to Get Some Code Written and Merged.  We had a small list
+of priorities and some amazement at the amount of stuff the morning caterer
+could fit into a single box. [Note to self: get a magic catering box to store
+oversized project todo list]
+
+I was focused primarily on DevStack although some discussion took place around
+some future direction on Grenade plugins (see below).  Much actual work was
+accomplished by others present in spite of Matt's attempts to feed us into
+submission.  Dang, those short ribs were good...
+
+DevStack
+========
+
+There are two major priorities for DevStack: run services in virtual
+environments and use Neutron as the default network stack.
+
+Neutron
+-------
+
+Sean Collins (sc68cal) was present [#]_ and is taking on most of the work to get
+Neutron supported as the default.  We had given him some constraints to be the
+default, being use of a single interface and using ``linuxbridge`` rather than
+Open vSwitch.  Other Sean had the `single interface work`_ mostly complete and
+after one false start it was merged.
+
+The selection of ``linuxbridge`` seems to be a bit controversial but the thinking
+goes like this: DevStack's default should be simple and not require a huge learning
+curve.  The ``linuxbridge`` configuration is an intermediate step between
+``nova-network`` and full-blown Neutron-with-OVS and is totally adequate for a
+large number of use cases.  If it is not a valid use case, then we feel it should
+be totally removed from Neutron.
+
+Other Sean sent a `WIP review`_ into the gate to see just how badly ``linuxbridge``
+is as it is not currently tested in the gate AT ALL! Unsurprisingly it has a
+number of failures, but is not a total washout.
+
+.. _`single interface work`: https://review.openstack.org/168001
+.. _`WIP review`: https://review.openstack.org/168423
+
+DevStack's Neutron code is in bad shape.  It has been continually updated by
+many people who do not understand the Big Picture.  I blame myself for not
+staying on top of this code and allowing it to diverge from the rest of DevStack's
+style and implementation.  Other Sean found a number of inconsistencies in
+variable names and uses as he tried to get the single interface work done and
+we came to the inevitable conclusion that it was time to start over.
+
+``lib/neutron`` was renamed to ``lib/neutron-legacy`` in review `167684`_ and
+I put together the first cut as a new ``lib/neutron`` that takes a similar
+form to the rest of DevStack in `168438`_.  This is a stripped-down subset
+that has a number of changes:
+
+* Service names are renamed to ``neutron-api``, ``neutron-agent``, etc.
+* At this point, only the API service and basic agents are intended to be started.
+
+.. _`167684`: https://review.openstack.org/#/c/167684
+.. _`168438`: https://review.openstack.org/168438
+
+But what about the plugins?  What about the advanced services?  What about the vendors?
+I can't do it all at once.  The first priority is to get a 'minimum viable
+Neutron' configuration to use as the default.  The old code was renamed not
+removed, and exactly zero of the configuration variables and service names have
+changed.  Nothing should be directly importing ``lib/neutron*`` so that change
+is handled in DevStack and Grenade already.  After we have working ``linuxbridge``
+and ``ovs`` configurations we can look at what else needs to be included.
+
+The advanced services should be implemented as plugins in the same manner that
+we are doing with other layer 3 and higher services.  Vendor plugins will be
+removed from the tree when the legacy code is removed and should also be moved
+to out-of-tree plugins.
+
+Virtual Environments
+--------------------
+
+The first set of virtual environment (venv) support was finally merged.  This
+work has exposed a number of assumptions on both DevStack and the projects themselves
+that have needed to be handled.  The most recent is that ``rootwrap`` is called
+from the services without a fully-qualified path, relying on a ``PATH`` search.
+Normally this is a Bad Thing(TM) in conjunction with ``sudo`` use, and I think
+that applies to this situation too.  When venvs are active, the ``{project}-rootwrap``
+binary is not in the system ``PATH``, nor the one configured in ``sudo's secure_path``.
+We need to now add each venv ``/bin`` directory to the ``secure_path`` so the
+``{project}-rootwrap`` binary can be found.
+
+`Review 168773`_ extracts the basic ``rootwrap`` configuration for Cinder and Nova
+into ``lib/rootwrap`` and adds a function to maintain a useful ``secure_path``
+setting for ``sudo``.
+
+.. _`Review 168773`: https://review.openstack.org/168773
+
+Other DevStack Bits
+-------------------
+
+Sean Dague (sdague) nuked the ``INSTALL_TESTONLY_PACKAGES`` setting and set the
+code to always install those packages, ie as if ``INSTALL_TESTONLY_PACKAGES=True``.
+We felt that the evolution of DevStack no longer made sense to maintain this
+distinction, some may argue it never was needed in the first place.  They can now
+say 'I told you so' and buy us a ``$COLD_BEVERAGE`` in Vancouver.
+
+Some travel delays and spotty on-board wifi on the trip home led to a semi-irregular
+`cleanup review`_ that fixed a bunch of Shocco docs build errors and spellings
+and comment spacings and most importantly, the capitalization of 'DevStack'.
+
+.. _`cleanup review`: https://review.openstack.org/168616
+
+Grenade
+=======
+
+The Grenade plugin story has not been completed, it is in the first set of draft
+rewrites to remove the zombies and vampires and make it just a 'plugin exiled
+to project repo' kind of story.
+
+There were a pair of minor reviews landed to support the DevStack/Neutron rework
+but they demanded more lines and were relegated to the 'C' story that parallels
+Rosencrantz and Guildenstern, who of course `are now dead`_.
+
+.. _`are now dead`: http://en.wikipedia.org/wiki/Rosencrantz_and_Guildenstern_Are_Dead
+
+----
+
+.. [#] great, another Sean, spelled the same way even.  Let's call him 'Other Sean'
