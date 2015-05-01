@@ -63,7 +63,7 @@
       </li>
       <li>
         
-        <a href="/x/blog" class="selected">Blog</a>
+        <a href="/x/blog" class="">Blog</a>
       </li>
       <li>
         
@@ -75,71 +75,22 @@
 
           <div id="prose_block" class="grid_11">
             
-
+  
 
 
 
 <article>
   <div class="blog_post">
     <header>
-      <div id="openstackclient-is-official"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2015/03/18/openstackclient-is-official/" rel="bookmark" title="Permanent Link to OpenStackClient Is Official">OpenStackClient Is Official</a></h1>
-      <p><small><span class="blog_post_date">March 18, 2015 at 03:03 PM</span> | categories: 
-        <span class="blog_post_categories">openstackclient</span>
+      <div id="openstackclient-is-three-and-official"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2015/04/18/openstackclient-is-three-and-official/" rel="bookmark" title="Permanent Link to OpenStackClient Is Three and Official">OpenStackClient Is Three and Official</a></h1>
+      <p><small><span class="blog_post_date">April 18, 2015 at 03:03 PM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstackclient/'>openstackclient</a></span>
       </small></p>
     </header>
     <div class="post_prose">
       
-<div class="document">
-<p>So it finally happened after a couple of false starts over the years, OpenStackClient
-has been officially added to the list of OpenStack projects.</p>
-<p>It is the first
-new project added as part of the 'big tent' governance changes even though the
-Technical Committee is still wrestling with implementation of the tagging process
-that they expect to use as the advertisement for capabilities and status.  I'm
-not going to rehash that here, now, though...</p>
-<div class="section" id="looking-backward">
-<h1>Looking Backward</h1>
-<p>I don't want to spend too much energy looking at where we have been, except to note
-that a lot has happened since dolphm and I shared a cab to SFO and I floated the
-idea of scrapping all of the OpenStack project CLIs and starting over.  He was
-just receptive enough that I spent most of the flight home teasing out the basic
-set of command objects and actions.</p>
-<p>That right there is what I consider the big win for OSC, having a small set of
-common actions and a set of known objects that are manipulated with those
-actions.  Define a common operation and then do that operation on _EVERY_
-object the same way, even if that means a bunch of work under the hood because
-the REST API doesn't work that way.</p>
-<p>One now-forgotten tidbit here is that I designed the commands to look similar
-to VMS's DCL command line set, in that the action preceeds the object.  One
-complaint was that the objects needed to be pluralized on some commands like list
-because that's the proper English thing to do.  I ignored plurals completely,
-although it does seem like we could have done it only with the list command.</p>
-<p>It was at the Portland summit that I was persuaded to make the change when
-someone who understands bash command completion better than I do (which is
-'I never looked at it') mentioned that it would be _much_ simpler if the
-object came first.  OK, finally, a good technical reason to change so we did.
-I think dhellmann said something like &quot;I expected that to be much harder&quot;
-afterward.  I do change my mind, sometimes.</p>
-</div>
-<div class="section" id="looking-around-today">
-<h1>Looking Around Today</h1>
-<p>In the last nearly-three years we have had ~570 commits from ~70 contributors.</p>
-<p>We have a couple of interesting features brewing for the next significant release,
-support for the <tt class="docutils literal"><span class="pre">os-client-config</span></tt> cloud configuration files and a client-side
-caching that will significantly improve responsiveness in many instances.</p>
-</div>
-<div class="section" id="looking-ahead">
-<h1>Looking Ahead</h1>
-<p>Where we go from here is somewhat obvious, switch to use the OpenStack SDK when
-it is ready, keep adding support for the lower layer services, enable plugins
-to support upper layer services.  Most importantly, we MUST drive down the
-number of dependencies required to install OSC and make it easy to use for
-non-Python developers.</p>
-<p>I do still want to re-write it all in Go...</p>
-</div>
-</div>
-
+  I was looking forward to writing a bit about OpenStackClient becoming the first project added to OpenStack under the 'big yurt' [1] governance model. It was even mostly written and set to publish right after the QA Code sprint article when Nebula did what so many startups do, which is to abruptly cease to exist. On April 1 no less. So instead I'll rehash this as a note on OSC's third birthday, based on the first repo commit. Looking Backward I don't want to spend too much energy looking at where we have been, except to note that a lot
 
     </div>
   </div>
@@ -147,6 +98,7 @@ non-Python developers.</p>
 
 
 
+  <hr class="interblog" />
 
           </div>
           <div id="sidebar" class="grid_1">
@@ -155,11 +107,11 @@ non-Python developers.</p>
 <!--
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
+      <li><a href="/x/blog/2015/04/18/openstackclient-is-three-and-official/">OpenStackClient Is Three and Official</a></li>
       <li><a href="/x/blog/2015/03/30/qa-code-sprint/">QA Code Sprint</a></li>
       <li><a href="/x/blog/2015/03/08/plug-in-to-openstackclient/">Plug In To OpenStackClient</a></li>
       <li><a href="/x/blog/2015/02/11/real-world-devstack-configuration/">Real World DevStack Configuration</a></li>
       <li><a href="/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways/">How Dost Thy Cloud Know Me, Let Me Count The Ways</a></li>
-      <li><a href="/x/blog/2014/10/08/first-principles-glossary/">First Principles - Glossary</a></li>
     </ul>
 -->
   </section>

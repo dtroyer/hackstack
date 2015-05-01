@@ -7,12 +7,126 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2015-03-30T22:32:10Z</updated>
+  <updated>2015-05-01T03:02:27Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
   <id>http://hackstack.org/x/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[OpenStackClient Is Three and Official]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2015/04/18/openstackclient-is-three-and-official" />
+    <id>http://hackstack.org/x/blog/2015/04/18/openstackclient-is-three-and-official</id>
+    <updated>2015-04-18T15:03:18Z</updated>
+    <published>2015-04-18T15:03:18Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstackclient" />
+    <summary type="html"><![CDATA[OpenStackClient Is Three and Official]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2015/04/18/openstackclient-is-three-and-official"><![CDATA[<div class="document">
+<p>I was looking forward to writing a bit about OpenStackClient becoming the first
+project added to OpenStack under the 'big yurt' <a class="footnote-reference" href="#id3" id="id1">[1]</a> governance model.  It was
+even mostly written and set to publish right after the QA Code sprint article
+when Nebula did what so many startups do, which is to abruptly cease to exist.
+On April 1 no less.  So instead I'll rehash this as a note on OSC's third birthday,
+based on the first repo commit.</p>
+<div class="section" id="looking-backward">
+<h1>Looking Backward</h1>
+<p>I don't want to spend too much energy looking at where we have been, except to note
+that a lot has happened since I shared a cab to SFO with Dolph Matthews and I floated the
+idea of scrapping all of the OpenStack project CLIs and starting over.  He was
+just receptive enough that I spent most of the flight home teasing out the basic
+set of command actions and objects.  And he backed that up by later choosing to not
+implement a CLI for the Identity v3 API but instead use OSC.</p>
+<p>The rigorous <a class="reference external" href="http://docs.openstack.org/developer/python-openstackclient/commands.html">command structure</a> is what I consider the big win for OSC, having a
+small set of common actions and a set of known objects that are manipulated with
+those actions.  Define a common operation and then do that operation on <strong>EVERY</strong>
+object the same way, even if that means a bunch of work under the hood because
+the REST API doesn't work that way.</p>
+<p>One now-forgotten tidbit here is that I designed the commands to look similar
+to VMS's DCL command line set, in that the action preceeds the object.  One
+complaint was that the objects needed to be pluralized on some actios, like <tt class="docutils literal">list</tt>,
+because that's the proper English thing to do.  I ignored plurals completely,
+although it does seem like we could have done it only with the list command.</p>
+<p>It was at the Portland summit that I was persuaded to make the change when
+someone who understands bash command completion better than I do (which is to say
+'I never looked at it') mentioned that it would be <strong>much</strong> simpler if the
+object came first.  OK, finally, a good technical reason to change so we did.
+I think dhellmann said something like &quot;I expected that to be much harder&quot;
+afterward.  I do change my mind, sometimes.</p>
+</div>
+<div class="section" id="looking-around-today">
+<h1>Looking Around Today</h1>
+<p>In the three years we have had just over 1000 commits from around 70 contributors.
+I want to grow the team; we have a small band of regulars now with
+a core review team of 4, having recently added Terry Howe, who has also spent
+a significant amount of time working on the Python SDK.</p>
+<p>We have a couple of interesting features brewing for the next significant release,
+support for the <tt class="docutils literal"><span class="pre">os-client-config</span></tt> cloud configuration files and a client-side
+caching that will significantly improve responsiveness in many instances. <a class="footnote-reference" href="#id4" id="id2">[2]</a></p>
+<p>Another historical bit is that for most of its life, OSC was mostly a side project
+for me.  I was able to eventually give it some real time along side DevStack and
+the other things but it seems to be the kind of project that doesn't seem so
+important until you really really need it now.</p>
+<p>As I was talking to a lot of people over the last couple of weeks trying to find
+my next professional home, it became clear to me how some people and organizations feel
+about projects like OSC.  They're not sexy, not the sort of thing that 'sells'
+customers on your cloud or your service or whatever.  There were a couple of companies
+that totally did not view this as worth spending time on.  Fortunately for us all,
+there are more companies that do think it is worth the time and I expect to be able
+to give OSC and other client/app developer projects a significant part of my time
+going forward.</p>
+<p>When OSC was added as an official project, we also brought the <a class="reference external" href="http://git.openstack.org/cgit/openstack/os-client-config">os-client-config</a>
+(from Stackforge) and <a class="reference external" href="http://git.openstack.org/cgit/openstack/cliff">cliff</a> (from Oslo) repos with it.  <tt class="docutils literal">Cliff</tt> was written
+by Doug Hellmann specifically for OSC to manage the numerous command implementations
+and give a solid basis for each of the actions.  I think it has worked out great
+and been a great help in maintaining the consistency  in OSC so far.  It has also
+been adopted by other projects, some outside of the OpenStack ecosystem.</p>
+<p><tt class="docutils literal"><span class="pre">os-client-config</span></tt> (aka <tt class="docutils literal"><span class="pre">o-c-c</span></tt>) was originated by Monty Taylor to add client-side
+cloud configuration along with his <a class="reference external" href="http://git.openstack.org/cgit/openstack-infra/shade">shade</a> library.
+BTW, if you ever want to see what the challenges of using multiple clouds in the
+same project, have a look at <tt class="docutils literal">shade</tt>.  In an ideal world it should not need to exist,
+especially since it only talks to OpenStack clouds.</p>
+<p>OSC will be using <tt class="docutils literal"><span class="pre">o-c-c</span></tt> to implement the same cloud configuration that will
+make it <strong>simple</strong> to switch between cloud authentication configurations with a
+single command line option.  And also to share public cloud configuration templates
+without sharing authentication details for them.  I plan to follow up with details
+on how to use this soon, watch this space.</p>
+</div>
+<div class="section" id="looking-ahead">
+<h1>Looking Ahead</h1>
+<p>Technically we still have a lot of work to do.  There are significant APIs
+that are still not implemented (Network, Volume v2) and incomplete (Image v1 and
+v2).  We need to speed up the load time, eliminate unnecessary dependencies,
+and fix bugs.  Always fix bugs.</p>
+<p>On a slightly longer scope, we will switch to use the OpenStack SDK when
+it is ready, continue to better enable plugins to support upper layer services,
+and most importantly, we MUST drive down the
+number of dependencies required to install OSC and make it easy to use for
+non-Python developers.  There needs to be a single file install that 'just works'.</p>
+<p>I do still want to duplicate it all in Go.  My Go prototype is older than
+OSC, actually...and is a single file install...</p>
+<hr class="docutils" />
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Yeah, I know the usual term is <cite>big tent</cite>.  Every time I hear that I
+think of a <cite>big top</cite> and I really don't want to be thought of as 'one of the
+clowns in the big top'... even if it might be accurate...</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><strong>Update:</strong> Caching didn't make it.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+]]></content>
+  </entry>
   <entry>
     <author>
       <name>dtroyer</name>
@@ -1059,113 +1173,6 @@ kvm \
     -usbdevice tablet
 </pre>
 <p>Connect via VNC to :9</p>
-</div>
-</div>
-</div>
-]]></content>
-  </entry>
-  <entry>
-    <author>
-      <name>dtroyer</name>
-      <uri>http://hackstack.org/x/blog</uri>
-    </author>
-    <title type="html"><![CDATA[Windows Images for OpenStack]]></title>
-    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2014/07/07/windows-images-for-openstack" />
-    <id>http://hackstack.org/x/blog/2014/07/07/windows-images-for-openstack</id>
-    <updated>2014-07-07T07:07:00Z</updated>
-    <published>2014-07-07T07:07:00Z</published>
-    <category scheme="http://hackstack.org/x/blog" term="windows" />
-    <category scheme="http://hackstack.org/x/blog" term="openstack" />
-    <category scheme="http://hackstack.org/x/blog" term="virtualbox" />
-    <summary type="html"><![CDATA[Windows Images for OpenStack]]></summary>
-    <content type="html" xml:base="http://hackstack.org/x/blog/2014/07/07/windows-images-for-openstack"><![CDATA[<div class="document">
-<p>There is no shortage of articles online about building Windows images for use in various clouds.  What there is a shortage of are working articles on building these images unattended.  The Windows unattended install process has been basically solved, even if still a bit arcane.  But finding more than a trivial example of doing it in a cloud is sparse.</p>
-<p>Cloudbase has <a class="reference external" href="https://github.com/cloudbase/windows-openstack-imaging-tools">shared the tooling</a> they created for building their Windows images.  That makes a good base for an automated build process that can be tailored to your particular needs.  in addition to being the authors of cloudbase-init, their GitHub account is a trove of resources for Windows admins.</p>
-<p>Since I had a Windows 7 Professional ISO handy I used that for the example...</p>
-<div class="section" id="requirements">
-<h1>Requirements</h1>
-<p>The resulting image must:</p>
-<ul class="simple">
-<li>have RedHat's VirtIO drivers installed</li>
-<li>use <tt class="docutils literal"><span class="pre">cloudbase-init</span></tt> for metadata handling</li>
-</ul>
-</div>
-<div class="section" id="build-in-virtualbox">
-<h1>Build In VirtualBox</h1>
-<p>The Cloudbase process is designed to perform the build using KVM.  Ideally, it would be possible to boot a VM in an OpenStack cloud from the install ISO and let it go, but it turns out this is hard.  The unattended install process  requires two ISO images and a floppy image attached to the VM in addition to the target disk device. OpenStack currently has no way to do all of these attachments.  The alternative is to stash autounattend.xml and the virtio drivers in the Windows install ISO, but this requires a rebuild/upload for _every_ change to the install scripts.</p>
-<p>So normally this means a Linux on bare-metal install is required.  How hard is it to dig up a laptop with Trusty on it?  Hard, if you're me.</p>
-<p>I've heard that using VirtualBox doesn't work for some reason, but these reasons haven't been made clear to me so I didn't know I couldn't do what I'm describing here.</p>
-<div class="section" id="auto-answer-changes">
-<h2>Auto Answer Changes</h2>
-<p>One of the main change to Cloudbase's setup is to put the PowerShell scripts on the floppy with Autounattend.xml.  This ensures that the files are matched together and changes in the repo doesn't break our working setup.</p>
-<p>The Autounattend.xml file has a couple of changes other than those required to run the script from the floppy:</p>
-<ul class="simple">
-<li>Add the MetaData value for Win7</li>
-<li>Since this is Win7, we need to enable the account stanza</li>
-<li>Install a public product key</li>
-<li>Fix a spacing error in the Microsoft-Windows-International-Core-WinPE component element</li>
-</ul>
-</div>
-<div class="section" id="powershell-script-changes">
-<h2>PowerShell Script Changes</h2>
-<p>The primary change to the PowerShell scripts is to remove the file downloads and retrieve them from the floppy instead.</p>
-</div>
-<div class="section" id="make-the-floppy-image">
-<h2>Make the Floppy Image</h2>
-<p>I used <a class="reference external" href="/x/files/make-floppy.sh">this script</a> to create the floppy image, it builds a new image, mounts it, copies the appropriate Autounattend.xml and PowerShell scripts and other files, then umnounts the image.</p>
-</div>
-<div class="section" id="build-vm-configuration">
-<h2>Build VM Configuration</h2>
-<p>Automating a VBox build includes creating the VM to be used.  The <tt class="docutils literal">VBoxManage</tt> tool is the simple way to do this from a script and that's exactly what I've done here.</p>
-<p>It turns out that 16Gb is not enough for Windows 7 installation once all of the updates are installed.  There are a LOT of them, 157 at this writing.  Even though this only needs to be done once, it takes a long time to apply them and it might be worthwhile to obtain media with the updates pre-applied.</p>
-<p>The commands here are taken from the <tt class="docutils literal"><span class="pre">build-vb.sh</span></tt> script.</p>
-<p>Create a new empty VM and disk:</p>
-<pre class="literal-block">
-BASE_NAME='win-build'
-# Create a new empty VM
-VBoxManage createvm --name &quot;$BASE_NAME&quot; --ostype &quot;$OS_TYPE&quot; --register
-VBoxManage createhd --filename &quot;$VM_DIR/$BASE_NAME.vdi&quot; --size $DISK_SIZE
-</pre>
-<p>The disk configuration is an important part of this process so everything is found as required.  In addition to the install disk and install ISO a second ISO must be mounted containing the VirtIO drivers and a floppy image with the Autounattend.xml and Powershell scripts:</p>
-<pre class="literal-block">
-# SATA Controller
-VBoxManage storagectl &quot;$BASE_NAME&quot; --name &quot;SATA&quot; --add sata
-VBoxManage storageattach &quot;$BASE_NAME&quot; --storagectl &quot;SATA&quot; --type hdd \
-    --port 0 --device 0 --medium &quot;$VM_DIR/$BASE_NAME.vdi&quot;
-
-# Make IDE disks
-VBoxManage storagectl &quot;$BASE_NAME&quot; --name &quot;IDE&quot; --add ide
-VBoxManage storageattach &quot;$BASE_NAME&quot; --storagectl &quot;IDE&quot;  --type dvddrive \
-    --port 0  --device 0 --medium &quot;$WIN_ISO&quot;
-VBoxManage storageattach &quot;$BASE_NAME&quot; --storagectl &quot;IDE&quot;  --type dvddrive \
-    --port 1  --device 0 --medium &quot;$VIRTIO_ISO&quot;
-
-# Floppy disk image
-VBoxManage storagectl &quot;$BASE_NAME&quot; --name &quot;Floppy&quot; --add floppy
-VBoxManage storageattach &quot;$BASE_NAME&quot; --storagectl &quot;Floppy&quot; --type fdd \
-    --port 0 --device 0 --medium &quot;$FLOPPY&quot;
-</pre>
-<p>Do the remaining basic configuration, including a virtio NIC to tickle Windows to install the drivers:</p>
-<pre class="literal-block">
-# General Config
-VBoxManage modifyvm &quot;$BASE_NAME&quot; --cpus 2
-VBoxManage modifyvm &quot;$BASE_NAME&quot; --memory $RAM_SIZE --vram 24
-VBoxManage modifyvm &quot;$BASE_NAME&quot; --ioapic on
-
-VBoxManage modifyvm &quot;$BASE_NAME&quot; --nic1 nat --bridgeadapter1 e1000g0
-VBoxManage modifyvm &quot;$BASE_NAME&quot; --nic2 nat
-VBoxManage modifyvm &quot;$BASE_NAME&quot; --nictype2 virtio
-
-VBoxManage modifyvm &quot;$BASE_NAME&quot; --boot1 dvd --boot2 disk --boot3 none --boot4 none
-</pre>
-<p>Kick off the build process:</p>
-<pre class="literal-block">
-VBoxManage startvm &quot;$BASE_NAME&quot; --type gui
-</pre>
-<p>Convert the disk from VDI to QCOW2 format for uploading into the image store:</p>
-<pre class="literal-block">
-qemu-img convert -p -O qcow &quot;$VM_DIR/$BASE_NAME.vdi&quot; &quot;$VM_DIR/$BASE_NAME.qcow&quot;
-</pre>
 </div>
 </div>
 </div>
