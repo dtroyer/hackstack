@@ -4,7 +4,7 @@ author: dtroyer
 date: 2014-12-18 12:18:00
 categories: DevStack
 tags: openstack devstack
-draft:true
+draft: true
 ---
 
 DevStack has always utilized a mix of distro-provided and PyPI-installed

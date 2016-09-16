@@ -7,12 +7,155 @@
   <title type="text">HackStack Posts</title>
   <subtitle type="text">OpenStack and other hackish things</subtitle>
 
-  <updated>2015-05-01T03:02:27Z</updated>
+  <updated>2016-09-16T17:59:20Z</updated>
   <generator uri="http://blogofile.com/">Blogofile</generator>
 
   <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog" />
   <id>http://hackstack.org/x/blog/feed/atom/</id>
   <link rel="self" type="application/atom+xml" href="http://hackstack.org/x/blog/feed/atom/" />
+  <entry>
+    <author>
+      <name>dtroyer</name>
+      <uri>http://hackstack.org/x/blog</uri>
+    </author>
+    <title type="html"><![CDATA[Client Cloud Configuration]]></title>
+    <link rel="alternate" type="text/html" href="http://hackstack.org/x/blog/2015/04/30/client-cloud-configuration" />
+    <id>http://hackstack.org/x/blog/2015/04/30/client-cloud-configuration</id>
+    <updated>2015-04-30T15:04:30Z</updated>
+    <published>2015-04-30T15:04:30Z</published>
+    <category scheme="http://hackstack.org/x/blog" term="openstackclient" />
+    <summary type="html"><![CDATA[Client Cloud Configuration]]></summary>
+    <content type="html" xml:base="http://hackstack.org/x/blog/2015/04/30/client-cloud-configuration"><![CDATA[<div class="document">
+<p>or</p>
+<div class="section" id="how-i-learned-to-love-the-lack-of-environment-variables">
+<h1>How I Learned to Love the Lack of Environment Variables</h1>
+<p><a class="reference external" href="/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways/">Previously</a> I
+posted a preview of my favorite new feature of OpenStackClient, support for
+cloud configuration files and the new <tt class="docutils literal"><span class="pre">--os-cloud</span></tt> global option.  Who knew it
+would take six months to get it done and released?  There is some merely
+adequate documentation of the <strong>Client Cloud Configuration</strong> (or CCC) operation
+in the <a class="reference external" href="http://docs.openstack.org/developer/python-openstackclient/configuration.html#configuration-files">OSC Configuration docs</a>, but this is too good to leave to official
+docs alone.</p>
+<p>CCC was actually introduced in OSC release 1.1.0, which is the basis for compatibility
+with Liberty dependency requirements.  But like the rest of OSC, it works just fine
+with all of the supported OpenStack releases.</p>
+<div class="section" id="overview">
+<h2>Overview</h2>
+<p>The TL;DR for Client Cloud Configuration is take a global public cloud configuration
+file, add to it local clouds and/or public cloud authentication and region details
+and use them with a single command line option or environment variable and
+forget sourcing many <tt class="docutils literal">openrc</tt>-like files.</p>
+</div>
+<div class="section" id="clouds-yaml">
+<h2>clouds.yaml</h2>
+<p>It all starts with the <tt class="docutils literal">clouds.yaml</tt> file that contains your cloud configuration
+details.  This is really the only file required to use <tt class="docutils literal"><span class="pre">--os-cloud</span></tt> and defines
+its available arguments.  OSC searches the following directories for <tt class="docutils literal">clouds.yaml</tt>
+and uses only the first one it finds:</p>
+<pre class="literal-block">
+* the current directory
+* ``~/.config/openstack``, aka ``$XDG_CONFIG_HOME/openstack``
+* ``/etc/openstack``
+</pre>
+<p><tt class="docutils literal"><span class="pre">~/.config</span></tt> is a well-known directory defined by the freedesktop.org <a class="reference external" href="http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html">XDG Base Directory Specification</a>.  If
+<tt class="docutils literal">XDG_CONFIG_HOME</tt> is defined, it will be used in place of <tt class="docutils literal"><span class="pre">~/.config</span></tt>.</p>
+<p><tt class="docutils literal">clouds.yaml</tt> defines a list of clouds, the key for each cloud definition is
+shockingly the argument used with the <tt class="docutils literal"><span class="pre">--os-cloud</span></tt> option.  Each cloud definition
+is made up of a list of keys that correspond to OSC's global options.  One special
+item in this list is <tt class="docutils literal">auth</tt>, which contains all of the authentication-related options.
+A bare-minimum <tt class="docutils literal">clouds.yaml</tt> that works with a default DevStack installation
+(using Identity v2) looks like this:</p>
+<pre class="literal-block">
+clouds:
+  devstack:
+    auth:
+      auth_url: http://127.0.0.1:35357/
+      project_name: demo
+      username: demo
+      password: 0penstack
+    region_name: RegionOne
+</pre>
+<p>With that configuration, you can skip sourcing <tt class="docutils literal">openrc</tt> and do this:</p>
+<pre class="literal-block">
+openstack --os-cloud devstack token issue
+</pre>
+<p>to get a token from the running cloud.</p>
+</div>
+<div class="section" id="clouds-public-yaml">
+<h2>clouds-public.yaml</h2>
+<p>Duplicating the configuration for public clouds (or private clouds within an
+organization) gets tedious, thus the motivation for <tt class="docutils literal"><span class="pre">clouds-public.yaml</span></tt>.
+The search path is the same as for <tt class="docutils literal">clouds.yaml</tt>, in fact it is basically
+the same file except that the top-level key is <tt class="docutils literal"><span class="pre">public-clouds</span></tt>.</p>
+<p>I should also note that a small set of public OpenStack clouds is also
+built-in to OSC so they can be referenced automatically.  Here is an sample of the
+current built-in configuration:</p>
+<pre class="literal-block">
+public-clouds:
+    hp:
+        auth:
+            auth_url: https://region-b.geo-1.identity.hpcloudsvc.com:35357/v2.0
+        region_name: region-b.geo-1
+        dns_service_type: 'hpext:dns'
+        image_api_version: 1
+        image_format: qcow2
+    rackspace:
+        auth:
+            auth_url: https://identity.api.rackspacecloud.com/v2.0/
+        database_service_type: 'rax:database'
+        compute_service_name: cloudServersOpenStack
+        image_api_version: 2
+        image_api_use_tasks: True
+        image_format: vhd
+    dreamhost:
+        auth:
+            auth_url: https://keystone.dream.io/v2.0
+        region_name: RegionOne
+        image_api_version: 2
+        image_format: raw
+</pre>
+<p>Note that not all of those configuration options are recognized by OSC yet.</p>
+<p>With the above file, a <tt class="docutils literal">clouds.yaml</tt> file that utilized it might look like this:</p>
+<pre class="literal-block">
+clouds:
+    rax:
+        cloud: rackspace
+        auth:
+            project_id: 123456
+            username: joe-stacker
+            password: 0penstack
+        region_name: DFW
+</pre>
+<p>The <tt class="docutils literal">cloud</tt> key selects the <tt class="docutils literal">rackspace</tt> definition from the <tt class="docutils literal"><span class="pre">clouds-public.yaml</span></tt>
+file.  The <tt class="docutils literal">auth_url</tt> is automatically inherited from the <tt class="docutils literal">rackspace</tt> definition.
+With those definitions, all that is required is the following:</p>
+<pre class="literal-block">
+openstack --os-cloud rax server list
+</pre>
+<p>or for those who still want to hang on to the old way, with an environment variable:</p>
+<pre class="literal-block">
+OS_CLOUD=rax openstack server list
+</pre>
+</div>
+</div>
+<div class="section" id="followup">
+<h1>Followup</h1>
+<p>Oh, just one more thing... I promised a followup to
+<a class="reference external" href="/x/blog/2015/04/18/openstackclient-is-three-and-official/">this post</a>  once things
+settled down.  I am settling into my new role with Intel doing pretty much
+the same set of upstream things I was doing before.  As hoped, OpenStackClient
+is a primary focus, along with some of the other client-side and app developer
+things I have been peripherally involved in lately like the Python SDK and
+the API Working Group.  And DevStack.  Always DevStack.</p>
+<p>Actually, two more things... I was also elected to the OpenStack Technical Committee
+in the recent election.</p>
+<p>How about one more one more thing?  I shamelessly grabbed control of <a class="reference external" href="http://git.openstack.org/cgit/stackforge/golang-client/tree/">this dormant repo</a>
+and intend to keep slowly plugging away at recreating a Keystone Session-style
+client in my favorite strongly-typed language.  Come join!</p>
+</div>
+</div>
+]]></content>
+  </entry>
   <entry>
     <author>
       <name>dtroyer</name>

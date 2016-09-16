@@ -82,6 +82,54 @@
 <article>
   <div class="blog_post">
     <header>
+      <div id="real-world-devstack-configuration"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2015/02/11/real-world-devstack-configuration/" rel="bookmark" title="Permanent Link to Real World DevStack Configuration">Real World DevStack Configuration</a></h1>
+      <p><small><span class="blog_post_date">February 11, 2015 at 03:02 PM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/devstack/'>devstack</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  Configuring DevStack for development use is a trail of Google searches and devstack.org reading and all sorts of things. In my experience, the best and hardest source of what to do is experience. And we all know how experience is the bridge between Bad Judgement and Good Judgement.[] local.conf This is DevStack's configuration file. It will never be modified by DevStack. localrc Now just a section in local.conf, localrc used to be the main config file. References to it should be mentally translated to local.conf [[local|localrc]] section. I also tend to carry a number of config bits commented out to
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
+      <div id="how-dost-thy-cloud-know-me-let-me-count-the-ways"></div>
+      <h1 class="blog_post_title"><a href="/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways/" rel="bookmark" title="Permanent Link to How Dost Thy Cloud Know Me, Let Me Count The Ways">How Dost Thy Cloud Know Me, Let Me Count The Ways</a></h1>
+      <p><small><span class="blog_post_date">October 24, 2014 at 10:24 AM</span> | categories: 
+        <span class="blog_post_categories"><a href='/x/blog/category/openstackclient/'>openstackclient</a></span>
+      </small></p>
+    </header>
+    <div class="post_prose">
+      
+  One of the coolest (IMHO) new features [1] recently added to OpenStackClient is its leveraging of a new-ish feature of Keystone's client library, authentication plugins. As that name implies, this allows for Keystone client to be able to use an extendable set of authentication backends for validating users. At press time (keypress time for the pedantic) the freshly released python-keystoneclient 0.11.2 includes the traditional password method, a new variant on the token method and a recent addition supporting SAML2. Happily, the master branch of OpenStackClient has learned how to take advantage of these plugins, plus any additional ones written for
+
+    </div>
+  </div>
+</article>
+
+
+
+  <hr class="interblog" />
+  
+
+
+
+<article>
+  <div class="blog_post">
+    <header>
       <div id="first-principles-glossary"></div>
       <h1 class="blog_post_title"><a href="/x/blog/2014/10/08/first-principles-glossary/" rel="bookmark" title="Permanent Link to First Principles - Glossary">First Principles - Glossary</a></h1>
       <p><small><span class="blog_post_date">October 08, 2014 at 10:08 AM</span> | categories: 
@@ -147,54 +195,6 @@
 
 
   <hr class="interblog" />
-  
-
-
-
-<article>
-  <div class="blog_post">
-    <header>
-      <div id="openwrt-images-for-openstack"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2014/08/17/openwrt-images-for-openstack/" rel="bookmark" title="Permanent Link to OpenWRT Images for OpenStack">OpenWRT Images for OpenStack</a></h1>
-      <p><small><span class="blog_post_date">August 17, 2014 at 08:17 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/openstack/'>openstack</a>, <a href='/x/blog/category/openwrt/'>openwrt</a></span>
-      </small></p>
-    </header>
-    <div class="post_prose">
-      
-  I've been playing with OpenWRT since <mumble>-<mumble> and have enjoyed building some of the smallest Linux images around. While targeted at low-end home router platforms, it also runs on a wide variety of small SoC boards including the near-ubiqutious Raspberry Pi and my fave BeagleBone Black. I've also been using an incredibly tiny OpenWRT instance on my laptop for years now to work around the 'interesting' network configuration of VirtualBox. Building a set of VMs that need to talk to each other and to the outside world shouldn't be hard, so I added a router just like I have at
-
-    </div>
-  </div>
-</article>
-
-
-
-  <hr class="interblog" />
-  
-
-
-
-<article>
-  <div class="blog_post">
-    <header>
-      <div id="more-notes-on-windows-images"></div>
-      <h1 class="blog_post_title"><a href="/x/blog/2014/07/13/more-notes-on-windows-images/" rel="bookmark" title="Permanent Link to More Notes on Windows Images">More Notes on Windows Images</a></h1>
-      <p><small><span class="blog_post_date">July 13, 2014 at 07:13 AM</span> | categories: 
-        <span class="blog_post_categories"><a href='/x/blog/category/windows/'>windows</a>, <a href='/x/blog/category/openstack/'>openstack</a></span>
-      </small></p>
-    </header>
-    <div class="post_prose">
-      
-  This is a follow-up to Windows Images for OpenStack that includes some of the notes accumulated along the way. Other Docs Building Windows VM images is a topic that has been done to death, but the working consensus of those I've talked to is that Florent Flament's post is one of the best guides through this minefield. Metadata Server Curl Commands Instance UUID: curl http://169.254.169.254/openstack/latest/meta_data.json | python -c 'import sys, json; print json.load(sys.stdin)["uuid"]' Instance Name: curl http://169.254.169.254/openstack/latest/meta_data.json | python -c 'import sys, json; print json.load(sys.stdin)["name"]' Fixed IP: curl http://169.254.169.254/latest/meta-data/local-ipv4 Floating IP: curl http://169.254.169.254/latest/meta-data/public-ipv4 Building on an OpenStack Cloud One of
-
-    </div>
-  </div>
-</article>
-
-
-
-  <hr class="interblog" />
  <a href="../1">« Previous Page</a>
   --  
  <a href="../3">Next Page »</a>
@@ -206,11 +206,11 @@
 <!--
     <h1 class="post_header_gradient theme_font">Latest Posts</h1>
     <ul>
+      <li><a href="/x/blog/2016/02/16/layers-redux/">Layers Redux</a></li>
+      <li><a href="/x/blog/2015/04/30/client-cloud-configuration/">Client Cloud Configuration</a></li>
       <li><a href="/x/blog/2015/04/18/openstackclient-is-three-and-official/">OpenStackClient Is Three and Official</a></li>
       <li><a href="/x/blog/2015/03/30/qa-code-sprint/">QA Code Sprint</a></li>
       <li><a href="/x/blog/2015/03/08/plug-in-to-openstackclient/">Plug In To OpenStackClient</a></li>
-      <li><a href="/x/blog/2015/02/11/real-world-devstack-configuration/">Real World DevStack Configuration</a></li>
-      <li><a href="/x/blog/2014/10/24/how-dost-thy-cloud-know-me-let-me-count-the-ways/">How Dost Thy Cloud Know Me, Let Me Count The Ways</a></li>
     </ul>
 -->
   </section>
@@ -239,7 +239,7 @@
     </div>
     <div class="grid_4" id="credits">
       <p>
-        Copyright 2015
+        Copyright 2016
         dtroyer
       </p>
       <p>

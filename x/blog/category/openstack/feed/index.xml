@@ -10,10 +10,57 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Fri, 01 May 2015 03:02:27 GMT</pubDate>
+    <pubDate>Fri, 16 Sep 2016 17:59:20 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
+    <item>
+      <title>Layers Redux</title>
+      <link>http://hackstack.org/x/blog/2016/02/16/layers-redux</link>
+      <pubDate>Tue, 16 Feb 2016 02:16:00 CST</pubDate>
+      <category><![CDATA[openstack]]></category>
+      <guid isPermaLink="false">tdb-nLr9hVwIwRab4_CXgxgbE-I=</guid>
+      <description>Layers Redux</description>
+      <content:encoded><![CDATA[<div class="document">
+<p>It has been a while since I <a class="reference external" href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/">last wrote about 'layers' in OpenStack projects/services</a>.  A recent Twitter conversation (a first for me?) asking about updating the layers model brought this back to my foreground stack, and on reflection I don't think much has changed.</p>
+<p>We have nearly a year of 'big tent' inclusion in OpenStack project governance now, which still has mixed reviews (ha!) in the community.  We have had an explosion in 'official OpenStack projects', and apparently even more hurt feelings for projects that simply are not ready or still do not fit the 'one of us' tests.  But more than just that, some official projects still also have hurt feelings because big tent did not level the playing field as they hoped it would.</p>
+<p>I do not know how expectations that big tent governance would change things like Keystone being a requirement for the majority of deployment models, or why Triple-O or Fuel are not magically the presumed deployment platforms because they are 'official'.  Some things might have changed because they were created or motivated by political/policy/financial reasons, often within the companies that fun this entire effort to begin with.  But some things are the way they are because of technical and architectural reasons that a governance change is not meant to address.</p>
+<p>Let's get specific.  The Twitter conversation I referenced above touched on containers maybe now being a 'first class' citizen.  I do not know specifics on why Magnum feels like they are not first class, nor exactly what that means.  But I can say that in relationship to the layers concept I write about here it has nothing to do with perceptions nor other non-technical reasons why Magnum might at best be a layer 2 project, possibly layer 3. TBD.</p>
+<p>My real question was to want to see a container-only cloud configuration (in DevStack because, well, I know a little about that) that did not require Nova or Ironic.  From what I know, having never deployed Magnum, it requires something to manage the Linux OS that it uses for the host for its containers.  That would be Nova for containers-in-a-VM or Ironic for containers-on-baremetal.  If Magnum uses something else for that functionality it has either duplicated work unnecessarily or is dependent on non-OpenStack projects and the 'one of us' questions may need to be revisited.</p>
+<p>For what it's worth, I don't think either of those are the case, it is just a desire to not feel put down that the teams that depend on Nova or Glance or Keystone have, and a feeling of being left out of the action.  Realistically, the real action in OpenStack these days is in the upper layers anyway.  Maintaining the lower layers is closer to commodity work, unless you are talking about major re-factoring such as the current scheduler work in Nova.</p>
+<div class="section" id="layers-redux">
+<h1>Layers Redux</h1>
+<p>So how do layers stand up to the ravages of 16 months since I last visited it here?</p>
+<div class="section" id="layer-1">
+<h2>Layer 1</h2>
+<ul class="simple">
+<li>Neutron is no longer an exception.  There are still a lot of deployments of Nova-net in the wild, but Neutron should be the default now, so we can remove any dotted lines around it here.</li>
+</ul>
+</div>
+<div class="section" id="layer-2">
+<h2>Layer 2</h2>
+<ul class="simple">
+<li>I think Ironic stays at layer two until deployments that can totally replace Nova with Ironic are a thing.  Until then, it is, similar to Cinder, a valuable not not essential part of many clouds.</li>
+<li>Most of the layer 2 changes will be around arguments for adding some projects.  Magnum probably fits here as a peer to Ironic, or else in Layer 3 because of that.</li>
+<li>Manila also belongs in Layer 2, removing the 'probably' from my earlier assessment.</li>
+</ul>
+</div>
+<div class="section" id="layer-3">
+<h2>Layer 3</h2>
+<p>As before, I am stopping here as without hand-on experience I do not feel qualified to stack up the remaining projects, other than reading their dependency list from <tt class="docutils literal">requirements.txt</tt>, and that is not enough.  However, whatever ranking needs to come from their practical, technical dependencies and relationships, not from some value judgement on the quality or status or political importance of the project.</p>
+</div>
+</div>
+<div class="section" id="defcore">
+<h1>Defcore</h1>
+<p>Defcore is still (check this!!) built around layer 1 and 2 APIs, which also may be an argument for moving an project down the stack.  I don't think that is a slam dunk, but another data point.</p>
+</div>
+<div class="section" id="tomorrow">
+<h1>Tomorrow</h1>
+<p>What will change tomorrow?  Not much, frankly.  That is not a fatalist view, it is a reflection on the speed at which things flow in our community.  Achieving consensus is not an overnight operation.</p>
+</div>
+</div>
+]]></content:encoded>
+    </item>
     <item>
       <title>First Principles - Glossary</title>
       <link>http://hackstack.org/x/blog/2014/10/08/first-principles-glossary</link>
@@ -1068,113 +1115,6 @@ RABBIT_PASSWORD=$ADMIN_PASSWORD
 </pre>
 </li>
 </ul>
-</div>
-</div>
-]]></content:encoded>
-    </item>
-    <item>
-      <title>OpenStack - Seven Layer Dip as a Service</title>
-      <link>http://hackstack.org/x/blog/2013/09/05/openstack-seven-layer-dip-as-a-service</link>
-      <pubDate>Thu, 05 Sep 2013 09:05:00 CDT</pubDate>
-      <category><![CDATA[openstack]]></category>
-      <category><![CDATA[rant]]></category>
-      <guid isPermaLink="false">n_L3VOh8Wa6r8DsnH3_0f0RV7GE=</guid>
-      <description>OpenStack - Seven Layer Dip as a Service</description>
-      <content:encoded><![CDATA[<div class="document">
-<p><em>Updated 06Nov2014</em>: I've updated my <a class="reference external" href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/">thoughts on the layers</a> to take into account both things I learned since this was originally written.</p>
-<p>OpenStack is, as it name implies, a stack of services to provide &quot;components for a cloud infrastructure solution&quot;. <a class="footnote-reference" href="#id2" id="id1">[1]</a>  There are layers of services, some interdependent on each other, some only dependent on the layers below it.</p>
-<p>For some time there has been a PC dance around 'labelling' projects that may or may not be at a layer that it wants to be in.  Back in the day, the term 'core' was thrown around to identify the services necessary to build an OpenStack deployment.  That term has been so misused and coopted and stomped on as to become unusable for technical discussions.  The OpenStack Foundation Board has an effort ongoing to define what 'core' means but they are focused on who and what is required in a deployment in order to use the trademarked OpenStack[tm] name and logo and not any determination as to layering of projects.  Go team, but that is not what we in the coding trenches need.</p>
-<p>'Integrated' has become the term-du-jour for the TC to identify those projects that are part of the announced OpenStack release a the end of the development cycle.  That clearly identifies those projects that are administratively included but has no meaning for technical relationship/interface considerations.</p>
-<p>For the sake of argument I am going to co-opt another term, stealing it directly from OSI networking terminology: 'layer'.  Layer is used there to describe the boundaries and interfaces between the functional components.  In OpenStack, the layers we have are the base infrastructure required to make something work, the additional services to make things integrate well with its surroundings and the services provided to the system and its users.  Really general terms there.</p>
-<div class="section" id="layer-definitions">
-<h1>Layer Definitions</h1>
-<div class="section" id="layer-0-operating-systems-and-libraries">
-<h2>Layer 0: Operating Systems and Libraries</h2>
-<p>[Because Real Programmers start with zero, right?]</p>
-<p>OpenStack is built on top of the existing projects and technology that do the grunt work.  For completeness we will include the underlying components in Layer 0 even though these pieces are not part of OpenStack proper.</p>
-<p>There are also a number of libraries specific to OpenStack (even though some may be useful elsewhere) that the other projects are dependent on but are not themselves operational services.  Most of these are encapsulated in the Oslo project.</p>
-</div>
-<div class="section" id="layer-1-the-basics">
-<h2>Layer 1: The Basics</h2>
-<p>The OpenStack stack begins with the Infrastructure as a Service.  This is the layer that everything else builds on.  This is also the focus of three of the four early OpenStack projects, once called 'core projects'.  But we've thrown out that c-word so now let's agree that this is simply 'OpenStack Layer 1'.  These are the interdependent services that form a minimal operational system and have no other OpenStack dependencies.</p>
-<blockquote>
-<ul class="simple">
-<li>Identity (Keystone)</li>
-<li>Image (Glance)</li>
-<li>Compute (Nova)</li>
-</ul>
-</blockquote>
-<p>Thats it.  Really.  At least until Nova Networking is removed and Network (Neutron) moves in to this layer as a required service for every deployment.</p>
-<p>While this is contrary to what the board is saying regarding the definition of 'core', they are talking about user experience and legal definitions where I am talking about technical and architectural relationships.</p>
-<p>Since Essex, most OpenStack services rely on Keystone to provide Identity services; Swift still is able to be deployed in a stand-alone configuration.  Nova requires Glance to supply bootable images.  Glance is able to use Swift if it is available and must be specifically configured to do so..  Similarly, Nova is able to use Cinder and Neutron if they are available and must also be configured to use them.</p>
-</div>
-<div class="section" id="layer-2-extending-the-base">
-<h2>Layer 2: Extending the Base</h2>
-<p>Layer 2 services have the characteristic that they only depend on the services in Layer 1 and that Layer 1 services may be configured to use Layer 2 servies if available.  Nearly all deployments will include at least some of these services.</p>
-<blockquote>
-<ul class="simple">
-<li>Network (Neutron)</li>
-<li>Volume (Cinder)</li>
-<li>Object (Swift)</li>
-<li>Bare-metal (Ironic) - status: in incubation</li>
-</ul>
-</blockquote>
-<p>Neutron will eventually become a Layer 1 service when Nova Networking is removed.</p>
-<p>Ironic technically sits below Nova but is optional so it is in Layer 2.</p>
-</div>
-<div class="section" id="layer-3-the-options">
-<h2>Layer 3: The Options</h2>
-<p>Layer 3 services are optional from a functional point of view but valuable in deployments that integrate with the world around them.  They integrate with Layer 1 and 2 services and are dependent on them for operation.</p>
-<blockquote>
-<ul class="simple">
-<li>Web UI (Horizon)</li>
-<li>Notification (Ceilometer)</li>
-</ul>
-</blockquote>
-</div>
-<div class="section" id="layer-4-turtles-all-the-way-up">
-<h2>Layer 4: Turtles All The Way Up</h2>
-<p>Layer 4 catches everything else with an OpenStack sticker on the box.  This includes the rest of the XXaaS services and everything that is purely user facing, i.e. the OpenStack deployment itself does not depend on the service, it is only used by customers of cloud services.</p>
-<blockquote>
-<ul class="simple">
-<li>Orchestration (Heat)</li>
-<li>DBaaS (Trove) - status: to be integrated in Icehouse</li>
-<li>DNSaaS (Moniker) - status: applying for incubation</li>
-<li>MQaaS (Marconi) - status: in incubation</li>
-</ul>
-</blockquote>
-</div>
-</div>
-<div class="section" id="relationships">
-<h1>Relationships</h1>
-<p>What does all this mean?  Probably not much outside of the following projects.  Really it is just a framework for terminology to describe and categorize projects by their purely technical relationships.</p>
-<div class="section" id="devstack">
-<h2>DevStack</h2>
-<p>DevStack has struggled to keep from overgrowing its playpen and contain the effects of everyone with a project to pitch wanting to get it included.  Some basic hooks have been added to <tt class="docutils literal">stack.sh</tt> to allow projects not explicitly supported in the DevStack repo to be included in <tt class="docutils literal">stack</tt>/<tt class="docutils literal">unstack</tt> operations.  More hooks are coming in the near future as <tt class="docutils literal">stack.sh</tt> continues to get streamlined and make the projects follow a common template for installation/configuration/startup/etc.</p>
-<p>DevStack's goal is to (soon!) clearly define the layers of services so developers can focus on the layers they care about and still have the ability to build the whole she-bang.  The DevStack layer scripts will also be hookable to allow additional (non-Integrated? non-Incubated?) projects the ability to self-integrate into DevStack without being in the repo.</p>
-<p>The layered approach will be to install and configure the layers in order, with the exception that Layer 1 startup will be delayed until Layer 2 configuration is complete to allow the configuration changes to take effect.</p>
-</div>
-<div class="section" id="grenade">
-<h2>Grenade</h2>
-<p>Grenade only performs upgrade runs on Layer 1 and 2 services at the most, even then not including (yet?) all Layer 2 services.  Additional layers can only be added once a project is part of the DevStack stable release used as the Grenade <tt class="docutils literal">base</tt> release.</p>
-</div>
-<div class="section" id="openstackclient">
-<h2>OpenStackClient</h2>
-<p>OSC is not an official OpenStack project or program despite its existence in the OpenStack namespace on GitHub as it began before those concepts were fully-formed.  So in some regards it is not bound to the rules and conventions that apply to the other projects.  However, to do otherwise would be foolish.</p>
-<p>OSC uses the Layers in determining the priorities for implementation of client commands.  It currently has implementations for Identity, Image, Volume and Compute APIs with plans for Object and Network to come.  It does have a simple plug-in capability that allows additional modules to be added independently without being part of the OSC repo.</p>
-</div>
-</div>
-<div class="section" id="epilogue">
-<h1>Epilogue</h1>
-<p>[Quinn Martin Productions TV shows always had these, remember? Anyone?]</p>
-<p>Other projects may or may not pick up this terminology, it depends on if it turns out to be useful to them.  There is a technical hierarchy of projects even if not everyone wants to acknowledge it, and the need for avoiding the existing hot-button terms seems to be increasing.</p>
-<hr class="docutils" />
-<table class="docutils footnote" frame="void" id="id2" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>Stolen directly from <a class="reference external" href="http://www.openstack.org/">openstack.org</a></td></tr>
-</tbody>
-</table>
 </div>
 </div>
 ]]></content:encoded>
