@@ -10,54 +10,32 @@
     <title>HackStack Posts</title>
     <link>http://hackstack.org/x/blog</link>
     <description>OpenStack and other hackish things</description>
-    <pubDate>Fri, 16 Sep 2016 17:59:20 GMT</pubDate>
+    <pubDate>Fri, 14 Apr 2017 17:40:46 GMT</pubDate>
     <generator>Blogofile</generator>
     <sy:updatePeriod>hourly</sy:updatePeriod>
     <sy:updateFrequency>1</sy:updateFrequency>
     <item>
-      <title>Layers Redux</title>
-      <link>http://hackstack.org/x/blog/2016/02/16/layers-redux</link>
-      <pubDate>Tue, 16 Feb 2016 02:16:00 CST</pubDate>
+      <title>Who Are We?  Really?  Really!</title>
+      <link>http://hackstack.org/x/blog/2017/04/14/who-are-we-really-really</link>
+      <pubDate>Fri, 14 Apr 2017 04:14:00 CDT</pubDate>
       <category><![CDATA[openstack]]></category>
-      <guid isPermaLink="false">tdb-nLr9hVwIwRab4_CXgxgbE-I=</guid>
-      <description>Layers Redux</description>
+      <guid isPermaLink="false">lpfNCW9hes9I7czDS-PEjZaEAnc=</guid>
+      <description>Who Are We?  Really?  Really!</description>
       <content:encoded><![CDATA[<div class="document">
-<p>It has been a while since I <a class="reference external" href="/x/blog/2014/10/03/a-funny-thing-happened-on-the-way-to-the-summit/">last wrote about 'layers' in OpenStack projects/services</a>.  A recent Twitter conversation (a first for me?) asking about updating the layers model brought this back to my foreground stack, and on reflection I don't think much has changed.</p>
-<p>We have nearly a year of 'big tent' inclusion in OpenStack project governance now, which still has mixed reviews (ha!) in the community.  We have had an explosion in 'official OpenStack projects', and apparently even more hurt feelings for projects that simply are not ready or still do not fit the 'one of us' tests.  But more than just that, some official projects still also have hurt feelings because big tent did not level the playing field as they hoped it would.</p>
-<p>I do not know how expectations that big tent governance would change things like Keystone being a requirement for the majority of deployment models, or why Triple-O or Fuel are not magically the presumed deployment platforms because they are 'official'.  Some things might have changed because they were created or motivated by political/policy/financial reasons, often within the companies that fun this entire effort to begin with.  But some things are the way they are because of technical and architectural reasons that a governance change is not meant to address.</p>
-<p>Let's get specific.  The Twitter conversation I referenced above touched on containers maybe now being a 'first class' citizen.  I do not know specifics on why Magnum feels like they are not first class, nor exactly what that means.  But I can say that in relationship to the layers concept I write about here it has nothing to do with perceptions nor other non-technical reasons why Magnum might at best be a layer 2 project, possibly layer 3. TBD.</p>
-<p>My real question was to want to see a container-only cloud configuration (in DevStack because, well, I know a little about that) that did not require Nova or Ironic.  From what I know, having never deployed Magnum, it requires something to manage the Linux OS that it uses for the host for its containers.  That would be Nova for containers-in-a-VM or Ironic for containers-on-baremetal.  If Magnum uses something else for that functionality it has either duplicated work unnecessarily or is dependent on non-OpenStack projects and the 'one of us' questions may need to be revisited.</p>
-<p>For what it's worth, I don't think either of those are the case, it is just a desire to not feel put down that the teams that depend on Nova or Glance or Keystone have, and a feeling of being left out of the action.  Realistically, the real action in OpenStack these days is in the upper layers anyway.  Maintaining the lower layers is closer to commodity work, unless you are talking about major re-factoring such as the current scheduler work in Nova.</p>
-<div class="section" id="layers-redux">
-<h1>Layers Redux</h1>
-<p>So how do layers stand up to the ravages of 16 months since I last visited it here?</p>
-<div class="section" id="layer-1">
-<h2>Layer 1</h2>
+<p>[Most of this originally appeared in a <a class="reference external" href="http://lists.openstack.org/pipermail/openstack-dev/2017-April/115297.html">thread on the openstack-dev mailing list</a> but seemed interesting enough to repost here.]</p>
+<p>It is TC election season again in OpenStack-land and this time around a few days gap has been included between the self-nomination period and the actual election for those standing for election to be quizzed on various topics.  One of these questions[0] was the usual &quot;what is OpenStack?&quot; between One Big Thing and Loosely Familiar Many Things.</p>
+<p>I started with a smart-alec response to ttx's comparison of OpenStack to Lego (which I still own more of than I care to admit to my wife): &quot;something something step on them in the dark barefoot&quot;.  OpenStack really can be a lot like that, you think you are cruising along fine getting it running and BAM, there's that equivalent to a 2x2 brick in the carpet locating your heel in the dark.  Why are those the sharpest ones???</p>
+<p>Back to the topic at hand:  This question comes up over and over, almost like clockwork at election time. This is a signal to me that we (the community overall) still do not have a shared understanding of the answer, or some just don't like the stated answer and their process to change that answer is to repeat the question hoping for a different answer.</p>
+<p>In my case, the answer may be changing a bit. We've <a class="reference external" href="https://www.openstack.org/software/">used the term</a> 'cloud operating system' in various places, but not in our defining documents:</p>
 <ul class="simple">
-<li>Neutron is no longer an exception.  There are still a lot of deployments of Nova-net in the wild, but Neutron should be the default now, so we can remove any dotted lines around it here.</li>
+<li>The <a class="reference external" href="https://www.openstack.org/legal/bylaws-of-the-openstack-foundation/">OpenStack Foundation Bylaws</a> use the phrase &quot;the open source cloud computing project which is known as the OpenStack Project&quot;</li>
+<li>The <a class="reference external" href="https://governance.openstack.org/tc/reference/principles.html#one-openstack">Technical Committee Charter</a> uses the phrase &quot;one community with one common mission, producing one framework of collaborating components&quot;</li>
+<li>The <a class="reference external" href="https://governance.openstack.org/uc/reference/charter.html">User Committee Charter</a> does not include a statement on &quot;what is OpenStack&quot;</li>
 </ul>
-</div>
-<div class="section" id="layer-2">
-<h2>Layer 2</h2>
-<ul class="simple">
-<li>I think Ironic stays at layer two until deployments that can totally replace Nova with Ironic are a thing.  Until then, it is, similar to Cinder, a valuable not not essential part of many clouds.</li>
-<li>Most of the layer 2 changes will be around arguments for adding some projects.  Magnum probably fits here as a peer to Ironic, or else in Layer 3 because of that.</li>
-<li>Manila also belongs in Layer 2, removing the 'probably' from my earlier assessment.</li>
-</ul>
-</div>
-<div class="section" id="layer-3">
-<h2>Layer 3</h2>
-<p>As before, I am stopping here as without hand-on experience I do not feel qualified to stack up the remaining projects, other than reading their dependency list from <tt class="docutils literal">requirements.txt</tt>, and that is not enough.  However, whatever ranking needs to come from their practical, technical dependencies and relationships, not from some value judgement on the quality or status or political importance of the project.</p>
-</div>
-</div>
-<div class="section" id="defcore">
-<h1>Defcore</h1>
-<p>Defcore is still (check this!!) built around layer 1 and 2 APIs, which also may be an argument for moving an project down the stack.  I don't think that is a slam dunk, but another data point.</p>
-</div>
-<div class="section" id="tomorrow">
-<h1>Tomorrow</h1>
-<p>What will change tomorrow?  Not much, frankly.  That is not a fatalist view, it is a reflection on the speed at which things flow in our community.  Achieving consensus is not an overnight operation.</p>
-</div>
+<p>I've never liked the &quot;cloud operating system&quot; term because I felt it mis-represented how we defined ourself and is too generic and used in other places for other things. But I've come to realize it is an easy-to-understand metaphor for what OpenStack does and where we are today.  Going forward it is increasingly apparent that hybrid stacks (constellations, etc) will be common that include significant components that are not OpenStack at layers other than &quot;layer 0&quot; (ie, below all OpenStack components: database, message queue, etc).  The example commonly given is of course Kubernetes, but there are others.</p>
+<p>UNIX caught on as well as it did partly because of its well-defined interfaces between components at user-visible levels, specifically in userspace.  The 'everything is a file' metaphor, for all its faults, was simple to understand and use, until it wasn't, but it still serves us well.  There was a LOT of 'differentiation' between the eventual commercial implementations of UNIX which caused a lot of pain for many (including me) but the masses have settled on the highly-interoperable GNU/Linux combination. (I am conveniently ignoring the still-present 'differentiation' that Linux distros insist on because that will never go away).</p>
+<p>This is where I see OpenStack today.  We are in the role of being the cloud for the masses, used by both large (hi CERN!) and small (hi mtreinish's closet!) clouds and largely interoperable.  Just as an OS (operating system) is the enabling glue for applications to function and communicate, our OS (OpenStack) is in position to do that for cloud apps.  What we are lacking for guidance is a direct lineage to 20 years of history.  We have to have our own discipline to keep our interfaces clean and easy to consume and understand, and present a common foundation for applications to build on, including applications that are themselves higher layers of an OS stack.</p>
+<p>Phew!  Thank you again for reading this far, I know this is not news to a lot of our community, but the assumption that &quot;everyone knows this&quot; is not true, we need to occasionally repeat ourselves to remind ourselves and inform our newer members what we are, where we are headed and why we are all here in the first place: to enable awesome work to build on our foundation, and if we sell a few boxes or service contracts or chips along the way, our sponsors are happy too.</p>
 </div>
 ]]></content:encoded>
     </item>
